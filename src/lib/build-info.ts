@@ -8,7 +8,7 @@
  * neither - so both are absent far more often than they are present, and
  * every field here is nullable by design rather than by caution.
  */
-export const REPO_URL = "https://github.com/kamontat/cookierun";
+export const REPO_URL = "https://github.com/kamontat/cr-tools";
 
 /**
  * Declared so the two reads below can be written as property access, which is
