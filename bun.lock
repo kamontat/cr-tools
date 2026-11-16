@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "demo-cookierun-encode",
+      "name": "cr-tools",
       "dependencies": {
         "@kcstyles/reset.css": "1.0.12",
         "@kctools/bun-server": "0.3.2",
