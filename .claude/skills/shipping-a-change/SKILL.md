@@ -58,7 +58,7 @@ size or "just" are not permission. When they do skip one, say which in the PR te
    gh pr checks <number> --watch
    ```
    The URL is the `environment.url` in `.github/workflows/deploy-preview.yml` with the PR
-   number filled in (`https://pr-<number>-cookierun.kcinth.workers.dev/`). Report it only
+   number filled in (`https://pr-<number>-cr-tools.kcinth.workers.dev/`). Report it only
    after the `deploy` check passes; if it fails, say so with the failing line.
 
 Then stop and hand the user the PR link and preview URL. Wait for their approval before

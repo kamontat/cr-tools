@@ -2,6 +2,22 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-16: The site moves to cr-tools.kc.in.th
+
+### BREAKING CHANGES
+
+- The site is now served at `https://cr-tools.kc.in.th`, not `https://cookierun.kc.in.th`.
+  Saved codes, the theme choice and the drawer width live in the browser per domain, so they
+  do not follow: copy any saved code from the old address before it goes away.
+
+### Improvements
+
+- The project is named `cr-tools` throughout: the Cloudflare Worker, the package, the GitHub
+  repository the footer's commit links open, and the preview URLs
+  (`https://pr-<number>-cr-tools.kcinth.workers.dev/`).
+- A test holds both deploy workflows' hand-written URLs to the Worker name in
+  `wrangler.jsonc`, so a later rename cannot miss one.
+
 ## 2026-11-06: Update waits for a change, and saved codes sort by episode
 
 ### Features

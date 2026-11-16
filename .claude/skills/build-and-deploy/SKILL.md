@@ -41,7 +41,7 @@ The two levels still have to be read together. The base sheet lays `main` out as
 
 ## Deployment
 
-The site is a Cloudflare Worker serving static assets. `wrangler.jsonc` names the worker `cookierun`, sets `build.command` to `bun run build`, and points `assets.directory` at `dist/` — so wrangler runs the build itself, and neither deploy workflow builds beforehand. Nothing else reads `dist/`; changing where the build writes means changing that file too.
+The site is a Cloudflare Worker serving static assets. `wrangler.jsonc` names the worker `cr-tools`, sets `build.command` to `bun run build`, and points `assets.directory` at `dist/` — so wrangler runs the build itself, and neither deploy workflow builds beforehand. Nothing else reads `dist/`; changing where the build writes means changing that file too.
 
 Four workflows, each pinning every action to a full commit SHA with the release tag in a trailing comment:
 
@@ -50,7 +50,7 @@ Four workflows, each pinning every action to a full commit SHA with the release 
 - `deploy-production.yml` — on pushes to `main`, `wrangler deploy`, reporting into the `production` environment.
 - `assets.yml` — Mondays at 06:00 UTC and on `workflow_dispatch`, `bun run verify:assets`. It is the only workflow that reaches cookierunhub.com, and the only one on a schedule. It is deliberately not part of `main.yml`: it fails whenever the site gains an entry, and `main.yml` gates the deploys.
 
-Each deploy workflow's `environment.url` is only the link GitHub shows on the deployment; wrangler does not read it. It is built by hand because the action's `deployment-url` output knows neither preview aliases nor custom domains, so it must be edited whenever the Worker name, the workers.dev subdomain (`kcinth`) or the custom domain (`cookierun.kc.in.th`) changes.
+Each deploy workflow's `environment.url` is only the link GitHub shows on the deployment; wrangler does not read it. It is built by hand because the action's `deployment-url` output knows neither preview aliases nor custom domains, so it must be edited whenever the Worker name, the workers.dev subdomain (`kcinth`) or the custom domain (`cr-tools.kc.in.th`) changes. `src/lib/deploy.test.ts` holds both URLs to the Worker name in `wrangler.jsonc` and the production URL to the custom domain, so a rename that misses one fails the suite.
 
 Both deploy workflows need `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in repository secrets, and grant `deployments: write` on the job rather than at the top of the file — the workflows open with `permissions: {}` and hand back only what each job needs. Keep that shape in anything new.
 

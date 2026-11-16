@@ -12,6 +12,10 @@ test("a commit becomes a short name and a link to the commit", () => {
 	expect(info.commitUrl).toBe(`${REPO_URL}/commit/${SHA}`);
 });
 
+test("commit links point at the cr-tools repository", () => {
+	expect(REPO_URL).toBe("https://github.com/kamontat/cr-tools");
+});
+
 // A local build inlines nothing, and the dev server does not inline at all,
 // so the empty string is the ordinary case rather than the broken one.
 test("no commit leaves nothing to link to", () => {

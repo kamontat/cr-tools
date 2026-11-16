@@ -1,5 +1,5 @@
 {
-	"name": "demo-cookierun-encode",
+	"name": "cr-tools",
 	"type": "module",
 	"private": true,
 	"packageManager": "bun@1.4.2",
