@@ -48,3 +48,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # astro generated types
 .astro
+
+# fixture directories left by an interrupted test run
+tests/**/fixture-*

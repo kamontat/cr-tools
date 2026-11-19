@@ -1,5 +1,5 @@
 /**
- * Wire ids for `assets/index.json`: what they are, how the file is written,
+ * Wire ids for `public/assets/index.json`: what they are, how the file is written,
  * and what makes a written file intact.
  *
  * An id is the entry's own number on cookierunhub.com in fixed-width base 36,
@@ -36,7 +36,7 @@ export type StaticEntry = {
 	name: string
 	/** The entry's own page, or `null` where the site has none — every boost. */
 	url: string | null
-	/** Path under `assets/`, or `null` where no icon has been collected yet. */
+	/** Path under `public/assets/`, or `null` where no icon has been collected yet. */
 	image: string | null
 }
 
@@ -229,7 +229,7 @@ function byKey(entries: Record<string, StaticEntry>): Record<string, StaticEntry
 }
 
 /**
- * The one way `assets/index.json` is written, so the scraper and the verifier
+ * The one way `public/assets/index.json` is written, so the scraper and the verifier
  * cannot disagree about what the file should look like.
  *
  * The static sections come last so a hand edit to one shows up as a diff at

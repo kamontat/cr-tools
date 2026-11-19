@@ -25,7 +25,7 @@ import { type HubRow, iconUrl, pageUrl } from "./cookierunhub"
 
 export type HubEntries = {
 	entries: Record<string, Entry | TreasureEntry>
-	/** Path under `assets/` → the URL it is downloaded from. */
+	/** Path under `public/assets/` → the URL it is downloaded from. */
 	icons: Map<string, string>
 	/** One line per thing the rows say that this mapping cannot represent. */
 	problems: string[]

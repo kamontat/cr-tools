@@ -191,7 +191,7 @@ isSemiAuto(combi) // true
 
 The site is being rebuilt on Astro and Svelte, with saved codes as the combi page's main content, a left sidebar, a Settings page, Thai and English, and backup and restore for saved data. The design is [`docs/superpowers/specs/2026-11-19-site-redesign-design.md`](docs/superpowers/specs/2026-11-19-site-redesign-design.md). The work lands on the `redesign` branch piece by piece; `main` serves the previous site until the new combi page is complete. On `redesign` the pages — Home at `/`, the combi tool at `/combi-name/`, and Settings at `/settings/` — are placeholders for now, while the codec and everything around it are in place under `src/lib/combi/`.
 
-The format does not change in the redesign. Links already shared, such as `/combi-name/#CODE?note=…`, keep opening the same code with its note and stats.
+The format does not change in the redesign. Links already shared, such as `/combi-name/#CODE?note=…`, keep working: they reach the combi page address, which reads them once the page is rebuilt.
 
 ## Development
 

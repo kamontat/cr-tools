@@ -55,7 +55,7 @@ const environmentOf = (env: BuildEnv): Environment => {
 }
 
 /**
- * Defaults its argument the way `hrefFor` defaults its protocol: every caller
+ * Defaults its argument to the build's inlined environment: every caller
  * would otherwise pass the same thing, and the tests are the only caller that
  * ever passes anything else.
  */
