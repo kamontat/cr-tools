@@ -2,6 +2,6 @@
 	"$schema": "https://biomejs.dev/schemas/2.6.5/schema.json",
 	"extends": ["@kcconfigs/biome/configs/astro"],
 	"files": {
-		"includes": ["!.claude", "!public", "!assets", "!docs/superpowers"]
+		"includes": ["!.claude", "!public", "!docs/superpowers"]
 	}
 }

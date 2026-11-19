@@ -91,7 +91,7 @@ test("ordered keeps a retired entry's flag last and drops nothing", () => {
 	expect(entry.retired).toBe(true)
 })
 
-const INDEX = new URL("../../../assets/index.json", import.meta.url)
+const INDEX = new URL("../../../public/assets/index.json", import.meta.url)
 
 /**
  * `bun run verify:assets` asks a different question — is the index complete
@@ -304,7 +304,7 @@ test("every image the committed index names is on disk", async () => {
 	for (const section of sections) {
 		for (const [key, entry] of Object.entries(index[section] as Record<string, { image: string | null }>)) {
 			if (entry.image === null) continue
-			const file = new URL(`../../../assets/${entry.image}`, import.meta.url)
+			const file = new URL(`../../../public/assets/${entry.image}`, import.meta.url)
 			if (!(await Bun.file(file).exists())) {
 				missing.push(`${section}/${key} -> ${entry.image}`)
 			}

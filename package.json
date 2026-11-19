@@ -6,7 +6,7 @@
 		"#lib/*": "./src/lib/*.ts",
 		"#components/*": "./src/components/*",
 		"#layouts/*": "./src/layouts/*",
-		"#assets/*": "./assets/*"
+		"#assets/*": "./public/assets/*"
 	},
 	"scripts": {
 		"dev": "astro dev",

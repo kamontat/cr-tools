@@ -1,5 +1,5 @@
 /**
- * Asks cookierunhub.com whether `assets/index.json` is still complete: for each
+ * Asks cookierunhub.com whether `public/assets/index.json` is still complete: for each
  * section, how many entries the site lists against how many this index carries
  * without `retired: true`. A treasure the site marks blessed counts twice, once
  * per form, the same way `fetch-assets` writes it.
@@ -18,7 +18,7 @@ import { type AssetIndex, type Entry, parseIndex, SECTIONS } from "./utils/asset
 import { fetchRows } from "./utils/cookierunhub"
 import { entriesFrom } from "./utils/hub-index"
 
-const INDEX = fileURLToPath(new URL("../assets/index.json", import.meta.url))
+const INDEX = fileURLToPath(new URL("../public/assets/index.json", import.meta.url))
 
 function fail(lines: string[], label: string): never {
 	console.error(`${label} (${lines.length}):`)
@@ -28,12 +28,12 @@ function fail(lines: string[], label: string): never {
 
 async function readIndex(): Promise<AssetIndex> {
 	if (!(await Bun.file(INDEX).exists())) {
-		fail(["assets/index.json does not exist"], "nothing to verify")
+		fail(["public/assets/index.json does not exist"], "nothing to verify")
 	}
 	try {
 		return parseIndex(await Bun.file(INDEX).json())
 	} catch (error) {
-		fail([`assets/index.json could not be read: ${String(error)}`], "nothing to verify")
+		fail([`public/assets/index.json could not be read: ${String(error)}`], "nothing to verify")
 	}
 }
 

@@ -1,9 +1,9 @@
 /**
  * Syncs cookie, pet and treasure entries and icons from cookierunhub.com into
- * `assets/` and writes `assets/index.json`. Every entry is keyed by its wire
+ * `public/assets/` and writes `public/assets/index.json`. Every entry is keyed by its wire
  * id — the site's own number for it in base 36, see `utils/asset-ids.ts` — and
  * records a readable key, its name, its page on cookierunhub.com and its icon
- * path (relative to `assets/`, or `null` where the site has no picture). An
+ * path (relative to `public/assets/`, or `null` where the site has no picture). An
  * entry the site no longer lists is kept and marked `retired` rather than
  * deleted, since its id may already be part of a published code.
  *
@@ -14,7 +14,7 @@
  *
  * Network cost is three API requests, one per section, plus one request per
  * icon that is not already on disk. An icon on disk that no entry names any
- * more is deleted, so `assets/` holds exactly what the index points at.
+ * more is deleted, so `public/assets/` holds exactly what the index points at.
  */
 import { fileURLToPath } from "node:url"
 
@@ -34,7 +34,7 @@ import { entriesFrom } from "./utils/hub-index"
 
 // `fileURLToPath`, not `.pathname`: the latter percent-encodes, so a checkout
 // under a path containing a space would not resolve.
-const ASSETS = fileURLToPath(new URL("../assets/", import.meta.url))
+const ASSETS = fileURLToPath(new URL("../public/assets/", import.meta.url))
 const ASSETS_INDEX = `${ASSETS}index.json`
 const CONCURRENCY = 4
 const BAR_WIDTH = 24
@@ -109,7 +109,7 @@ const index: {
 	pets: Record<string, Entry>
 	treasures: Record<string, TreasureEntry>
 } = { cookies: {}, pets: {}, treasures: {} }
-const downloads = new Map<string, string>() // path under assets/ -> remote URL
+const downloads = new Map<string, string>() // path under public/assets/ -> remote URL
 const problems: string[] = []
 
 for (const section of SECTIONS) {
