@@ -11,3 +11,10 @@ test("icons ship as files and the index does not", async () => {
 	expect(await Bun.file(`${root}/dist/assets/cookies/fire_spirit_cookie.webp`).exists()).toBe(true)
 	expect(await Bun.file(`${root}/dist/.assetsignore`).text()).toContain("assets/index.json")
 })
+
+test("pages build as folders, so /combi-name/ and its hash links still open", async () => {
+	expect(await Bun.file(`${root}/dist/combi-name/index.html`).exists()).toBe(true)
+	expect(await Bun.file(`${root}/dist/combi-name.html`).exists()).toBe(false)
+	expect(await Bun.file(`${root}/dist/settings/index.html`).exists()).toBe(true)
+	expect(await Bun.file(`${root}/dist/settings.html`).exists()).toBe(false)
+})

@@ -73,7 +73,7 @@ test("the any episode has no icon", () => {
 	expect(episodeArt("any", "../assets/")).toBe(null)
 })
 
-// A key renamed in assets/index.json is caught here rather than on the page.
+// A key renamed in public/assets/index.json is caught here rather than on the page.
 test("every key these two name is in the index", () => {
 	for (const boost of ALL_BOOSTS) {
 		expect(boostArt(boost, "")).toEqual([expect.stringMatching(/^boosts\/.+\.png$/)])
