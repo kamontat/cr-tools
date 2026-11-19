@@ -57,8 +57,17 @@ describe("toolchain", () => {
 		const modules = globSync("scripts/utils/*.ts", { cwd: root })
 		expect(modules.length).toBeGreaterThan(0)
 		const imports = modules.map((file) => `await import(${JSON.stringify(`./${file}`)})`).join(";")
-		const result = spawnSync("node", ["--input-type=module", "-e", imports], { cwd: root, encoding: "utf8" })
-		expect(result.stderr).toBe("")
-		expect(result.status).toBe(0)
+		const result = spawnSync(process.execPath, ["--input-type=module", "-e", imports], {
+			cwd: root,
+			encoding: "utf8",
+		})
+		expect(result.status, result.stderr).toBe(0)
+	})
+
+	it("keeps scraper code out of the site: nothing under src/ imports #scripts/", () => {
+		const offenders = globSync("src/**/*.{ts,astro,svelte}", { cwd: root }).filter((file) =>
+			/["']#scripts\//.test(read(file)),
+		)
+		expect(offenders).toEqual([])
 	})
 })

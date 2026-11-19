@@ -4,7 +4,8 @@ import { expect, test } from "vitest"
 
 import { pageEntrypoints, TOOLS } from "#lib/tools"
 
-// A path, not a URL: happy-dom replaces the global URL, which node:fs refuses.
+// A path, not a URL: under happy-dom, new URL(…, import.meta.url) resolves to an
+// http://localhost:3000/ URL, which node:fs rejects (ERR_INVALID_URL_SCHEME).
 const root = join(import.meta.dirname, "..", "..")
 
 test("tool slugs are unique", () => {
