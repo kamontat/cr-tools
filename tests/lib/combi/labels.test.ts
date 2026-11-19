@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, test } from "vitest"
 
 import {
 	ALL_ACTIONS,
@@ -8,7 +8,7 @@ import {
 	ALL_GOALS,
 	ALL_MODES,
 	ALL_RANDOM_BOOSTS,
-} from "./codec";
+} from "#lib/combi/codec"
 import {
 	ACTION_LABELS,
 	BOOST_LABELS,
@@ -17,13 +17,13 @@ import {
 	GOAL_LABELS,
 	MODE_LABELS,
 	RANDOM_BOOST_LABELS,
-} from "./labels";
+} from "#lib/combi/labels"
 
 type LabelTable = {
-	field: string;
-	labels: Record<string, string>;
-	values: readonly string[];
-};
+	field: string
+	labels: Record<string, string>
+	values: readonly string[]
+}
 
 const TABLES: LabelTable[] = [
 	{ field: "goal", labels: GOAL_LABELS, values: ALL_GOALS },
@@ -41,24 +41,22 @@ const TABLES: LabelTable[] = [
 		values: ALL_COOKIE_POWERS,
 	},
 	{ field: "action", labels: ACTION_LABELS, values: ALL_ACTIONS },
-];
+]
 
 test("every value of every field has a label, with no leftover keys", () => {
 	for (const { field, labels, values } of TABLES) {
-		expect(Object.keys(labels).sort(), `${field} keys`).toEqual(
-			[...values].sort(),
-		);
+		expect(Object.keys(labels).sort(), `${field} keys`).toEqual([...values].sort())
 		for (const value of values) {
-			expect(labels[value], `${field} label for ${value}`).toBeTruthy();
+			expect(labels[value], `${field} label for ${value}`).toBeTruthy()
 		}
 	}
-});
+})
 
 test("labels read the way the game words them", () => {
-	expect(MODE_LABELS.semiauto).toBe("Semi-auto");
-	expect(EPISODE_LABELS.specialExp).toBe("Special Exp Episode");
-	expect(RANDOM_BOOST_LABELS.revive).toBe("Revive once with 80 HP");
-	expect(COOKIE_POWER_LABELS.seaFairy).toBe("Sea Fairy Cookie");
-	expect(ACTION_LABELS.jumpAtStart).toBe("Jump at start");
-	expect(BOOST_LABELS.powerJellyBoost).toBe("Power Jelly Boost");
-});
+	expect(MODE_LABELS.semiauto).toBe("Semi-auto")
+	expect(EPISODE_LABELS.specialExp).toBe("Special Exp Episode")
+	expect(RANDOM_BOOST_LABELS.revive).toBe("Revive once with 80 HP")
+	expect(COOKIE_POWER_LABELS.seaFairy).toBe("Sea Fairy Cookie")
+	expect(ACTION_LABELS.jumpAtStart).toBe("Jump at start")
+	expect(BOOST_LABELS.powerJellyBoost).toBe("Power Jelly Boost")
+})

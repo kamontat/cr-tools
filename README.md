@@ -13,14 +13,14 @@ ex:    J  MX   3  5  RV   F  W  0
 SE2:   A  X0   T  0  42   0  0  0
 ```
 
-| Slot | Field | Encoding |
-| --- | --- | --- |
-| 1 | Mode | `M` Manual, `A` Auto, `S` Semi-auto, `J` Semi-auto with a jump at the start |
-| 2-3 | Goal | Two characters for the set of goals, below |
-| 4 | Episode | `A` Any, `1`-`7` Episode 1-7, `C` Special Episode 1 (Island of Coins), `T` Special Episode 2 (Tower of Frozen Waves), `R` Special Episode 3 (Mysterious Rabbit Hole), `X` Special Exp Episode (XP-Elixir Workshop) |
-| 5 | Boosts | One character for the whole set, below |
-| 6-7 | Random boost | `00` none, otherwise two characters for one of the eleven below |
-| 8-10 | Cookie power+ | One slot per group of powers, below |
+| Slot | Field         | Encoding                                                                                                                                                                                                           |
+| ---- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | Mode          | `M` Manual, `A` Auto, `S` Semi-auto, `J` Semi-auto with a jump at the start                                                                                                                                        |
+| 2-3  | Goal          | Two characters for the set of goals, below                                                                                                                                                                         |
+| 4    | Episode       | `A` Any, `1`-`7` Episode 1-7, `C` Special Episode 1 (Island of Coins), `T` Special Episode 2 (Tower of Frozen Waves), `R` Special Episode 3 (Mysterious Rabbit Hole), `X` Special Exp Episode (XP-Elixir Workshop) |
+| 5    | Boosts        | One character for the whole set, below                                                                                                                                                                             |
+| 6-7  | Random boost  | `00` none, otherwise two characters for one of the eleven below                                                                                                                                                    |
+| 8-10 | Cookie power+ | One slot per group of powers, below                                                                                                                                                                                |
 
 The combi name is letters and digits only: the game field takes it as is, and a `-` inside it would read as the section separator below. There is no version character among the ten: the format version is the full code's, the first character of the loadout section below.
 
@@ -30,12 +30,12 @@ The starting action has no slot of its own. A jump at the start is one more thin
 
 A run aims for Score on its own, or for one to three of Money, Exp and Box. An auto run never aims for Score — Score is played by hand.
 
-| Chars | Goals | Chars | Goals |
-| --- | --- | --- | --- |
-| `S0` | Score | `MX` | Money + Exp |
-| `M0` | Money | `MB` | Money + Box |
-| `X0` | Exp (X for eXp) | `XB` | Exp + Box |
-| `B0` | Box | `AA` | Money + Exp + Box |
+| Chars | Goals           | Chars | Goals             |
+| ----- | --------------- | ----- | ----------------- |
+| `S0`  | Score           | `MX`  | Money + Exp       |
+| `M0`  | Money           | `MB`  | Money + Box       |
+| `X0`  | Exp (X for eXp) | `XB`  | Exp + Box         |
+| `B0`  | Box             | `AA`  | Money + Exp + Box |
 
 A code that says Score beside `A`, `S` or `J` still decodes, with a warning.
 
@@ -43,14 +43,14 @@ A code that says Score beside `A`, `S` or `J` still decodes, with a warning.
 
 Each of the sixteen sets of boosts has a fixed character. A single boost is its own letter and all four is `A`. HP Extension with Power Jelly — the pair most runs take — is `2`, and with Double XP as well `3`; the other pairs and triples take the characters left, in order:
 
-| Char | Boosts | Char | Boosts | Char | Boosts |
-| --- | --- | --- | --- | --- | --- |
-| `0` | none | `2` | HP Extension + Power Jelly | `3` | HP Extension + Power Jelly + Double XP |
-| `H` | HP Extension | `1` | HP Extension + Fast Start | `8` | HP Extension + Power Jelly + Fast Start |
-| `P` | Power Jelly Boost | `4` | HP Extension + Double XP | `9` | HP Extension + Fast Start + Double XP |
-| `F` | Fast Start | `5` | Power Jelly + Fast Start | `B` | Power Jelly + Fast Start + Double XP |
-| `X` | Double XP | `6` | Power Jelly + Double XP | `A` | all four |
-| | | `7` | Fast Start + Double XP | | |
+| Char | Boosts            | Char | Boosts                     | Char | Boosts                                  |
+| ---- | ----------------- | ---- | -------------------------- | ---- | --------------------------------------- |
+| `0`  | none              | `2`  | HP Extension + Power Jelly | `3`  | HP Extension + Power Jelly + Double XP  |
+| `H`  | HP Extension      | `1`  | HP Extension + Fast Start  | `8`  | HP Extension + Power Jelly + Fast Start |
+| `P`  | Power Jelly Boost | `4`  | HP Extension + Double XP   | `9`  | HP Extension + Fast Start + Double XP   |
+| `F`  | Fast Start        | `5`  | Power Jelly + Fast Start   | `B`  | Power Jelly + Fast Start + Double XP    |
+| `X`  | Double XP         | `6`  | Power Jelly + Double XP    | `A`  | all four                                |
+|      |                   | `7`  | Fast Start + Double XP     |      |                                         |
 
 Cookie Relay is not here: a run that uses one says so by naming a relay cookie in the loadout section.
 
@@ -58,25 +58,25 @@ Cookie Relay is not here: a run that uses one says so by naming a relay cookie i
 
 Two characters from each boost's name, or its number where it has one.
 
-| Chars | Boost | Chars | Boost |
-| --- | --- | --- | --- |
-| `00` | none | `GC` | Gold Coin Magic |
-| `2C` | Double Coins | `CO` | -30% Collision Damage |
-| `BS` | +15% Score (bonus score) | `PO` | +20% HP from Potions |
-| `HD` | 15% HP Drain | `MA` | Magnetic Aura |
-| `RV` | Revive once with 80 HP | `PL` | 2 Pit Lifts |
-| `CC` | 70% Crush Chance | | |
-| `17` | +17% Base Speed | | |
+| Chars | Boost                    | Chars | Boost                 |
+| ----- | ------------------------ | ----- | --------------------- |
+| `00`  | none                     | `GC`  | Gold Coin Magic       |
+| `2C`  | Double Coins             | `CO`  | -30% Collision Damage |
+| `BS`  | +15% Score (bonus score) | `PO`  | +20% HP from Potions  |
+| `HD`  | 15% HP Drain             | `MA`  | Magnetic Aura         |
+| `RV`  | Revive once with 80 HP   | `PL`  | 2 Pit Lifts           |
+| `CC`  | 70% Crush Chance         |       |                       |
+| `17`  | +17% Base Speed          |       |                       |
 
 ### Cookie power+ (slots 8-10)
 
 Any number of the seven can be on, so they are split into three groups with a slot each. A slot works like the boost slot: `0` for none of its group, a power's own letter when it is the only one of its group, a running digit for some but not all of a group, and `A` for the whole group — as all four boosts are `A`.
 
-| Slot | Powers | Combinations |
-| --- | --- | --- |
-| 8 | `C` Cheerleader, `S` Special Force, `F` Fairy | `1` C+S, `2` C+F, `3` S+F, `A` all three |
-| 9 | `K` Cheesecake, `W` Sea Fairy (W for water) | `A` both |
-| 10 | `L` Serenade of Love, `E` EXP Party | `A` both |
+| Slot | Powers                                        | Combinations                             |
+| ---- | --------------------------------------------- | ---------------------------------------- |
+| 8    | `C` Cheerleader, `S` Special Force, `F` Fairy | `1` C+S, `2` C+F, `3` S+F, `A` all three |
+| 9    | `K` Cheesecake, `W` Sea Fairy (W for water)   | `A` both                                 |
+| 10   | `L` Serenade of Love, `E` EXP Party           | `A` both                                 |
 
 Fairy plus Sea Fairy is `FW0`; Cheerleader, Fairy and EXP Party is `20E`; all seven is `AAA`.
 
@@ -84,11 +84,11 @@ Fairy plus Sea Fairy is `FW0`; Cheerleader, Fairy and EXP Party is `20E`; all se
 
 Some episodes take less than a full run:
 
-| Episode | Takes |
-| --- | --- |
-| Special Episode 1 (`C`) | cookie, pet, treasures |
-| Special Episode 2 (`T`) | cookie, pet, treasures, and a tower floor |
-| Special Exp Episode (`X`) | cookie and pet |
+| Episode                   | Takes                                     |
+| ------------------------- | ----------------------------------------- |
+| Special Episode 1 (`C`)   | cookie, pet, treasures                    |
+| Special Episode 2 (`T`)   | cookie, pet, treasures, and a tower floor |
+| Special Exp Episode (`X`) | cookie and pet                            |
 
 None of the three takes a relay, boosts, a random boost, or cookie power+, so slots 5-10 read `0`. Special Episode 2 spends slots 5-7 on the floor instead — `001` to `100`, or `000` for any floor — and slots 8-10 stay `000`. The mode and goal apply as they do anywhere else.
 
@@ -102,12 +102,12 @@ The separators are picked for word-wise selection (double-click, or Option+Shift
 
 The loadout writes down the cookie, relay, pet, and treasure a build uses. The game already stores those four in its own combi field, so a loadout is never required — add one when you want a build to travel as text on its own, without a screenshot or the game alongside it.
 
-| Tag | Group | Encoding |
-| --- | --- | --- |
-| `1` | Version | The format version of the whole code; the ten combi characters carry none of their own. Always present, even with no group after it |
-| `C` | Cookie | 2-character catalog id, or `__` for any cookie |
-| `R` | Relay | 2-character catalog id, the same catalog as cookie, or `__` for any relay |
-| `P` | Pet | 2-character catalog id, or `__` for any pet |
+| Tag | Group     | Encoding                                                                                                                                                                                                                                                       |
+| --- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `1` | Version   | The format version of the whole code; the ten combi characters carry none of their own. Always present, even with no group after it                                                                                                                            |
+| `C` | Cookie    | 2-character catalog id, or `__` for any cookie                                                                                                                                                                                                                 |
+| `R` | Relay     | 2-character catalog id, the same catalog as cookie, or `__` for any relay                                                                                                                                                                                      |
+| `P` | Pet       | 2-character catalog id, or `__` for any pet                                                                                                                                                                                                                    |
 | `T` | Treasures | An order flag (`U` any order, `O` exact order), then up to three slots of 3-character ids joined by `.`; alternatives within a slot are joined by `_`, and each id may be followed by a level — a treasure whose levels are not one run is listed once per run |
 
 `C`, `R`, `P`, and `T` are each written at most once and, when present, always in that order. A group that has nothing to say is simply missing — there is no placeholder character for "unset."
@@ -134,15 +134,15 @@ Within one slot, an id repeats only to list another run of its levels, and readi
 
 A treasure is upgraded from +0 to +9, and each treasure in a slot says which levels it is accepted at. The level follows its id directly — ids are always three characters, so it needs no separator:
 
-| Written | Levels |
-| --- | --- |
-| `09F` | +0, not upgraded |
-| `09F5` | +5 |
-| `09F58` | +5 to +8 |
-| `09F09` | +0 to +9, any level |
-| `09F9` | +9 |
+| Written       | Levels                 |
+| ------------- | ---------------------- |
+| `09F`         | +0, not upgraded       |
+| `09F5`        | +5                     |
+| `09F58`       | +5 to +8               |
+| `09F09`       | +0 to +9, any level    |
+| `09F9`        | +9                     |
 | `09F02_09F59` | +0 to +2, and +5 to +9 |
-| `09F_09F9` | +0 and +9 |
+| `09F_09F9`    | +0 and +9              |
 
 No digits means +0, which is also how every code written before levels existed reads. A treasure whose levels are not one run repeats its id once per run, lowest first. Encoding writes the shortest form: runs are merged, a one-level run is one digit, and +0 is nothing. A range that runs backwards, like `95`, is rejected.
 
@@ -167,7 +167,7 @@ AM0T042000   full auto on the tower, floor 42
 ## Usage
 
 ```ts
-import { encode, decode, isSemiAuto } from "./src/routes/combi-name/codec";
+import { encode, decode, isSemiAuto } from "./src/lib/combi/codec"
 
 encode({
   goals: ["score"],
@@ -178,11 +178,11 @@ encode({
   randomBoost: null,
   cookiePowers: ["fairy", "seaFairy"],
   action: "none",
-});
+})
 // "MS0A800FW0"
 
-const { combi, warnings } = decode("JX035RVC0E");
-isSemiAuto(combi); // true
+const { combi, warnings } = decode("JX035RVC0E")
+isSemiAuto(combi) // true
 ```
 
 `decode` throws on a code it cannot read — wrong length, an unknown character in a slot, or a tower floor that is not `000`-`100`. Everything else is soft and comes back in `warnings`: slot 1 disagreeing with the flag slots, Score on an auto run, or anything the episode has no room for. `encode` throws on a set of goals no code can say: Score beside another goal, or none at all.
@@ -235,22 +235,22 @@ The exhaustive test asserts that encoding produces exactly 5,310,888 distinct co
 
 ### Layout
 
-| Path | Role |
-| --- | --- |
-| `src/routes/` | One directory per page — markup, stylesheet, page script, and that page's own logic. `src/routes/index.*` is the home pane. |
-| `src/routes/combi-name/codec.ts` | Slot tables, episode limits, `encode`, `decode`, `normalize`, `isSemiAuto`. No DOM, no dependencies. |
-| `src/routes/combi-name/labels.ts` | Display names for every enum value. |
-| `src/routes/combi-name/describe.ts` | Turns a combi into rows and an auto/semi-auto verdict. |
-| `src/routes/combi-name/catalog.ts` | Resolves cookie, pet, and treasure ids against `assets/index.json`. |
-| `src/routes/combi-name/loadout.ts` | The loadout section's grammar: `encodeLoadout`, `decodeLoadout`. |
-| `src/routes/combi-name/full-code.ts` | Joins a loadout and a combi into `loadout-combi`, or just the bare combi when there is no loadout. |
-| `src/routes/combi-name/hints.ts` | What each character of a code means, one entry per character, for the tooltips on the built code. |
-| `src/routes/combi-name/state.ts` | The code in the address bar and in `localStorage`: what a link carries and what a return visit restores. |
-| `src/routes/combi-name/saved.ts` | The saved list: save, update and remove entries, and the plain-text form export writes and import reads. |
-| `src/components/` | Every custom element the pages declare, the top bar and the light/dark control among them. |
-| `src/lib/` | What more than one route needs: the tool registry, and the link writer that keeps every href relative. |
-| `scripts/` | The two asset programs and their helpers: `fetch-assets.ts` syncs from cookierunhub.com, `verify-assets.ts` asks the site whether the committed index is still complete. Every other package script is the command itself, in `package.json`. |
-| `tests/` | Test configuration only; every test sits beside the code it covers. |
+| Path                                 | Role                                                                                                                                                                                                                                          |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/`                        | One directory per page — markup, stylesheet, page script, and that page's own logic. `src/routes/index.*` is the home pane.                                                                                                                   |
+| `src/routes/combi-name/codec.ts`     | Slot tables, episode limits, `encode`, `decode`, `normalize`, `isSemiAuto`. No DOM, no dependencies.                                                                                                                                          |
+| `src/routes/combi-name/labels.ts`    | Display names for every enum value.                                                                                                                                                                                                           |
+| `src/routes/combi-name/describe.ts`  | Turns a combi into rows and an auto/semi-auto verdict.                                                                                                                                                                                        |
+| `src/routes/combi-name/catalog.ts`   | Resolves cookie, pet, and treasure ids against `assets/index.json`.                                                                                                                                                                           |
+| `src/routes/combi-name/loadout.ts`   | The loadout section's grammar: `encodeLoadout`, `decodeLoadout`.                                                                                                                                                                              |
+| `src/routes/combi-name/full-code.ts` | Joins a loadout and a combi into `loadout-combi`, or just the bare combi when there is no loadout.                                                                                                                                            |
+| `src/routes/combi-name/hints.ts`     | What each character of a code means, one entry per character, for the tooltips on the built code.                                                                                                                                             |
+| `src/routes/combi-name/state.ts`     | The code in the address bar and in `localStorage`: what a link carries and what a return visit restores.                                                                                                                                      |
+| `src/routes/combi-name/saved.ts`     | The saved list: save, update and remove entries, and the plain-text form export writes and import reads.                                                                                                                                      |
+| `src/components/`                    | Every custom element the pages declare, the top bar and the light/dark control among them.                                                                                                                                                    |
+| `src/lib/`                           | What more than one route needs: the tool registry, and the link writer that keeps every href relative.                                                                                                                                        |
+| `scripts/`                           | The two asset programs and their helpers: `fetch-assets.ts` syncs from cookierunhub.com, `verify-assets.ts` asks the site whether the committed index is still complete. Every other package script is the command itself, in `package.json`. |
+| `tests/`                             | Test configuration only; every test sits beside the code it covers.                                                                                                                                                                           |
 
 The `ALL_*` arrays and the label tables derive from the character tables, and a test asserts every value has a label, so adding a goal or episode cannot silently ship a page with a missing option.
 

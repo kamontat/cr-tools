@@ -1,21 +1,5 @@
 {
-	"extends": "@kcconfigs/tsconfig/bun",
-	// The preset checks `src/**/*.ts` only. The scripts and the test preload
-	// are TypeScript this repository owns too, so they are checked here as
-	// well - which is why `rootDir` has to widen to the repository root and
-	// `noEmit` has to be explicit, since nothing under `scripts/` belongs in
-	// an `outDir`.
-	"include": [
-		"${configDir}/package.json",
-		"${configDir}/src/**/*.ts",
-		"${configDir}/scripts/**/*.ts",
-		"${configDir}/tests/**/*.ts"
-	],
-	"compilerOptions": {
-		"rootDir": "${configDir}",
-		"noEmit": true,
-		// FIXME: https://github.com/oven-sh/bun/issues/43097
-		"experimentalDecorators": true,
-		"useDefineForClassFields": false
-	}
+	"extends": ["@kcconfigs/tsconfig/bun", "astro/tsconfigs/strictest"],
+	"include": ["${configDir}/.astro/types.d.ts", "${configDir}/**/*"],
+	"exclude": ["${configDir}/**/node_modules/**", "${configDir}/dist/**"]
 }

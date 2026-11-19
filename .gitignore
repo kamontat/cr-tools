@@ -45,3 +45,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # agent scratch (ledgers, briefs, review packages)
 .superpowers
+
+# astro generated types
+.astro

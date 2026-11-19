@@ -1,32 +1,24 @@
-import type {
-	Action,
-	Boost,
-	CookiePower,
-	Episode,
-	Goal,
-	Mode,
-	RandomBoost,
-} from "./codec";
+import type { Action, Boost, CookiePower, Episode, Goal, Mode, RandomBoost } from "./codec"
 
 export const BOOST_LABELS: Record<Boost, string> = {
 	hpExtension: "HP Extension",
 	powerJellyBoost: "Power Jelly Boost",
 	fastStart: "Fast Start",
 	doubleXp: "Double XP",
-};
+}
 
 export const GOAL_LABELS: Record<Goal, string> = {
 	score: "Score",
 	money: "Money",
 	exp: "Exp",
 	box: "Box",
-};
+}
 
 export const MODE_LABELS: Record<Mode, string> = {
 	manual: "Manual",
 	auto: "Auto",
 	semiauto: "Semi-auto",
-};
+}
 
 export const EPISODE_LABELS: Record<Episode, string> = {
 	any: "Any",
@@ -41,7 +33,7 @@ export const EPISODE_LABELS: Record<Episode, string> = {
 	special2: "Special Episode 2",
 	special3: "Special Episode 3",
 	specialExp: "Special Exp Episode",
-};
+}
 
 export const RANDOM_BOOST_LABELS: Record<RandomBoost, string> = {
 	doubleCoins: "Double Coins",
@@ -55,7 +47,7 @@ export const RANDOM_BOOST_LABELS: Record<RandomBoost, string> = {
 	potionHp: "+20% HP from Potions",
 	magneticAura: "Magnetic Aura",
 	pitLifts: "2 Pit Lifts",
-};
+}
 
 export const COOKIE_POWER_LABELS: Record<CookiePower, string> = {
 	cheerleader: "Cheerleader Cookie",
@@ -65,9 +57,9 @@ export const COOKIE_POWER_LABELS: Record<CookiePower, string> = {
 	seaFairy: "Sea Fairy Cookie",
 	serenadeOfLove: "Serenade of Love",
 	expParty: "EXP Party",
-};
+}
 
 export const ACTION_LABELS: Record<Action, string> = {
 	none: "No action",
 	jumpAtStart: "Jump at start",
-};
+}

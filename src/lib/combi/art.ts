@@ -11,11 +11,12 @@
  * page decision either way, so all three mappings live here.
  */
 
-import { type CatalogSection, imageForKey, staticImage } from "./catalog";
-import type { Boost, CookiePower, Episode } from "./codec";
+import type { Boost, CookiePower, Episode } from "./codec"
+
+import { type CatalogSection, imageForKey, staticImage } from "./catalog"
 
 /** One entry of a catalog, named the way `assets/index.json` names it. */
-export type ArtRef = { section: CatalogSection; key: string };
+export type ArtRef = { section: CatalogSection; key: string }
 
 /**
  * Who each power+ belongs to. Most are a single cookie; Serenade of Love is the
@@ -37,7 +38,7 @@ export const COOKIE_POWER_ART: Record<CookiePower, readonly ArtRef[]> = {
 		{ section: "cookies", key: "KaymakCookie" },
 		{ section: "cookies", key: "PineMonkCookie" },
 	],
-};
+}
 
 /**
  * Every picture a cookie power+ wears, under `base`. An entry the catalog can
@@ -45,14 +46,11 @@ export const COOKIE_POWER_ART: Record<CookiePower, readonly ArtRef[]> = {
  * shows the faces it has — and none at all falls back to a lettered tile in the
  * component.
  */
-export function cookiePowerArt(
-	power: CookiePower,
-	base: string,
-): readonly string[] {
+export function cookiePowerArt(power: CookiePower, base: string): readonly string[] {
 	return COOKIE_POWER_ART[power].flatMap(({ section, key }) => {
-		const image = imageForKey(section, key);
-		return image === null ? [] : [base + image];
-	});
+		const image = imageForKey(section, key)
+		return image === null ? [] : [base + image]
+	})
 }
 
 /**
@@ -66,7 +64,7 @@ export const BOOST_ART: Record<Boost, string> = {
 	powerJellyBoost: "power-jellies",
 	fastStart: "fast-start",
 	doubleXp: "double-xp",
-};
+}
 
 /**
  * The same for episodes, where `any` is the one value with no icon: it is the
@@ -87,7 +85,7 @@ export const EPISODE_ART: Record<Episode, string | null> = {
 	special2: "sep2",
 	special3: "sep3",
 	specialExp: "eexp",
-};
+}
 
 /**
  * A boost's picture under `base`, as the list `<card-group>` takes — one entry
@@ -96,14 +94,14 @@ export const EPISODE_ART: Record<Episode, string | null> = {
  * back to its lettered tile.
  */
 export function boostArt(boost: Boost, base: string): readonly string[] {
-	const image = staticImage("boosts", BOOST_ART[boost]);
-	return image === null ? [] : [base + image];
+	const image = staticImage("boosts", BOOST_ART[boost])
+	return image === null ? [] : [base + image]
 }
 
 /** An episode's picture under `base`, or `null` where it has none. */
 export function episodeArt(episode: Episode, base: string): string | null {
-	const key = EPISODE_ART[episode];
-	if (key === null) return null;
-	const image = staticImage("episodes", key);
-	return image === null ? null : base + image;
+	const key = EPISODE_ART[episode]
+	if (key === null) return null
+	const image = staticImage("episodes", key)
+	return image === null ? null : base + image
 }

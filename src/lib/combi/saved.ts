@@ -12,10 +12,11 @@
  * `state.ts`'s are, and imported text is decoded code by code.
  */
 
-import type { Episode } from "./codec";
-import { describeRun, GOALS_JOIN } from "./describe";
-import { decodeFull, encodeFull } from "./full-code";
-import { codeInHash, noteInHash, statsInHash } from "./state";
+import type { Episode } from "./codec"
+
+import { describeRun, GOALS_JOIN } from "./describe"
+import { decodeFull, encodeFull } from "./full-code"
+import { codeInHash, noteInHash, statsInHash } from "./state"
 import {
 	formatStat,
 	isEmptyStats,
@@ -26,32 +27,32 @@ import {
 	STAT_FIELDS,
 	type StatField,
 	type StatsDraft,
-} from "./stats";
+} from "./stats"
 
-export const SAVED_KEY = "combi-name:saved";
+export const SAVED_KEY = "combi-name:saved"
 
 /** Room for a few lines of notes, short enough that the list stays a list. */
-export const DESCRIPTION_MAX = 500;
+export const DESCRIPTION_MAX = 500
 
 export interface SavedCode {
-	readonly code: string;
-	readonly description: string;
+	readonly code: string
+	readonly description: string
 	/** Left off rather than empty when the entry has none. */
-	readonly stats?: RunStats;
+	readonly stats?: RunStats
 	/** Milliseconds since the epoch, when the entry was last saved. */
-	readonly savedAt: number;
+	readonly savedAt: number
 }
 
 function isSavedCode(value: unknown): value is SavedCode {
-	if (typeof value !== "object" || value === null) return false;
-	const entry = value as { [K in keyof SavedCode]?: unknown };
+	if (typeof value !== "object" || value === null) return false
+	const entry = value as { [K in keyof SavedCode]?: unknown }
 	return (
 		typeof entry.code === "string" &&
 		entry.code !== "" &&
 		typeof entry.description === "string" &&
 		typeof entry.savedAt === "number" &&
 		Number.isFinite(entry.savedAt)
-	);
+	)
 }
 
 /**
@@ -66,57 +67,51 @@ export function cleanDescription(description: string): string {
 		.join("\n")
 		.replace(/^\s*\n|\n\s*$/g, "")
 		.trim()
-		.slice(0, DESCRIPTION_MAX);
+		.slice(0, DESCRIPTION_MAX)
 }
 
 /** An entry as it is kept: a clean description, and stats only if there are any. */
-function entryOf(
-	code: string,
-	note: { description: string; stats?: RunStats },
-	savedAt: number,
-): SavedCode {
-	const stats = readStats(note.stats);
+function entryOf(code: string, note: { description: string; stats?: RunStats }, savedAt: number): SavedCode {
+	const stats = readStats(note.stats)
 	return {
 		code,
 		description: cleanDescription(note.description),
 		...(isEmptyStats(stats) ? {} : { stats }),
 		savedAt,
-	};
+	}
 }
 
 /** The first line, for anywhere a description has to fit in a sentence. */
 export function descriptionTitle(description: string): string {
-	return description.split("\n")[0] ?? "";
+	return description.split("\n")[0] ?? ""
 }
 
 /** Every saved code, newest first. */
 export function readSaved(storage: Storage): SavedCode[] {
-	let raw: string | null = null;
+	let raw: string | null = null
 	try {
-		raw = storage.getItem(SAVED_KEY);
+		raw = storage.getItem(SAVED_KEY)
 	} catch {
-		return [];
+		return []
 	}
-	if (raw === null) return [];
+	if (raw === null) return []
 
-	let parsed: unknown;
+	let parsed: unknown
 	try {
-		parsed = JSON.parse(raw);
+		parsed = JSON.parse(raw)
 	} catch {
-		return [];
+		return []
 	}
-	if (!Array.isArray(parsed)) return [];
-	return parsed
-		.filter(isSavedCode)
-		.map((entry) => entryOf(entry.code, entry, entry.savedAt));
+	if (!Array.isArray(parsed)) return []
+	return parsed.filter(isSavedCode).map((entry) => entryOf(entry.code, entry, entry.savedAt))
 }
 
 function writeSaved(storage: Storage, entries: readonly SavedCode[]): boolean {
 	try {
-		storage.setItem(SAVED_KEY, JSON.stringify(entries));
-		return true;
+		storage.setItem(SAVED_KEY, JSON.stringify(entries))
+		return true
 	} catch {
-		return false;
+		return false
 	}
 }
 
@@ -134,33 +129,27 @@ export function saveCode(
 	note: { description: string; stats?: RunStats },
 	now: number = Date.now(),
 ): { entries: SavedCode[]; stored: boolean } {
-	const entry = entryOf(code, note, now);
-	const entries = [
-		entry,
-		...readSaved(storage).filter((saved) => saved.code !== code),
-	];
-	return { entries, stored: writeSaved(storage, entries) };
+	const entry = entryOf(code, note, now)
+	const entries = [entry, ...readSaved(storage).filter((saved) => saved.code !== code)]
+	return { entries, stored: writeSaved(storage, entries) }
 }
 
-export function removeSaved(
-	storage: Storage,
-	code: string,
-): { entries: SavedCode[]; stored: boolean } {
-	const entries = readSaved(storage).filter((saved) => saved.code !== code);
-	return { entries, stored: writeSaved(storage, entries) };
+export function removeSaved(storage: Storage, code: string): { entries: SavedCode[]; stored: boolean } {
+	const entries = readSaved(storage).filter((saved) => saved.code !== code)
+	return { entries, stored: writeSaved(storage, entries) }
 }
 
 /** Empties the list. Written as an empty list, the shape `removeSaved` leaves. */
 export function clearSaved(storage: Storage): {
-	entries: SavedCode[];
-	stored: boolean;
+	entries: SavedCode[]
+	stored: boolean
 } {
-	return { entries: [], stored: writeSaved(storage, []) };
+	return { entries: [], stored: writeSaved(storage, []) }
 }
 
 export type UpdateResult =
 	| { ok: true; entries: SavedCode[]; stored: boolean }
-	| { ok: false; reason: "missing" | "taken"; entries: SavedCode[] };
+	| { ok: false; reason: "missing" | "taken"; entries: SavedCode[] }
 
 /**
  * Rewrites one entry — its code, its description, its stats — where it stands.
@@ -175,18 +164,15 @@ export function updateSaved(
 	change: { code: string; description: string; stats?: RunStats },
 	now: number = Date.now(),
 ): UpdateResult {
-	const entries = readSaved(storage);
-	const index = entries.findIndex((saved) => saved.code === code);
-	if (index === -1) return { ok: false, reason: "missing", entries };
-	if (
-		change.code !== code &&
-		entries.some((saved) => saved.code === change.code)
-	) {
-		return { ok: false, reason: "taken", entries };
+	const entries = readSaved(storage)
+	const index = entries.findIndex((saved) => saved.code === code)
+	if (index === -1) return { ok: false, reason: "missing", entries }
+	if (change.code !== code && entries.some((saved) => saved.code === change.code)) {
+		return { ok: false, reason: "taken", entries }
 	}
 
-	const next = entries.with(index, entryOf(change.code, change, now));
-	return { ok: true, entries: next, stored: writeSaved(storage, next) };
+	const next = entries.with(index, entryOf(change.code, change, now))
+	return { ok: true, entries: next, stored: writeSaved(storage, next) }
 }
 
 /**
@@ -194,18 +180,9 @@ export function updateSaved(
  * exported and edited newest first whatever the drawer shows, so picking a sort
  * never rewrites anyone's list.
  */
-export const SAVED_SORTS = [
-	"newest",
-	"oldest",
-	"score",
-	"money",
-	"exp",
-	"boxes",
-	"time",
-	"episode",
-] as const;
+export const SAVED_SORTS = ["newest", "oldest", "score", "money", "exp", "boxes", "time", "episode"] as const
 
-export type SavedSort = (typeof SAVED_SORTS)[number];
+export type SavedSort = (typeof SAVED_SORTS)[number]
 
 export const SAVED_SORT_LABELS: Readonly<Record<SavedSort, string>> = {
 	newest: "Newest",
@@ -216,35 +193,35 @@ export const SAVED_SORT_LABELS: Readonly<Record<SavedSort, string>> = {
 	boxes: "Most boxes",
 	time: "Longest",
 	episode: "Episode",
-};
+}
 
-export const SAVED_SORT_KEY = "combi-name:saved-sort";
+export const SAVED_SORT_KEY = "combi-name:saved-sort"
 
 function isSavedSort(value: unknown): value is SavedSort {
-	return (SAVED_SORTS as readonly unknown[]).includes(value);
+	return (SAVED_SORTS as readonly unknown[]).includes(value)
 }
 
 /** The sort this browser last picked, or newest when it picked none. */
 export function storedSort(storage: Storage): SavedSort {
 	try {
-		const value = storage.getItem(SAVED_SORT_KEY);
-		return isSavedSort(value) ? value : "newest";
+		const value = storage.getItem(SAVED_SORT_KEY)
+		return isSavedSort(value) ? value : "newest"
 	} catch {
-		return "newest";
+		return "newest"
 	}
 }
 
 export function rememberSort(storage: Storage, sort: SavedSort): void {
 	try {
-		storage.setItem(SAVED_SORT_KEY, sort);
+		storage.setItem(SAVED_SORT_KEY, sort)
 	} catch {}
 }
 
 /** A stat as one pair to compare: the top of a range first, then its floor. */
 function statKey(entry: SavedCode, field: StatField): [number, number] | null {
-	const value = entry.stats?.[field];
-	if (value === undefined) return null;
-	return typeof value === "number" ? [value, value] : [value.max, value.min];
+	const value = entry.stats?.[field]
+	if (value === undefined) return null
+	return typeof value === "number" ? [value, value] : [value.max, value.min]
 }
 
 /**
@@ -264,14 +241,14 @@ const EPISODE_ORDER: readonly Episode[] = [
 	"special3",
 	"specialExp",
 	"any",
-];
+]
 
 /** Where an entry's episode falls, with a code that no longer reads last. */
 function episodeRank(entry: SavedCode): number {
 	try {
-		return EPISODE_ORDER.indexOf(decodeFull(entry.code).full.combi.episode);
+		return EPISODE_ORDER.indexOf(decodeFull(entry.code).full.combi.episode)
 	} catch {
-		return EPISODE_ORDER.length;
+		return EPISODE_ORDER.length
 	}
 }
 
@@ -281,54 +258,49 @@ function episodeRank(entry: SavedCode): number {
  * that stat after every one that did. The episode sort walks `EPISODE_ORDER`.
  * Ties keep the order the list has.
  */
-export function sortSaved(
-	entries: readonly SavedCode[],
-	sort: SavedSort,
-): SavedCode[] {
-	if (sort === "newest") return [...entries];
-	if (sort === "oldest") return [...entries].reverse();
+export function sortSaved(entries: readonly SavedCode[], sort: SavedSort): SavedCode[] {
+	if (sort === "newest") return [...entries]
+	if (sort === "oldest") return [...entries].reverse()
 	if (sort === "episode") {
-		const ranks = new Map(entries.map((entry) => [entry, episodeRank(entry)]));
-		return [...entries].sort(
-			(a, b) => (ranks.get(a) ?? 0) - (ranks.get(b) ?? 0),
-		);
+		const ranks = new Map(entries.map((entry) => [entry, episodeRank(entry)]))
+		return [...entries].sort((a, b) => (ranks.get(a) ?? 0) - (ranks.get(b) ?? 0))
 	}
 	return [...entries].sort((a, b) => {
-		const left = statKey(a, sort);
-		const right = statKey(b, sort);
+		const left = statKey(a, sort)
+		const right = statKey(b, sort)
 		if (left === null || right === null) {
-			return (left === null ? 1 : 0) - (right === null ? 1 : 0);
+			return (left === null ? 1 : 0) - (right === null ? 1 : 0)
 		}
-		return right[0] - left[0] || right[1] - left[1];
-	});
+		return right[0] - left[0] || right[1] - left[1]
+	})
 }
 
 /** What a run reads as on its row, or null for a code that no longer reads. */
 function runChipsOf(code: string): string[] | null {
 	try {
-		return describeRun(decodeFull(code).full);
+		return describeRun(decodeFull(code).full)
 	} catch {
-		return null;
+		return null
 	}
 }
 
 /** The three things a row's run says that the drawer can filter on. */
-export const RUN_FACETS = ["mode", "goal", "episode"] as const;
+export const RUN_FACETS = ["mode", "goal", "episode"] as const
 
-export type RunFacet = (typeof RUN_FACETS)[number];
+export type RunFacet = (typeof RUN_FACETS)[number]
 
 /**
  * A run's mode, goal and episode, worded as its row's chips word them, so a
  * filter offers exactly what the rows say.
  */
 export function runFacets(code: string): Record<RunFacet, string> | null {
-	return facetsOf(runChipsOf(code));
+	return facetsOf(runChipsOf(code))
 }
 
 function facetsOf(chips: string[] | null): Record<RunFacet, string> | null {
-	if (chips === null) return null;
-	const [mode = "", goal = "", episode = ""] = chips;
-	return { mode, goal, episode };
+	if (chips === null) return null
+	const [mode = "", goal = "", episode = ""] = chips
+	return { mode, goal, episode }
 }
 
 /**
@@ -336,12 +308,12 @@ function facetsOf(chips: string[] | null): Record<RunFacet, string> | null {
  * one of each of them, so a goal filter matches it on any and offers each.
  */
 function facetParts(run: Record<RunFacet, string>, facet: RunFacet): string[] {
-	return facet === "goal" ? run.goal.split(GOALS_JOIN) : [run[facet]];
+	return facet === "goal" ? run.goal.split(GOALS_JOIN) : [run[facet]]
 }
 
 /** What the drawer is narrowed to. An empty field narrows nothing. */
 export interface SavedFilter extends Record<RunFacet, string> {
-	readonly text: string;
+	readonly text: string
 }
 
 export const NO_FILTER: SavedFilter = {
@@ -349,13 +321,10 @@ export const NO_FILTER: SavedFilter = {
 	mode: "",
 	goal: "",
 	episode: "",
-};
+}
 
 export function isFiltering(filter: SavedFilter): boolean {
-	return (
-		filter.text.trim() !== "" ||
-		RUN_FACETS.some((facet) => filter[facet] !== "")
-	);
+	return filter.text.trim() !== "" || RUN_FACETS.some((facet) => filter[facet] !== "")
 }
 
 /**
@@ -364,45 +333,33 @@ export function isFiltering(filter: SavedFilter): boolean {
  * chips, in any case. A code that no longer reads has no run, so any facet
  * leaves it out.
  */
-export function filterSaved(
-	entries: readonly SavedCode[],
-	filter: SavedFilter,
-): SavedCode[] {
-	const words = filter.text.toLowerCase().split(/\s+/).filter(Boolean);
-	const facets = RUN_FACETS.filter((facet) => filter[facet] !== "");
+export function filterSaved(entries: readonly SavedCode[], filter: SavedFilter): SavedCode[] {
+	const words = filter.text.toLowerCase().split(/\s+/).filter(Boolean)
+	const facets = RUN_FACETS.filter((facet) => filter[facet] !== "")
 	return entries.filter((entry) => {
-		const chips = runChipsOf(entry.code);
+		const chips = runChipsOf(entry.code)
 		if (facets.length > 0) {
-			const run = facetsOf(chips);
-			if (run === null) return false;
-			if (
-				facets.some((facet) => !facetParts(run, facet).includes(filter[facet]))
-			) {
-				return false;
+			const run = facetsOf(chips)
+			if (run === null) return false
+			if (facets.some((facet) => !facetParts(run, facet).includes(filter[facet]))) {
+				return false
 			}
 		}
-		const haystack = [entry.description, entry.code, ...(chips ?? [])]
-			.join("\n")
-			.toLowerCase();
-		return words.every((word) => haystack.includes(word));
-	});
+		const haystack = [entry.description, entry.code, ...(chips ?? [])].join("\n").toLowerCase()
+		return words.every((word) => haystack.includes(word))
+	})
 }
 
 /** Each value a facet takes in the list, once, sorted as a reader would. */
-export function facetValues(
-	entries: readonly SavedCode[],
-	facet: RunFacet,
-): string[] {
-	const values = new Set<string>();
+export function facetValues(entries: readonly SavedCode[], facet: RunFacet): string[] {
+	const values = new Set<string>()
 	for (const entry of entries) {
-		const run = runFacets(entry.code);
+		const run = runFacets(entry.code)
 		if (run !== null) {
-			for (const value of facetParts(run, facet)) values.add(value);
+			for (const value of facetParts(run, facet)) values.add(value)
 		}
 	}
-	return [...values].sort((a, b) =>
-		a.localeCompare(b, undefined, { numeric: true }),
-	);
+	return [...values].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
 }
 
 /**
@@ -416,55 +373,51 @@ export function formatSaved(entries: readonly SavedCode[]): string {
 	return entries
 		.map((entry) => {
 			const note =
-				entry.description === ""
-					? []
-					: entry.description
-							.split("\n")
-							.map((line) => (line === "" ? ">" : `> ${line}`));
+				entry.description === "" ? [] : entry.description.split("\n").map((line) => (line === "" ? ">" : `> ${line}`))
 			const stats = STAT_FIELDS.flatMap((field) => {
-				const value = entry.stats?.[field];
-				return value === undefined ? [] : [`${field}: ${formatStat(value)}`];
-			});
-			return [entry.code, ...stats, ...note].join("\n");
+				const value = entry.stats?.[field]
+				return value === undefined ? [] : [`${field}: ${formatStat(value)}`]
+			})
+			return [entry.code, ...stats, ...note].join("\n")
 		})
 		.map((block) => `${block}\n`)
-		.join("\n");
+		.join("\n")
 }
 
 /** One entry read from text, before the list it joins gives it a time. */
 export interface ParsedCode {
-	readonly code: string;
-	readonly description: string;
-	readonly stats?: RunStats;
+	readonly code: string
+	readonly description: string
+	readonly stats?: RunStats
 }
 
 /** A line of text that named no code this page can read. */
 export interface SkippedLine {
 	/** One-based, the way an editor numbers it. */
-	readonly line: number;
-	readonly text: string;
-	readonly reason: string;
+	readonly line: number
+	readonly text: string
+	readonly reason: string
 }
 
 /** A stat on a line of its own under a code, as `formatSaved` writes it. */
-const STAT_LINE = /^(score|money|exp|boxes|time)\s*:\s*(.*)$/i;
+const STAT_LINE = /^(score|money|exp|boxes|time)\s*:\s*(.*)$/i
 
 /** The code a line names, written in the form the page itself would write it. */
 function codeOnLine(text: string): {
-	code: string;
-	note: string | null;
-	stats: RunStats;
+	code: string
+	note: string | null
+	stats: RunStats
 } {
 	// A link, or a bare hash: the code is the fragment, and it may carry a note.
-	const at = text.indexOf("#");
-	const raw = at === -1 ? text : text.slice(at);
-	const code = at === -1 ? text.toUpperCase() : (codeInHash(raw) ?? "");
-	const { full } = decodeFull(code);
+	const at = text.indexOf("#")
+	const raw = at === -1 ? text : text.slice(at)
+	const code = at === -1 ? text.toUpperCase() : (codeInHash(raw) ?? "")
+	const { full } = decodeFull(code)
 	return {
 		code: encodeFull(full),
 		note: at === -1 ? null : noteInHash(raw),
 		stats: at === -1 ? {} : statsInHash(raw),
-	};
+	}
 }
 
 /**
@@ -479,65 +432,64 @@ function codeOnLine(text: string): {
  * saved list itself keeps.
  */
 export function parseSaved(text: string): {
-	entries: ParsedCode[];
-	skipped: SkippedLine[];
+	entries: ParsedCode[]
+	skipped: SkippedLine[]
 } {
 	const blocks: {
-		code: string;
-		linkNote: string | null;
-		stats: StatsDraft;
-		lines: string[];
-	}[] = [];
-	const skipped: SkippedLine[] = [];
-	let current: (typeof blocks)[number] | null = null;
+		code: string
+		linkNote: string | null
+		stats: StatsDraft
+		lines: string[]
+	}[] = []
+	const skipped: SkippedLine[] = []
+	let current: (typeof blocks)[number] | null = null
 
 	text
 		.replace(/\r\n?/g, "\n")
 		.split("\n")
 		.forEach((raw, index) => {
-			const line = raw.trim();
+			const line = raw.trim()
 			if (line.startsWith(">")) {
-				current?.lines.push(line.slice(1).replace(/^ /, ""));
-				return;
+				current?.lines.push(line.slice(1).replace(/^ /, ""))
+				return
 			}
-			if (line === "") return;
-			const stat = STAT_LINE.exec(line);
+			if (line === "") return
+			const stat = STAT_LINE.exec(line)
 			if (stat !== null) {
-				const field = (stat[1] ?? "").toLowerCase() as StatField;
-				const parsed = parseStat(field, stat[2] ?? "");
+				const field = (stat[1] ?? "").toLowerCase() as StatField
+				const parsed = parseStat(field, stat[2] ?? "")
 				if (parsed.ok) {
-					if (current !== null) putStat(current.stats, field, parsed.value);
+					if (current !== null) putStat(current.stats, field, parsed.value)
 				} else {
-					skipped.push({ line: index + 1, text: line, reason: parsed.error });
+					skipped.push({ line: index + 1, text: line, reason: parsed.error })
 				}
-				return;
+				return
 			}
 			try {
-				const { code, note, stats } = codeOnLine(line);
-				current = { code, linkNote: note, stats: { ...stats }, lines: [] };
-				blocks.push(current);
+				const { code, note, stats } = codeOnLine(line)
+				current = { code, linkNote: note, stats: { ...stats }, lines: [] }
+				blocks.push(current)
 			} catch (error) {
-				current = null;
+				current = null
 				skipped.push({
 					line: index + 1,
 					text: line,
 					reason: error instanceof Error ? error.message : String(error),
-				});
+				})
 			}
-		});
+		})
 
-	const entries: ParsedCode[] = [];
+	const entries: ParsedCode[] = []
 	for (const block of blocks) {
-		if (entries.some((entry) => entry.code === block.code)) continue;
-		const typed = cleanDescription(block.lines.join("\n"));
+		if (entries.some((entry) => entry.code === block.code)) continue
+		const typed = cleanDescription(block.lines.join("\n"))
 		entries.push({
 			code: block.code,
-			description:
-				typed !== "" ? typed : cleanDescription(block.linkNote ?? ""),
+			description: typed !== "" ? typed : cleanDescription(block.linkNote ?? ""),
 			...(isEmptyStats(block.stats) ? {} : { stats: block.stats }),
-		});
+		})
 	}
-	return { entries, skipped };
+	return { entries, skipped }
 }
 
 /**
@@ -551,15 +503,15 @@ export function importSaved(
 	incoming: readonly ParsedCode[],
 	now: number = Date.now(),
 ): { entries: SavedCode[]; stored: boolean; added: number; kept: number } {
-	const existing = readSaved(storage);
+	const existing = readSaved(storage)
 	const fresh = incoming
 		.filter((entry) => !existing.some((saved) => saved.code === entry.code))
-		.map((entry) => entryOf(entry.code, entry, now));
-	const entries = [...fresh, ...existing];
+		.map((entry) => entryOf(entry.code, entry, now))
+	const entries = [...fresh, ...existing]
 	return {
 		entries,
 		stored: fresh.length === 0 ? true : writeSaved(storage, entries),
 		added: fresh.length,
 		kept: incoming.length - fresh.length,
-	};
+	}
 }

@@ -2,41 +2,42 @@
 	"name": "cr-tools",
 	"type": "module",
 	"private": true,
-	"packageManager": "bun@1.4.2",
 	"imports": {
 		"#lib/*": "./src/lib/*.ts",
-		"#components/*": "./src/components/*.ts",
+		"#components/*": "./src/components/*",
+		"#layouts/*": "./src/layouts/*",
 		"#assets/*": "./assets/*"
 	},
 	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview",
+		"test": "vitest run",
+		"check": "bun run check:type && bun run check:biome",
+		"check:type": "astro check",
+		"check:biome": "biome check",
+		"format": "biome check --unsafe --write",
+		"astro": "astro",
 		"fetch:assets": "bun scripts/fetch-assets.ts",
 		"verify:assets": "bun scripts/verify-assets.ts",
-		"test": "bun test",
-		"dev": "bun-server dev --statics 'assets/**/*.{png,webp}'",
-		"build": "NODE_ENV=production bun-server build --statics 'assets/**/*.{png,webp}'",
-		"preview": "bun-server preview",
-		"check": "bun run check:type && bun run check:biome",
-		"check:biome": "biome check",
-		"check:type": "tsc --noEmit",
-		"format": "bun run format:biome",
-		"format:biome": "biome check --write --unsafe",
 		"deploy": "wrangler deploy"
 	},
 	"dependencies": {
-		"@kcstyles/reset.css": "1.0.12",
-		"@kctools/bun-server": "0.3.2",
-		"lit": "3.3.3"
+		"@astrojs/svelte": "9.1.2",
+		"@kcstyles/reset.css": "2.1.1",
+		"astro": "7.4.7",
+		"svelte": "5.57.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.13",
-		"@happy-dom/global-registrator": "20.14.3",
-		"@kcconfigs/biome": "2.0.4",
-		"@kcconfigs/tsconfig": "1.1.5",
-		"@types/bun": "1.4.2",
-		"typescript-language-server": "6.0.0",
-		"wrangler": "4.131.0"
-	},
-	"peerDependencies": {
-		"typescript": "7.0.2"
+		"@astrojs/check": "0.9.12",
+		"@biomejs/biome": "2.6.5",
+		"@kcconfigs/biome": "4.2.1",
+		"@kcconfigs/tsconfig": "2.1.4",
+		"@testing-library/svelte": "5.4.2",
+		"@types/bun": "1.4.4",
+		"happy-dom": "21.0.4",
+		"typescript": "6.0.3",
+		"vitest": "5.1.0",
+		"wrangler": "4.158.0"
 	}
 }

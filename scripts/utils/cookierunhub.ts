@@ -12,11 +12,11 @@
  * `verify-assets.ts` needs the listings too.
  */
 
-import type { Section } from "./asset-ids";
+import type { Section } from "./asset-ids"
 
-export const ORIGIN = "https://www.cookierunhub.com";
+export const ORIGIN = "https://www.cookierunhub.com"
 
-const API = `${ORIGIN}/api/v1/game-data`;
+const API = `${ORIGIN}/api/v1/game-data`
 
 /**
  * One entry as the API lists it, narrowed to the fields this project reads.
@@ -28,27 +28,23 @@ const API = `${ORIGIN}/api/v1/game-data`;
  */
 export type HubRow = {
 	/** The site's own running number, which its page URL carries. */
-	id: number;
-	english_name: string | null;
+	id: number
+	english_name: string | null
 	/** Relative to `/images/`, or rooted at the site (`/uploads/...`). */
-	image_path: string | null;
-	category?: string | null;
-	evolved_from_id?: number | null;
-	has_blessed?: boolean | null;
-	blessed_english_name?: string | null;
-};
+	image_path: string | null
+	category?: string | null
+	evolved_from_id?: number | null
+	has_blessed?: boolean | null
+	blessed_english_name?: string | null
+}
 
 /**
  * The entry's page. A blessed treasure has no page or number of its own — it
  * is a section of its unblessed form's page — so it borrows that page with a
  * fragment, which keeps every entry's url distinct.
  */
-export function pageUrl(
-	section: Section,
-	hubId: number,
-	blessed = false,
-): string {
-	return `${ORIGIN}/en/encyclopedia/${section}/${hubId}${blessed ? "#blessed" : ""}`;
+export function pageUrl(section: Section, hubId: number, blessed = false): string {
+	return `${ORIGIN}/en/encyclopedia/${section}/${hubId}${blessed ? "#blessed" : ""}`
 }
 
 /**
@@ -56,31 +52,27 @@ export function pageUrl(
  * entries added through the site's own editor are rooted at `/uploads/`.
  */
 export function iconUrl(imagePath: string): string {
-	return encodeURI(
-		imagePath.startsWith("/")
-			? `${ORIGIN}${imagePath}`
-			: `${ORIGIN}/images/${imagePath}`,
-	);
+	return encodeURI(imagePath.startsWith("/") ? `${ORIGIN}${imagePath}` : `${ORIGIN}/images/${imagePath}`)
 }
 
 export async function get(url: string): Promise<Response> {
 	for (let attempt = 1; ; attempt++) {
 		try {
-			const res = await fetch(url);
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			return res;
+			const res = await fetch(url)
+			if (!res.ok) throw new Error(`HTTP ${res.status}`)
+			return res
 		} catch (err) {
-			if (attempt === 3) throw new Error(`${url}: ${err}`);
-			await Bun.sleep(500 * attempt);
+			if (attempt === 3) throw new Error(`${url}: ${err}`)
+			await Bun.sleep(500 * attempt)
 		}
 	}
 }
 
 /** Every entry the site lists for one section. */
 export async function fetchRows(section: Section): Promise<HubRow[]> {
-	const rows: unknown = await (await get(`${API}/${section}`)).json();
+	const rows: unknown = await (await get(`${API}/${section}`)).json()
 	if (!Array.isArray(rows)) {
-		throw new Error(`${API}/${section} did not return a list`);
+		throw new Error(`${API}/${section} did not return a list`)
 	}
-	return rows as HubRow[];
+	return rows as HubRow[]
 }

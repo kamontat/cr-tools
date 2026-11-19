@@ -11,20 +11,15 @@
  * of the game, still decodes: it is read as the version this page writes.
  */
 
-import { type Combi, decode, encode, isSemiAuto, limitsOf } from "./codec";
-import {
-	decodeLoadout,
-	emptyLoadout,
-	encodeLoadout,
-	type Loadout,
-} from "./loadout";
+import { type Combi, decode, encode, isSemiAuto, limitsOf } from "./codec"
+import { decodeLoadout, emptyLoadout, encodeLoadout, type Loadout } from "./loadout"
 
 export type FullCode = {
-	loadout: Loadout;
-	combi: Combi;
-};
+	loadout: Loadout
+	combi: Combi
+}
 
-export const SECTION_SEPARATOR = "-";
+export const SECTION_SEPARATOR = "-"
 
 /**
  * Whether the whole build plays itself. The combi half answers for its own
@@ -36,7 +31,7 @@ export const SECTION_SEPARATOR = "-";
  * whose answer needs both halves, and the codec does not model a loadout.
  */
 export function isSemiAutoBuild(full: FullCode): boolean {
-	return isSemiAuto(full.combi) || carriesRelay(full);
+	return isSemiAuto(full.combi) || carriesRelay(full)
 }
 
 /**
@@ -45,7 +40,7 @@ export function isSemiAutoBuild(full: FullCode): boolean {
  * one, so it forces nothing there.
  */
 export function carriesRelay(full: FullCode): boolean {
-	return full.loadout.relay !== null && limitsOf(full.combi.episode).relay;
+	return full.loadout.relay !== null && limitsOf(full.combi.episode).relay
 }
 
 /**
@@ -54,20 +49,20 @@ export function carriesRelay(full: FullCode): boolean {
  * drops the combi's own.
  */
 export function fitLoadout(loadout: Loadout, combi: Combi): Loadout {
-	const limits = limitsOf(combi.episode);
+	const limits = limitsOf(combi.episode)
 	return {
 		...loadout,
 		relay: limits.relay ? loadout.relay : null,
 		treasures: limits.treasures ? loadout.treasures : [],
-	};
+	}
 }
 
 export function encodeFull(full: FullCode): string {
-	const loadout = fitLoadout(full.loadout, full.combi);
+	const loadout = fitLoadout(full.loadout, full.combi)
 	// Slot 1 is written from the whole build, so a code carrying a relay says
 	// Semi-auto in the ten characters someone pastes into the game.
-	const combi = encode(full.combi, loadout.relay !== null);
-	return `${encodeLoadout(loadout)}${SECTION_SEPARATOR}${combi}`;
+	const combi = encode(full.combi, loadout.relay !== null)
+	return `${encodeLoadout(loadout)}${SECTION_SEPARATOR}${combi}`
 }
 
 /**
@@ -75,55 +70,49 @@ export function encodeFull(full: FullCode): string {
  * characters against it while the code is still incomplete.
  */
 export function combiSectionOf(code: string): string {
-	const at = code.lastIndexOf(SECTION_SEPARATOR);
-	return at === -1 ? code : code.slice(at + 1);
+	const at = code.lastIndexOf(SECTION_SEPARATOR)
+	return at === -1 ? code : code.slice(at + 1)
 }
 
 export function decodeFull(code: string): {
-	full: FullCode;
-	warnings: string[];
+	full: FullCode
+	warnings: string[]
 } {
-	const parts = code.split(SECTION_SEPARATOR);
+	const parts = code.split(SECTION_SEPARATOR)
 	if (parts.length > 2) {
-		throw new Error(
-			`a code holds at most one "${SECTION_SEPARATOR}", got ${parts.length - 1}`,
-		);
+		throw new Error(`a code holds at most one "${SECTION_SEPARATOR}", got ${parts.length - 1}`)
 	}
 
-	const [first = "", second] = parts;
+	const [first = "", second] = parts
 	if (second === undefined) {
-		const { combi, warnings } = decode(first);
-		return { full: { loadout: emptyLoadout(), combi }, warnings };
+		const { combi, warnings } = decode(first)
+		return { full: { loadout: emptyLoadout(), combi }, warnings }
 	}
 
-	const written = decodeLoadout(first);
+	const written = decodeLoadout(first)
 	// The episode lives in the combi half, so it is read before the relay is
 	// allowed to say anything about slot 1.
-	const episode = decode(second).combi.episode;
-	const limits = limitsOf(episode);
-	const relayed = written.relay !== null && limits.relay;
-	const { combi, warnings } = decode(second, relayed);
-	const loadout = fitLoadout(written, combi);
+	const episode = decode(second).combi.episode
+	const limits = limitsOf(episode)
+	const relayed = written.relay !== null && limits.relay
+	const { combi, warnings } = decode(second, relayed)
+	const loadout = fitLoadout(written, combi)
 	return {
 		full: { loadout, combi },
-		warnings: [
-			...warnings,
-			...loadoutWarnings(written, loadout),
-			...(relayed ? relayWarnings(combi) : []),
-		],
-	};
+		warnings: [...warnings, ...loadoutWarnings(written, loadout), ...(relayed ? relayWarnings(combi) : [])],
+	}
 }
 
 /** What `fitLoadout` dropped from a loadout as written. */
 function loadoutWarnings(written: Loadout, kept: Loadout): string[] {
-	const warnings: string[] = [];
+	const warnings: string[] = []
 	if (written.relay !== null && kept.relay === null) {
-		warnings.push("this episode takes no relay cookie — ignoring it");
+		warnings.push("this episode takes no relay cookie — ignoring it")
 	}
 	if (written.treasures.length > 0 && kept.treasures.length === 0) {
-		warnings.push("this episode takes no treasures — ignoring them");
+		warnings.push("this episode takes no treasures — ignoring them")
 	}
-	return warnings;
+	return warnings
 }
 
 /**
@@ -133,8 +122,6 @@ function loadoutWarnings(written: Loadout, kept: Loadout): string[] {
  * what the code says, and re-encoding is what snaps the slot back.
  */
 function relayWarnings(combi: Combi): string[] {
-	if (combi.mode !== "auto") return [];
-	return [
-		"slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto",
-	];
+	if (combi.mode !== "auto") return []
+	return ["slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto"]
 }
