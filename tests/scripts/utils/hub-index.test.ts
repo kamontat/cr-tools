@@ -1,8 +1,8 @@
-import type { HubRow } from "../../../scripts/utils/cookierunhub"
+import type { HubRow } from "#scripts/utils/cookierunhub"
 
 import { expect, test } from "vitest"
 
-import { entriesFrom } from "../../../scripts/utils/hub-index"
+import { entriesFrom } from "#scripts/utils/hub-index"
 
 const row = (fields: Partial<HubRow> & { id: number }): HubRow => ({
 	english_name: `Entry ${fields.id}`,

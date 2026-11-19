@@ -23,9 +23,12 @@ jobs:
       url: https://cr-tools.kc.in.th
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-      - run: bun install
-      # What the About panel and the environment line report. wrangler runs `bun run build`
+      - name: Set up runtime
+        uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+        with:
+          cache: true
+          require-lockfile: true
+      # What the About panel and the environment line report. wrangler runs `pnpm run build`
       # itself, so these have to be on the step that runs wrangler; a build
       # anywhere else sets none and the page says it is a local build.
       - id: stamp

@@ -216,7 +216,7 @@ Branch from `redesign` after PR A merges.
   - TopBar renders the badge text `pr-31` only for a preview build (pass a `BuildEnv` through a prop default for testability: `env?: BuildEnv`).
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement.** CSS per the spec's Frame section and the prototype: 52px top bar with the 3px `--env` line under it, 210px sidebar, 60px rail, drawer `250px` over a scrim on phones. No footer.
-- [ ] **Step 4: Run, expect PASS**, then `bun run build`.
+- [ ] **Step 4: Run, expect PASS**, then `pnpm run build`.
 - [ ] **Step 5: Commit** — `feat(frame): sidebar and top bar`
 
 ### Task 8: Pop-up panel

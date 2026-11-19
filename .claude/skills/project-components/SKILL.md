@@ -20,7 +20,14 @@ and their tiers; the rules below are what they must follow.
   so it renders in the browser only — the site has no server, and nothing that depends on
   the visitor's storage can be rendered at build time anyway.
 
-Both kinds live in the same tiers and follow the same import rules.
+Both kinds live in the same tiers and follow the same import rules. A Svelte component
+cannot import an `.astro` one.
+
+`astro check` typechecks `.astro` files and every `.ts` file, but not the `<script>` block of
+a `.svelte` file: a type error there passes `pnpm run check`. Keep the logic a component
+needs in `src/lib/` (typechecked, and testable without a DOM) and the script block thin;
+the component's own test is what catches a mistake left in it. Checking the script blocks
+too would need `svelte-check`, which this repo does not run.
 
 ## Atomic tiers
 
@@ -174,7 +181,7 @@ type error.
 support, so Biome reads an `.astro` file's template as well as its frontmatter and sees an
 import used only in the markup. `tests/config/biome.test.ts` lints a fixture whose import and
 variable are used only in the template and fails if Biome flags them — if it starts failing
-after a Biome or preset bump, `bun run format` would delete component imports, so fix the
+after a Biome or preset bump, `pnpm run format` would delete component imports, so fix the
 config rather than the test.
 
 ## Testing

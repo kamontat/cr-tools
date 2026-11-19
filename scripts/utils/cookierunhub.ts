@@ -12,7 +12,9 @@
  * `verify-assets.ts` needs the listings too.
  */
 
-import type { Section } from "./asset-ids"
+import type { Section } from "#scripts/utils/asset-ids"
+
+import { setTimeout as sleep } from "node:timers/promises"
 
 export const ORIGIN = "https://www.cookierunhub.com"
 
@@ -63,7 +65,7 @@ export async function get(url: string): Promise<Response> {
 			return res
 		} catch (err) {
 			if (attempt === 3) throw new Error(`${url}: ${err}`)
-			await Bun.sleep(500 * attempt)
+			await sleep(500 * attempt)
 		}
 	}
 }

@@ -22,7 +22,7 @@ account active: prefix it with `GH_TOKEN=$(gh auth token --user kamontat)`.
 
 1. **Catch up with the base, in the worktree.** `git fetch origin` then
    `git merge origin/<base>`, so the changelog edit sees entries other PRs landed. Resolve
-   conflicts, rerun `bun run check` and `bun run test`.
+   conflicts, rerun `pnpm run check` and `pnpm run test`.
 2. **Changelog entry, on the PR branch.** Edit `CHANGELOG.md` following the
    `project-changelog` skill, which owns the entry format (`## YYYY-MM-DD: <title>` with
    BREAKING CHANGES, Features, Improvements, Bug fixes and Decisions). The date is today's.

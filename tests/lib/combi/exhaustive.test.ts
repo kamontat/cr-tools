@@ -75,7 +75,7 @@ const CODE_PATTERN = /^[0-9A-Z]{10}$/
 
 /**
  * Both tests below walk the whole configuration space, so their runtime is the
- * size of the format rather than anything about the machine. Bun's 5s default
+ * size of the format rather than anything about the machine. Vitest's 5s default
  * was already close when the space was half this size, and a CI runner is
  * slower than a laptop — the explicit budget is what keeps a growing format
  * from reading as a flaky test.

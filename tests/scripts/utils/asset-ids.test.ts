@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 import { expect, test } from "vitest"
 
 import {
@@ -15,7 +17,7 @@ import {
 	toId,
 	verifyStructure,
 	wireId,
-} from "../../../scripts/utils/asset-ids"
+} from "#scripts/utils/asset-ids"
 
 test("an id is fixed-width uppercase base-36", () => {
 	expect(toId(0, 2)).toBe("00")
@@ -94,13 +96,13 @@ test("ordered keeps a retired entry's flag last and drops nothing", () => {
 const INDEX = new URL("../../../public/assets/index.json", import.meta.url)
 
 /**
- * `bun run verify:assets` asks a different question — is the index complete
+ * `pnpm run verify:assets` asks a different question — is the index complete
  * against the site — so this is the only thing that checks the file's own
  * shape, and a contributor runs the suite far more often than a script they
  * have to remember.
  */
 test("the committed index is structurally intact", async () => {
-	const text = await Bun.file(INDEX).text()
+	const text = await readFile(INDEX, "utf8")
 
 	expect(verifyStructure(text)).toEqual([])
 })
@@ -108,7 +110,7 @@ test("the committed index is structurally intact", async () => {
 type LooseIndex = Record<string, Record<string, Record<string, unknown>>>
 
 async function tampered(change: (index: LooseIndex) => void): Promise<string[]> {
-	const index = JSON.parse(await Bun.file(INDEX).text())
+	const index = JSON.parse(await readFile(INDEX, "utf8"))
 	change(index)
 	return verifyStructure(`${JSON.stringify(index, null, 2)}\n`)
 }
@@ -240,7 +242,7 @@ test("the writer sorts a static section by its authored key", () => {
 })
 
 test("parseIndex leaves an already-written static section exactly as it is", async () => {
-	const index = parseIndex(await Bun.file(INDEX).json())
+	const index = parseIndex(JSON.parse(await readFile(INDEX, "utf8")))
 
 	expect(parseIndex(JSON.parse(serializeIndex(index)))).toEqual(index)
 	expect(Object.keys(index.boosts).length).toBeGreaterThan(0)
@@ -296,7 +298,7 @@ test("two static entries claiming one url are caught", async () => {
 // `verifyStructure` is handed the text and not the directory, so this is the
 // only thing between a path in the index and a broken image on the page.
 test("every image the committed index names is on disk", async () => {
-	const raw = await Bun.file(INDEX).json()
+	const raw = JSON.parse(await readFile(INDEX, "utf8"))
 	const index = parseIndex(raw)
 	const missing: string[] = []
 	const sections = [...STATIC_SECTIONS, "cookies", "pets", "treasures"] as const
@@ -305,7 +307,7 @@ test("every image the committed index names is on disk", async () => {
 		for (const [key, entry] of Object.entries(index[section] as Record<string, { image: string | null }>)) {
 			if (entry.image === null) continue
 			const file = new URL(`../../../public/assets/${entry.image}`, import.meta.url)
-			if (!(await Bun.file(file).exists())) {
+			if (!existsSync(file)) {
 				missing.push(`${section}/${key} -> ${entry.image}`)
 			}
 		}

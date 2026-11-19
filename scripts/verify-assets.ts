@@ -5,18 +5,20 @@
  * per form, the same way `fetch-assets` writes it.
  *
  * It does not check the index's own structure. `scripts/utils/asset-ids.test.ts`
- * runs `verifyStructure` over the committed file on every `bun run test`, and
+ * runs `verifyStructure` over the committed file on every `pnpm run test`, and
  * duplicating it here would mean two places to keep in step — the thing
  * `scripts/utils/asset-ids.ts` exists to prevent.
  *
  * Network cost is three requests, one per section.
  */
 
+import { existsSync } from "node:fs"
+import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 
-import { type AssetIndex, type Entry, parseIndex, SECTIONS } from "./utils/asset-ids"
-import { fetchRows } from "./utils/cookierunhub"
-import { entriesFrom } from "./utils/hub-index"
+import { type AssetIndex, type Entry, parseIndex, SECTIONS } from "#scripts/utils/asset-ids"
+import { fetchRows } from "#scripts/utils/cookierunhub"
+import { entriesFrom } from "#scripts/utils/hub-index"
 
 const INDEX = fileURLToPath(new URL("../public/assets/index.json", import.meta.url))
 
@@ -27,11 +29,11 @@ function fail(lines: string[], label: string): never {
 }
 
 async function readIndex(): Promise<AssetIndex> {
-	if (!(await Bun.file(INDEX).exists())) {
+	if (!existsSync(INDEX)) {
 		fail(["public/assets/index.json does not exist"], "nothing to verify")
 	}
 	try {
-		return parseIndex(await Bun.file(INDEX).json())
+		return parseIndex(JSON.parse(await readFile(INDEX, "utf8")))
 	} catch (error) {
 		fail([`public/assets/index.json could not be read: ${String(error)}`], "nothing to verify")
 	}
@@ -66,6 +68,6 @@ for (const section of SECTIONS) {
 
 if (problems.length > 0) {
 	console.error("")
-	console.error("run `bun run fetch:assets` to reconcile, then commit the result")
+	console.error("run `pnpm run fetch:assets` to reconcile, then commit the result")
 	process.exit(1)
 }

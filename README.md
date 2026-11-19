@@ -196,19 +196,21 @@ The format does not change in the redesign. Links already shared, such as `/comb
 ## Development
 
 ```bash
-bun install
-bun run dev           # astro dev on :4321
-bun run test          # vitest, including an exhaustive round-trip over all 10,621,776 combis
-bun run check         # astro check, then Biome
-bun run format        # Biome with --write --unsafe
-bun run build         # static HTML into dist/, one folder per page, icons under dist/assets/
-bun run preview       # serves the built dist/; build first
-bun run verify:assets # asks cookierunhub.com whether public/assets/index.json is still complete
+pnpm install
+pnpm run dev           # astro dev on :4321
+pnpm run test          # vitest, including an exhaustive round-trip over all 10,621,776 combis
+pnpm run check         # astro check, then Biome
+pnpm run format        # Biome with --write --unsafe
+pnpm run build         # static HTML into dist/, one folder per page, icons under dist/assets/
+pnpm run preview       # serves the built dist/; build first
+pnpm run verify:assets # asks cookierunhub.com whether public/assets/index.json is still complete
 ```
 
 The exhaustive test asserts that encoding produces exactly 5,310,888 distinct codes — 10,621,776 inputs collapse to that many because the auto/semi-auto character is derived rather than free, and a manual run drops its action. Vitest runs the tests under `tests/` in two projects: `tests/components/` and `tests/lib/` in happy-dom, everything else without a DOM.
 
-`bunfig.toml` runs Astro and Vitest on Bun rather than Node.js, and pins every dependency to an exact version; `mise.toml` pins Bun itself.
+Everything runs on [Node.js](https://nodejs.org/) with [pnpm](https://pnpm.io/). `package.json` pins both in `devEngines` (with `onFail: "download"`, so pnpm fetches the exact versions itself), mirrors the Node.js version in `volta.node` and lists the supported range in `engines.node`. `mise.toml` pins neither and tells [mise](https://mise.jdx.dev/) to read them from `package.json`; CI's [`pnpm/setup`](https://github.com/pnpm/setup) reads the same fields. `pnpm-workspace.yaml` pins every dependency to an exact version and lists the dependencies allowed to run install scripts. The asset programs under `scripts/` run as plain `node scripts/<name>.ts`.
+
+Svelte components render through `@astrojs/svelte` with `client:only="svelte"`. `astro check` does not typecheck the script block of a `.svelte` file, so the logic behind a component lives in `src/lib/`, where it is typechecked and tested on its own.
 
 ### Layout
 
@@ -228,6 +230,6 @@ The `ALL_*` arrays and the label tables derive from the character tables in `src
 
 ## Deployment
 
-The site is a Cloudflare Worker serving the static files in `dist/`. `wrangler.jsonc` points it at `dist/` and has wrangler run `bun run build` itself, so the deploy workflows do not build beforehand. Production is <https://cr-tools.kc.in.th>; each pull request gets a preview at `https://pr-<number>-cr-tools.kcinth.workers.dev/`.
+The site is a Cloudflare Worker serving the static files in `dist/`. `wrangler.jsonc` points it at `dist/` and has wrangler run `pnpm run build` itself, so the deploy workflows do not build beforehand. Production is <https://cr-tools.kc.in.th>; each pull request gets a preview at `https://pr-<number>-cr-tools.kcinth.workers.dev/`.
 
 `.github/workflows/main.yml` runs both checks, the build and the tests on every push. `deploy-preview.yml` uploads a preview version for every pull request; `deploy-production.yml` deploys on every push to `main`. Both tell the build which environment and commit it is (`PUBLIC_DEPLOY_ENV`, `PUBLIC_COMMIT_SHA`, `PUBLIC_BUILT_AT`, and for previews the PR number and branch), and production alone passes the Google Tag Manager container. Both need `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in repository secrets. `assets.yml` checks weekly that the committed catalog still matches cookierunhub.com.

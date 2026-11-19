@@ -1,6 +1,6 @@
 ---
 name: project-deploy
-description: Use when changing `bun run build`, `bun run dev`, `bun run preview`, astro.config.ts, public/ or public/.assetsignore, wrangler.jsonc, the dist/ output shape, the PUBLIC_* build variables, or anything under .github/workflows/ — including bumping a pinned action SHA or debugging a Cloudflare deploy.
+description: Use when changing `pnpm run build`, `pnpm run dev`, `pnpm run preview`, astro.config.ts, public/ or public/.assetsignore, wrangler.jsonc, the dist/ output shape, the PUBLIC_* build variables, or anything under .github/workflows/ — including bumping a pinned action SHA or debugging a Cloudflare deploy.
 ---
 
 # Build and deployment
@@ -8,8 +8,7 @@ description: Use when changing `bun run build`, `bun run dev`, `bun run preview`
 ## Build
 
 `dev`, `build` and `preview` are each one `astro` command in `package.json`, with no wrapper
-script, run on the Bun runtime through `bunfig.toml`'s `[run] bun = true` (see the
-`project-scripts` skill). `astro build` renders every route under `src/pages/` (see the
+script, run on Node.js (see the `project-scripts` skill). `astro build` renders every route under `src/pages/` (see the
 `project-pages` skill) to static HTML in `dist/`, with bundled scripts and styles in
 `dist/_astro/` under hashed names, and copies `public/` to the root of `dist/` unchanged.
 Astro empties `dist/` before each build, so no stale file from an earlier build reaches a
@@ -76,7 +75,7 @@ its shape is part of the deployment contract, not a local convenience.
 ## Deployment
 
 The site is a Cloudflare Worker serving static assets. `wrangler.jsonc` names the Worker
-`cr-tools`, sets `build.command` to `bun run build` and points `assets.directory` at
+`cr-tools`, sets `build.command` to `pnpm run build` and points `assets.directory` at
 `dist/`, so wrangler runs the build itself and neither deploy workflow builds beforehand.
 Every `PUBLIC_*` variable therefore goes on the `cloudflare/wrangler-action` step's `env`,
 since wrangler runs the build as its own child.
@@ -84,13 +83,13 @@ since wrangler runs the build as its own child.
 Four workflows, each pinning every action to a full commit SHA with the release tag in a
 trailing comment:
 
-- `main.yml` — every push: install, `bun run check`, `bun run build`, `bun run test`.
+- `main.yml` — every push: set up the runtime, `pnpm run check`, `pnpm run build`, `pnpm run test`.
 - `deploy-preview.yml` — pull requests: `wrangler versions upload --preview-alias
   pr-<number>`, reporting into the `preview` environment at
   `https://pr-<number>-cr-tools.kcinth.workers.dev/`.
 - `deploy-production.yml` — pushes to `main`: `wrangler deploy`, reporting into the
   `production` environment at `https://cr-tools.kc.in.th`.
-- `assets.yml` — Mondays at 06:00 UTC and on `workflow_dispatch`: `bun run verify:assets`.
+- `assets.yml` — Mondays at 06:00 UTC and on `workflow_dispatch`: `pnpm run verify:assets`.
   The only workflow that reaches cookierunhub.com, and deliberately not part of `main.yml`:
   it fails whenever the site gains an entry.
 
@@ -107,7 +106,11 @@ secrets, and grant `deployments: write` on the job rather than at the top — th
 with `permissions: {}` and hand back only what each job needs. Keep that shape in anything
 new.
 
-Bun's local version is pinned in `mise.toml`; keep any CI pin in sync with it.
+Every workflow sets up its toolchain with a `Set up runtime` step using `pnpm/setup` with
+`cache: true` and `require-lockfile: true` and no `runtime` input: it reads pnpm and Node.js
+from `package.json` `devEngines` and runs `pnpm install --frozen-lockfile`. Never pin a
+version in a workflow; `tests/config/toolchain.test.ts` fails on a `runtime:` input.
+`cloudflare/wrangler-action` finds `pnpm-lock.yaml` and runs wrangler through pnpm.
 
 A pinned SHA is bumped by resolving the tag again, never by hand:
 
@@ -142,7 +145,7 @@ because the bundler drops the call it can prove does nothing.
   Worker needs a new token), lives in the `CLOUDFLARE_ACCOUNT_ID` account, and has
   **Workers Routes: Edit** on the zone, since the production URL is a custom domain
   attached outside `wrangler.jsonc`. A Worker-scoped token cannot create a Worker: a new
-  Worker name needs one local `bunx wrangler deploy` under `wrangler login` first.
+  Worker name needs one local `pnpm exec wrangler deploy` under `wrangler login` first.
 - Deploy passed but the page is unstyled or broken: open the browser console. A 404 on an
   `/_astro/` file means a stale or partial `dist/`; a 404 on the page itself means no file
   under `src/pages/` maps to that path (see `project-pages`); a 404 on an icon means it is

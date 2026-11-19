@@ -74,8 +74,8 @@ to it. The redesign's sidebar reads this registry.
    blockers hide it (see `project-components`).
 6. Files no page imports (icons, `robots.txt`) go in `public/` and are copied to the root of
    `dist/` as-is.
-7. Run `bun run build` and confirm the page appears in the `generating static routes` list,
-   then `bun run preview` and open it.
+7. Run `pnpm run build` and confirm the page appears in the `generating static routes` list,
+   then `pnpm run preview` and open it.
 
 ## Example — a page composed from the tiers
 

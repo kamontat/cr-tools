@@ -8,11 +8,11 @@ This file is the always-loaded core: what the project is, how to run it, and whe
 
 A Cookie Run combi name is 10 characters, and the game stores only the cookie, relay, pet, and treasure in it. This project packs the rest of a run's configuration — goal, mode, episode (and the tower's floor), boosts, random boost, cookie power+ selections, and starting action — into those 10 characters, plus a browser site for building, saving and reading codes. `README.md` documents the slot format for humans.
 
-The site is being redesigned on [kamontat/bun-astro-template](https://github.com/kamontat/bun-astro-template). The design is `docs/superpowers/specs/2026-11-19-site-redesign-design.md`; the plans for each piece are in `docs/superpowers/plans/`. The work lands as pull requests into a long-lived `redesign` branch, which merges into `main` once the combi page is complete; until then `main` serves the previous site. On `redesign`, the stack, the combi logic and the deploy are in place, and the pages are placeholders the next pieces fill in. Describe and change the code as it is; read the spec for where it is going.
+The site is being redesigned on [ktemplates/astro](https://github.com/ktemplates/astro). The design is `docs/superpowers/specs/2026-11-19-site-redesign-design.md`; the plans for each piece are in `docs/superpowers/plans/`. The work lands as pull requests into a long-lived `redesign` branch, which merges into `main` once the combi page is complete; until then `main` serves the previous site. On `redesign`, the stack, the combi logic and the deploy are in place, and the pages are placeholders the next pieces fill in. Describe and change the code as it is; read the spec for where it is going.
 
 ## Runtime and stack
 
-- **Bun** runs everything (`mise.toml` pins the version). `bunfig.toml` sets `[run] bun = true`, so `astro` and `vitest` run on Bun rather than Node.js, and `[install] exact = true`, so every dependency is pinned exactly. Use `bun install`, `bun run <script>`, `bunx <package>`; Bun loads `.env` itself. Bun's API docs are vendored at `node_modules/bun-types/docs/**.mdx` — read those rather than guessing.
+- **Node.js** runs everything and **pnpm** installs it. `package.json` is the one place both are pinned: `devEngines.runtime` (Node.js) and `devEngines.packageManager` (pnpm), with `onFail: "download"`, so pnpm fetches the exact versions itself; `volta.node` mirrors the Node.js version and `engines.node` lists the supported range. `mise.toml` pins neither and reads them from `package.json`. `pnpm-workspace.yaml` sets `saveExact`, so every dependency is pinned exactly, and lists in `allowBuilds` the packages allowed to run install scripts. Use `pnpm install`, `pnpm run <script>`, `pnpm exec <binary>`. The asset programs under `scripts/` run as plain `node scripts/<name>.ts` (Node.js strips the types), so they use only `node:` APIs and erasable TypeScript syntax.
 - **Astro 7**, `output: "static"`: every page is HTML rendered at build time. No adapter, no server endpoints, no Worker code — the site is static files on Cloudflare.
 - **Svelte 5** through `@astrojs/svelte`, for every part that reads `localStorage` or reacts to input, rendered with `client:only="svelte"`.
 - **Vitest** with happy-dom; `@testing-library/svelte` for Svelte components; Astro's Container API for `.astro` ones.
@@ -21,21 +21,21 @@ The site is being redesigned on [kamontat/bun-astro-template](https://github.com
 ## Commands
 
 ```bash
-bun install
-bun run dev                                  # astro dev on :4321; / is Home, /combi-name/ the combi tool, /settings/ Settings
-bun run build                                # astro build into dist/, one folder per page, icons under dist/assets/
-bun run preview                              # serves the built dist/ on :4321; build first
-bun run test                                 # vitest run, the whole suite — a few minutes, the exhaustive combi test dominates
-bun run test tests/lib/combi/codec.test.ts   # one file
-bun run test -t "decodes every slot"         # one test by name substring
-bun run check                                # astro check, then biome check
-bun run format                               # biome check --unsafe --write; read the diff after
-bun run fetch:assets                         # re-syncs public/assets/ from cookierunhub.com
-bun run verify:assets                        # asks cookierunhub.com whether the committed index is still complete
-bun run deploy                               # wrangler deploy; wrangler runs the build itself
+pnpm install
+pnpm run dev                                  # astro dev on :4321; / is Home, /combi-name/ the combi tool, /settings/ Settings
+pnpm run build                                # astro build into dist/, one folder per page, icons under dist/assets/
+pnpm run preview                              # serves the built dist/ on :4321; build first
+pnpm run test                                 # vitest run, the whole suite — a few minutes, the exhaustive combi test dominates
+pnpm run test tests/lib/combi/codec.test.ts   # one file
+pnpm run test -t "decodes every slot"         # one test by name substring
+pnpm run check                                # astro check, then biome check
+pnpm run format                               # biome check --unsafe --write; read the diff after
+pnpm run fetch:assets                         # re-syncs public/assets/ from cookierunhub.com
+pnpm run verify:assets                        # asks cookierunhub.com whether the committed index is still complete
+pnpm run deploy                               # wrangler deploy; wrangler runs the build itself
 ```
 
-Every script but two is the command itself in `package.json`, resolved from `node_modules/.bin` by `bun run`. Only `fetch:assets` and `verify:assets` are programs, under `scripts/`. Before committing, `bun run format && bun run check && bun run test && bun run build` must all pass.
+Every script but two is the command itself in `package.json`, resolved from `node_modules/.bin` by `pnpm run`. Only `fetch:assets` and `verify:assets` are programs, under `scripts/`. Before committing, `pnpm run format && pnpm run check && pnpm run test && pnpm run build` must all pass.
 
 ## Project layout
 
@@ -60,6 +60,7 @@ Cross-directory imports go through the aliases in `package.json`'s `imports` fie
 - `#lib/*` → `./src/lib/*.ts` — no extension in the import (`#lib/combi/codec`, `#lib/gtm`).
 - `#components/*` → `./src/components/*` and `#layouts/*` → `./src/layouts/*` — with the extension (`#components/atoms/Seg.svelte`, `#layouts/BaseLayout.astro`).
 - `#assets/*` → `./public/assets/*` — `#assets/index.json` names its own extension.
+- `#scripts/*` → `./scripts/*.ts` — no extension (`#scripts/utils/asset-ids`). The asset programs import each other through it too, because plain Node.js resolves no extensionless relative import.
 
 No TypeScript import carries `.ts`; `.astro` and `.svelte` imports always carry theirs.
 

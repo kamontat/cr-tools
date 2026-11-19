@@ -20,8 +20,8 @@ import {
 	type TreasureEntry,
 	type TreasureFamily,
 	wireId,
-} from "./asset-ids"
-import { type HubRow, iconUrl, pageUrl } from "./cookierunhub"
+} from "#scripts/utils/asset-ids"
+import { type HubRow, iconUrl, pageUrl } from "#scripts/utils/cookierunhub"
 
 export type HubEntries = {
 	entries: Record<string, Entry | TreasureEntry>

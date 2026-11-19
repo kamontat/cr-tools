@@ -15,7 +15,7 @@ export default getViteConfig({
 		// Each project inherits the settings above; arrays such as include would
 		// concatenate rather than replace, so only the projects name files.
 		// Everything under tests/ runs: DOM-facing code in happy-dom, the rest
-		// (scripts, config, pages) in plain Bun.
+		// (scripts, config, pages) in plain Node.js.
 		projects: [
 			{
 				extends: true,

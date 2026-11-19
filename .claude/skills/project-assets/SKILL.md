@@ -5,13 +5,13 @@ description: Use when touching public/assets/, public/assets/index.json, public/
 
 # Assets
 
-Two commands own this directory, and both read [cookierunhub.com](https://www.cookierunhub.com/en/encyclopedia). `bun run fetch:assets` syncs the catalog and rewrites the index; `bun run verify:assets` asks the site whether the index is still complete and touches nothing. The encyclopedia is a client-rendered page over a JSON API, so neither parses HTML: `GET https://www.cookierunhub.com/api/v1/game-data/{cookies,pets,treasures}` returns every entry of a section in one response. Where they live:
+Two commands own this directory, and both read [cookierunhub.com](https://www.cookierunhub.com/en/encyclopedia). `pnpm run fetch:assets` syncs the catalog and rewrites the index; `pnpm run verify:assets` asks the site whether the index is still complete and touches nothing. The encyclopedia is a client-rendered page over a JSON API, so neither parses HTML: `GET https://www.cookierunhub.com/api/v1/game-data/{cookies,pets,treasures}` returns every entry of a section in one response. Where they live:
 
 - `scripts/utils/cookierunhub.ts` — the site: its origin, `pageUrl`, `iconUrl`, the retrying `get`, `fetchRows`, and the `HubRow` shape (the handful of API fields this project reads).
 - `scripts/utils/hub-index.ts` — `entriesFrom(section, rows)`, the pure mapping from API rows to index entries, icons to download, and problems. Both scripts call it, so they cannot disagree about what the site lists.
 - `scripts/utils/asset-ids.ts` — the file: wire ids, entry types, `parseIndex`, `serializeIndex`, `verifyStructure`.
 
-`bun run fetch:assets` costs three API requests plus one per icon not already on disk. It verifies what it wrote before writing it, deletes any icon under `public/assets/{cookies,pets,treasures}/` no entry names any more, prints a per-section report (`added`, `updated`, `retired`, `restored`, `unchanged`), and records the run in the top-level `fetchedAt`.
+`pnpm run fetch:assets` costs three API requests plus one per icon not already on disk. It verifies what it wrote before writing it, deletes any icon under `public/assets/{cookies,pets,treasures}/` no entry names any more, prints a per-section report (`added`, `updated`, `retired`, `restored`, `unchanged`), and records the run in the top-level `fetchedAt`.
 
 `fetchedAt` is written only when the run was a complete success. A failed icon download is the one partial-success path — a listing the mapping cannot represent and a failed structure check both bail before the write — so a run that lost an icon writes the index and leaves the previous timestamp standing. A **404** is not a failure: the site lists a handful of pictures it does not serve (its own page shows a placeholder for them), so the entry is written with `image: null` and the next run tries again. Because a successful run always writes `fetchedAt`, a rescrape that changes nothing still produces a one-line diff.
 
@@ -84,13 +84,13 @@ What does check them is `verifyStructure`, through `staticProblems`: the key sha
 
 ## What else guards the file
 
-`verifyStructure` also checks that the file parses, that `fetchedAt` is `null` or an ISO 8601 instant, and that the file is byte-identical to what `serializeIndex` would write — `ordered()` fixes one field order for every entry so a sync rewrites no entry it did not change. `tests/scripts/utils/asset-ids.test.ts` runs it over the committed file, so `bun run test` fails on a broken index without anyone remembering a script. What it cannot catch is the site renumbering its own pages: then an id would still agree with its url, but the url would show a different entry. **Read `git diff public/assets/index.json` when a sync renames entries.**
+`verifyStructure` also checks that the file parses, that `fetchedAt` is `null` or an ISO 8601 instant, and that the file is byte-identical to what `serializeIndex` would write — `ordered()` fixes one field order for every entry so a sync rewrites no entry it did not change. `tests/scripts/utils/asset-ids.test.ts` runs it over the committed file, so `pnpm run test` fails on a broken index without anyone remembering a script. What it cannot catch is the site renumbering its own pages: then an id would still agree with its url, but the url would show a different entry. **Read `git diff public/assets/index.json` when a sync renames entries.**
 
 Counts as of this writing: 96 cookies, 103 pets, 1,179 treasures (903 site rows plus 276 blessed forms); 30 entries have no picture.
 
 ## Is the index still complete?
 
-`bun run verify:assets` answers that, and nothing else. It fetches the three sections, runs them through `entriesFrom` (so blessed forms count as the sync writes them), and compares each section's count against the entries this index carries without `retired: true`:
+`pnpm run verify:assets` answers that, and nothing else. It fetches the three sections, runs them through `entriesFrom` (so blessed forms count as the sync writes them), and compares each section's count against the entries this index carries without `retired: true`:
 
 ```
 fetched 2026-10-25T17:33:45.014Z
@@ -99,7 +99,7 @@ pets:       103 on site, 103 listed (0 retired) — ok
 treasures:  1179 on site, 1179 listed (0 retired) — ok
 ```
 
-It exits non-zero on any mismatch, on an unreachable site, and on an index it cannot read. It does no structural checking — the suite owns that. Because it needs the network it is not in `bun run check` and not in `main.yml`; `.github/workflows/assets.yml` runs it weekly instead.
+It exits non-zero on any mismatch, on an unreachable site, and on an index it cannot read. It does no structural checking — the suite owns that. Because it needs the network it is not in `pnpm run check` and not in `main.yml`; `.github/workflows/assets.yml` runs it weekly instead.
 
 ## What consumes it
 
@@ -109,7 +109,7 @@ It exits non-zero on any mismatch, on an unreachable site, and on an index it ca
 
 ## How it ships
 
-Everything under `public/` is copied to the root of `dist/` unchanged, so an icon at `public/assets/cookies/fairy_cookie.png` is served at `/assets/cookies/fairy_cookie.png` — in `bun run dev` and in a build alike. Icons are always served as files, never inlined into a page: `catalog.ts` hands out paths relative to `public/assets/`, and `art.ts`'s functions take the `base` to put in front of them. `BaseLayout`'s favicon is one of these icons (`/assets/cookies/fairy_cookie.png`).
+Everything under `public/` is copied to the root of `dist/` unchanged, so an icon at `public/assets/cookies/fairy_cookie.png` is served at `/assets/cookies/fairy_cookie.png` — in `pnpm run dev` and in a build alike. Icons are always served as files, never inlined into a page: `catalog.ts` hands out paths relative to `public/assets/`, and `art.ts`'s functions take the `base` to put in front of them. `BaseLayout`'s favicon is one of these icons (`/assets/cookies/fairy_cookie.png`).
 
 `index.json` is the exception in the other direction. A page that imports `#assets/index.json` gets it bundled into its JavaScript like any other module, so serving it as a file too would be 400 KB for nothing. `public/.assetsignore` lists `assets/index.json` (a path inside `dist/`), and Cloudflare's static assets upload skips what that file names: the build still writes `dist/assets/index.json`, but the deploy leaves it out. `tests/build/output.test.ts` builds the site and checks both halves — an icon is in `dist/assets/`, and `dist/.assetsignore` names the index.
 

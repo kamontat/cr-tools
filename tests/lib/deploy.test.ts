@@ -1,9 +1,10 @@
+import { readFile } from "node:fs/promises"
 import { describe, expect, test } from "vitest"
 
 // Each deploy workflow's environment.url is written by hand, so it drifts from
 // the Worker name in wrangler.jsonc unless something compares the two.
 const root = `${import.meta.dirname}/../..`
-const read = (path: string) => Bun.file(`${root}/${path}`).text()
+const read = (path: string) => readFile(`${root}/${path}`, "utf8")
 const workerName = async () => (await read("wrangler.jsonc")).match(/"name":\s*"([^"]+)"/)?.[1]
 const environmentUrl = async (workflow: string) =>
 	(await read(`.github/workflows/${workflow}`)).match(/^\s+url:\s*(.+?)\s*$/m)?.[1]

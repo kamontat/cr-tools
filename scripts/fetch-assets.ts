@@ -16,6 +16,9 @@
  * icon that is not already on disk. An icon on disk that no entry names any
  * more is deleted, so `public/assets/` holds exactly what the index points at.
  */
+import { existsSync } from "node:fs"
+import { glob, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 
 import {
@@ -28,9 +31,9 @@ import {
 	serializeIndex,
 	type TreasureEntry,
 	verifyStructure,
-} from "./utils/asset-ids"
-import { fetchRows, get } from "./utils/cookierunhub"
-import { entriesFrom } from "./utils/hub-index"
+} from "#scripts/utils/asset-ids"
+import { fetchRows, get } from "#scripts/utils/cookierunhub"
+import { entriesFrom } from "#scripts/utils/hub-index"
 
 // `fileURLToPath`, not `.pathname`: the latter percent-encodes, so a checkout
 // under a path containing a space would not resolve.
@@ -101,8 +104,9 @@ function bail(problems: string[], label: string) {
 	process.exit(1)
 }
 
-const onDisk = await Bun.file(ASSETS_INDEX).exists()
-const previous: AssetIndex = parseIndex(onDisk ? await Bun.file(ASSETS_INDEX).json() : {})
+const previous: AssetIndex = parseIndex(
+	existsSync(ASSETS_INDEX) ? JSON.parse(await readFile(ASSETS_INDEX, "utf8")) : {},
+)
 
 const index: {
 	cookies: Record<string, Entry>
@@ -137,7 +141,7 @@ const spriteless = SECTIONS.flatMap((section) => Object.values(index[section] as
 // Only icons absent from disk are fetched; everything else is already correct.
 const jobs: [local: string, remote: string][] = []
 for (const [local, remote] of downloads) {
-	if (!(await Bun.file(ASSETS + local).exists())) jobs.push([local, remote])
+	if (!existsSync(ASSETS + local)) jobs.push([local, remote])
 }
 
 console.log(
@@ -152,7 +156,8 @@ const absent = new Set<string>()
 await pool("icons", jobs, async ([local, remote]) => {
 	try {
 		const res = await get(remote)
-		await Bun.write(ASSETS + local, await res.arrayBuffer())
+		await mkdir(dirname(ASSETS + local), { recursive: true })
+		await writeFile(ASSETS + local, new Uint8Array(await res.arrayBuffer()))
 	} catch (err) {
 		// The site lists a picture it does not serve — its own page falls back
 		// to a placeholder for these too. That is an entry without a picture,
@@ -197,7 +202,7 @@ const written = serializeIndex({
 })
 bail(verifyStructure(written), "the index this run assembled is not intact")
 
-await Bun.write(ASSETS_INDEX, written)
+await writeFile(ASSETS_INDEX, written)
 console.log("index written")
 
 // Every icon an entry names, retired ones included; anything else under a
@@ -210,9 +215,11 @@ for (const section of SECTIONS) {
 }
 let pruned = 0
 for (const section of SECTIONS) {
-	for await (const file of new Bun.Glob(`${section}/*`).scan(ASSETS)) {
+	for await (const entry of glob(`${section}/*`, { cwd: ASSETS, withFileTypes: true })) {
+		if (!entry.isFile()) continue
+		const file = `${section}/${entry.name}`
 		if (named.has(file)) continue
-		await Bun.file(ASSETS + file).delete()
+		await rm(ASSETS + file)
 		pruned++
 	}
 }

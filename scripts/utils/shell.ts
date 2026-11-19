@@ -1,6 +1,6 @@
+import { spawn } from "node:child_process"
 import { exit } from "node:process"
 import { styleText } from "node:util"
-import { $ } from "bun"
 
 const printCmd = (cmd: string, arg: string) => {
 	const prefix = styleText(["dim", "cyan"], "$")
@@ -11,6 +11,10 @@ const printCmd = (cmd: string, arg: string) => {
 export const execAsync = async (cmd: string, ...args: string[]) => {
 	printCmd(cmd, args.join(" "))
 
-	const { exitCode } = await $`${cmd} ${args}`.nothrow()
+	const exitCode = await new Promise<number>((resolve) => {
+		spawn(cmd, args, { stdio: "inherit" })
+			.on("error", () => resolve(1))
+			.on("close", (code) => resolve(code ?? 1))
+	})
 	exit(exitCode)
 }

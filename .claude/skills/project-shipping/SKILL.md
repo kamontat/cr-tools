@@ -54,13 +54,13 @@ The same prefix goes on `gh pr checks`, `gh pr view`, `gh run view` and `gh api`
      prefix — the tool adds it). It creates `.claude/worktrees/<name>` on branch
      `worktree-<name>`.
 
-   Already inside a worktree for this change? Keep using it. Then run `bun install` — a new
+   Already inside a worktree for this change? Keep using it. Then run `pnpm install` — a new
    worktree has no `node_modules`. Never use bare `git stash` in a worktree: the stash stack
    is shared with every other checkout.
 2. **Test first.** REQUIRED SUB-SKILL: superpowers:test-driven-development. Write the
    failing test under `tests/`, mirroring the `src/` path (`src/lib/combi/codec.ts` →
    `tests/lib/combi/codec.test.ts`, `src/components/atoms/Seg.svelte` →
-   `tests/components/atoms/Seg.test.ts`), run `bun run test <file>` and watch it fail for
+   `tests/components/atoms/Seg.test.ts`), run `pnpm run test <file>` and watch it fail for
    the right reason.
 3. **Code.** Write the smallest code that passes. Follow the layout in `AGENTS.md` and read
    the skill for the area first (`project-combi-codec`, `project-assets`,
@@ -70,10 +70,10 @@ The same prefix goes on `gh pr checks`, `gh pr view`, `gh run view` and `gh api`
    `#components/*`, `#layouts/*` and `#lib/*` aliases.
 4. **Format, check, test, build.** All must pass before committing:
    ```sh
-   bun run format      # biome check --unsafe --write
-   bun run check       # astro check + biome check
-   bun run test        # vitest run; the exhaustive combi test takes a few minutes
-   bun run build
+   pnpm run format      # biome check --unsafe --write
+   pnpm run check       # astro check + biome check
+   pnpm run test        # vitest run; the exhaustive combi test takes a few minutes
+   pnpm run build
    ```
    A failure means fix and rerun the whole list, not commit and fix later. `format` rewrites
    files, so stage after it (`git add -A`), and check `git status` for stray files.

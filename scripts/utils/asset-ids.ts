@@ -9,7 +9,7 @@
  * `verifyStructure` checks every id against the url it sits beside.
  */
 
-import { pageUrl } from "./cookierunhub"
+import { pageUrl } from "#scripts/utils/cookierunhub"
 
 export type Section = "cookies" | "pets" | "treasures"
 
