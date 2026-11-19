@@ -6,7 +6,7 @@
  * than through wire ids.
  *
  * Boosts and episodes work the same way for a different reason: each has an
- * icon in `assets/index.json` under a key someone wrote by hand, and the codec
+ * icon in `public/assets/index.json` under a key someone wrote by hand, and the codec
  * carries a character rather than that key. Which picture a value wears is a
  * page decision either way, so all three mappings live here.
  */
@@ -15,7 +15,7 @@ import type { Boost, CookiePower, Episode } from "./codec"
 
 import { type CatalogSection, imageForKey, staticImage } from "./catalog"
 
-/** One entry of a catalog, named the way `assets/index.json` names it. */
+/** One entry of a catalog, named the way `public/assets/index.json` names it. */
 export type ArtRef = { section: CatalogSection; key: string }
 
 /**

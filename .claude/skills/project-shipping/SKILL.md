@@ -42,13 +42,21 @@ The same prefix goes on `gh pr checks`, `gh pr view`, `gh run view` and `gh api`
 
 ## Steps
 
-1. **Worktree.** Every change gets one. Call `EnterWorktree` with a short kebab-case `name`
-   describing the change (no `worktree-` prefix — the tool adds it). It creates
-   `.claude/worktrees/<name>` on branch `worktree-<name>`. For redesign work, base it on
-   `origin/redesign` (`git reset --hard origin/redesign` straight after creating it, before
-   any edit, if the tool based it on `main`). Already inside a worktree for this change?
-   Keep using it. Then run `bun install` — a new worktree has no `node_modules`. Never use
-   bare `git stash` in a worktree: the stash stack is shared with every other checkout.
+1. **Worktree.** Every change gets one, named with a short kebab-case `<name>` describing
+   the change. `EnterWorktree` takes no base ref, so:
+   - **Redesign work** (base `redesign`): create the worktree yourself from
+     `origin/redesign`, then enter it by path:
+     ```sh
+     git fetch origin && git worktree add -b worktree-<name> .claude/worktrees/<name> origin/redesign
+     ```
+     then call `EnterWorktree` with `path: ".claude/worktrees/<name>"`.
+   - **Work based on `main`**: call `EnterWorktree` with `name: "<name>"` (no `worktree-`
+     prefix — the tool adds it). It creates `.claude/worktrees/<name>` on branch
+     `worktree-<name>`.
+
+   Already inside a worktree for this change? Keep using it. Then run `bun install` — a new
+   worktree has no `node_modules`. Never use bare `git stash` in a worktree: the stash stack
+   is shared with every other checkout.
 2. **Test first.** REQUIRED SUB-SKILL: superpowers:test-driven-development. Write the
    failing test under `tests/`, mirroring the `src/` path (`src/lib/combi/codec.ts` →
    `tests/lib/combi/codec.test.ts`, `src/components/atoms/Seg.svelte` →

@@ -1,11 +1,11 @@
 /**
- * The cookie, pet and treasure catalog, read from `assets/index.json`, whose
+ * The cookie, pet and treasure catalog, read from `public/assets/index.json`, whose
  * keys are the wire ids a loadout section carries. An id is the entry's own
  * number on cookierunhub.com in base 36, so it means the same entry for as long
  * as the site keeps its numbering — see `scripts/utils/asset-ids.ts`.
  *
- * It lives in the route rather than `lib/` for the same reason the codec does:
- * exactly one page imports it.
+ * It lives in `src/lib/combi/` beside the codec: framework-free, with no DOM,
+ * so the pages and their components share one copy.
  */
 
 import index from "#assets/index.json"
@@ -13,7 +13,7 @@ import index from "#assets/index.json"
 export type CatalogSection = "cookies" | "pets" | "treasures"
 
 /**
- * Declared here rather than imported from `scripts/utils/asset-ids.ts`: a route
+ * Declared here rather than imported from `scripts/utils/asset-ids.ts`: `src/`
  * does not import from `scripts/`. `catalog.test.ts` asserts the two agree, so
  * they cannot drift.
  */
@@ -107,7 +107,7 @@ function entryFor(section: CatalogSection, id: string): CatalogEntry | undefined
 }
 
 /**
- * The two sections of `assets/index.json` nobody scrapes. Their keys are
+ * The two sections of `public/assets/index.json` nobody scrapes. Their keys are
  * authored rather than assigned, and a code never carries one — the codec has
  * its own character for an episode and its own slot for a boost — so nothing
  * here is a wire id and none of the promises above apply to it.

@@ -120,6 +120,17 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
 - **A control refuses a value its options do not hold**, and holds its options and its
   value as separate inputs, so a list replaced underneath a pick cannot keep a ghost value.
 
+## Never name a region "cookie"
+
+Name a section, panel, dialog, form, header, aside, main or element id after what it does —
+never "cookie", "consent" or "gdpr". Content blockers hide consent banners with generic
+cosmetic rules: EasyList Cookie, Fanboy's lists and AdGuard's cookie-notice list all carry
+`###panel-cookies`, so under uBlock Origin, AdGuard or Brave the old site's Cookies tab
+(`#panel-cookies`) painted as nothing at all while every test and headless check passed. On a
+site about Cookie Run the word is tempting everywhere; a panel listing cookies is
+`#panel-roles` or similar. No headless test catches this, so review for it, and check a
+preview with a blocker on when a new region appears.
+
 ## Client-side script in an Astro component
 
 Interactivity that does not warrant Svelte goes in a `<script>` tag inside the component.

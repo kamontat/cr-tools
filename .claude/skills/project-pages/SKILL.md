@@ -70,9 +70,11 @@ to it. The redesign's sidebar reads this registry.
    rendered on a server.
 4. Link between pages with root-relative links that end in a slash — `/combi-name/`,
    `/settings/`, `/` — the form the folder build serves directly.
-5. Files no page imports (icons, `robots.txt`) go in `public/` and are copied to the root of
+5. Never give a region or id a name containing "cookie", "consent" or "gdpr" — content
+   blockers hide it (see `project-components`).
+6. Files no page imports (icons, `robots.txt`) go in `public/` and are copied to the root of
    `dist/` as-is.
-6. Run `bun run build` and confirm the page appears in the `generating static routes` list,
+7. Run `bun run build` and confirm the page appears in the `generating static routes` list,
    then `bun run preview` and open it.
 
 ## Example — a page composed from the tiers
