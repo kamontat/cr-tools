@@ -6,71 +6,92 @@ This file is the always-loaded core: what the project is, how to run it, and whe
 
 ## What this project is
 
-A Cookie Run combi name is 10 characters, and the game stores only the cookie, relay, pet, and treasure in it. This project packs the rest of a run's configuration — goal, mode, episode (and the tower's floor), boosts, random boost, cookie power+ selections, and starting action — into those 10 characters, plus a browser page for building and reading codes. `README.md` documents the slot format for humans.
+A Cookie Run combi name is 10 characters, and the game stores only the cookie, relay, pet, and treasure in it. This project packs the rest of a run's configuration — goal, mode, episode (and the tower's floor), boosts, random boost, cookie power+ selections, and starting action — into those 10 characters, plus a browser site for building, saving and reading codes. `README.md` documents the slot format for humans.
 
-## Runtime
+The site is being redesigned on [kamontat/bun-astro-template](https://github.com/kamontat/bun-astro-template). The design is `docs/superpowers/specs/2026-11-19-site-redesign-design.md`; the plans for each piece are in `docs/superpowers/plans/`. The work lands as pull requests into a long-lived `redesign` branch, which merges into `main` once the combi page is complete; until then `main` serves the previous site. On `redesign`, the stack, the combi logic and the deploy are in place, and the pages are placeholders the next pieces fill in. Describe and change the code as it is; read the spec for where it is going.
 
-Default to Bun instead of Node.js.
+## Runtime and stack
 
-- `bun <file>` instead of `node <file>` or `ts-node <file>`
-- `bun test` instead of `jest` or `vitest`
-- `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- `bun install` / `bun run <script>` / `bunx <package>` instead of the npm, yarn, or pnpm equivalents
-- Bun loads `.env` automatically — don't add `dotenv`
-- Prefer `Bun.file` and `Bun.write` over `node:fs`; ``Bun.$`ls` `` instead of `execa`
-- `Bun.serve()` for HTTP and WebSockets (no `express`), `bun:sqlite` (no `better-sqlite3`), `Bun.sql` (no `pg`), `Bun.redis` (no `ioredis`), built-in `WebSocket` (no `ws`)
-
-Bun's own API docs are vendored at `node_modules/bun-types/docs/**.mdx` — read those rather than guessing at an API.
+- **Bun** runs everything (`mise.toml` pins the version). `bunfig.toml` sets `[run] bun = true`, so `astro` and `vitest` run on Bun rather than Node.js, and `[install] exact = true`, so every dependency is pinned exactly. Use `bun install`, `bun run <script>`, `bunx <package>`; Bun loads `.env` itself. Bun's API docs are vendored at `node_modules/bun-types/docs/**.mdx` — read those rather than guessing.
+- **Astro 7**, `output: "static"`: every page is HTML rendered at build time. No adapter, no server endpoints, no Worker code — the site is static files on Cloudflare.
+- **Svelte 5** through `@astrojs/svelte`, for every part that reads `localStorage` or reacts to input, rendered with `client:only="svelte"`.
+- **Vitest** with happy-dom; `@testing-library/svelte` for Svelte components; Astro's Container API for `.astro` ones.
+- **`astro check`** for types and **Biome** (`@kcconfigs/biome` astro preset) for lint and format, Markdown included.
 
 ## Commands
 
 ```bash
 bun install
-bun run dev                                  # dev server on :3000; / is the home pane, /combi-name/ is the combi tool, /assets/* the icons
-bun run test                                 # whole suite, ~2min (the exhaustive test dominates)
-bun run test src/routes/combi-name/codec.test.ts # one file
+bun run dev                                  # astro dev on :4321; / is Home, /combi-name/ the combi tool, /settings/ Settings
+bun run build                                # astro build into dist/, one folder per page, icons under dist/assets/
+bun run preview                              # serves the built dist/ on :4321; build first
+bun run test                                 # vitest run, the whole suite — a few minutes, the exhaustive combi test dominates
+bun run test tests/lib/combi/codec.test.ts   # one file
 bun run test -t "decodes every slot"         # one test by name substring
-bun run check:type                           # tsc --noEmit; the test files are typechecked too
-bun run check:biome                          # formatting and lint; --write applies what Biome can fix
-bun run format:biome                         # the same check with --write --unsafe; read the diff after (`format` is an alias)
-bun run check                                # both checks, in one pass
-bun run build                                # writes dist/index.html and dist/combi-name/index.html with their shared chunks, plus dist/assets/ for the icons
-bun run preview                              # serves the built dist/ on :4000 the way Cloudflare does; build first
-bun run fetch:assets                         # re-syncs assets/ from cookierunhub.com, records fetchedAt, reports what changed
-bun run verify:assets                        # asks cookierunhub.com whether index.json is still complete
-bun run deploy                               # publishes to Cloudflare; wrangler builds first
+bun run check                                # astro check, then biome check
+bun run format                               # biome check --unsafe --write; read the diff after
+bun run fetch:assets                         # re-syncs public/assets/ from cookierunhub.com
+bun run verify:assets                        # asks cookierunhub.com whether the committed index is still complete
+bun run deploy                               # wrangler deploy; wrangler runs the build itself
 ```
 
-Every script but two is the command itself in `package.json` — `bun-server`, `tsc`, `biome`, `wrangler`, `bun test` — resolved from `node_modules/.bin` by `bun run`. Only `fetch:assets` and `verify:assets` are files under `scripts/`, because both are programs rather than invocations: `fetch-assets.ts` syncs from cookierunhub.com's API, `verify-assets.ts` asks it whether the committed index is still complete. See the `repo-scripts` skill before editing one.
-
-`dev`, `build` and `preview` are all `@kctools/bun-server` invocations. With no input argument it scans `src/routes/` for HTML files, so the route table is the directory itself and adding a page needs no edit anywhere; `--statics 'assets/**/*.{png,webp}'` puts the icons at `/assets/...` in both the dev server and `dist/`. See the `build-and-deploy` skill.
+Every script but two is the command itself in `package.json`, resolved from `node_modules/.bin` by `bun run`. Only `fetch:assets` and `verify:assets` are programs, under `scripts/`. Before committing, `bun run format && bun run check && bun run test && bun run build` must all pass.
 
 ## Project layout
 
-Everything the site is built from lives under `src/`; `assets/`, `scripts/`, and `tests/` sit beside it at the root. `tsconfig.json`'s `rootDir` is the repository root and its `include` names all four, so a script is typechecked like a route is.
+| Path                | What lives there                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/pages/`        | One route per file: `index.astro` (Home), `combi-name/index.astro`, `settings/index.astro`. Every page is `<slug>/index.astro` and builds to `dist/<slug>/index.html` (`build.format: "directory"`), so links already shared as `/combi-name/#CODE?note=…` keep opening. |
+| `src/layouts/`      | Templates. `BaseLayout.astro` owns `<html>`, `<head>` (title, favicon, Google Tag Manager) and imports the global CSS; every page renders inside it.                                                                                                                     |
+| `src/components/`   | Components in Atomic Design tiers — `atoms/`, `molecules/`, `organisms/` — as `.astro` or `.svelte` files. Empty on this branch.                                                                                                                                         |
+| `src/lib/`          | Framework-free TypeScript more than one place uses: the tool registry (`tools.ts`), build details (`build-info.ts`), Google Tag Manager (`gtm.ts`), resizable panel widths (`panel-width.ts`).                                                                           |
+| `src/lib/combi/`    | The combi logic: codec, labels, describe, hints, art, catalog, loadout, full code, the address-bar and saved-list state, run stats. No DOM, no framework.                                                                                                                |
+| `src/styles/`       | Global CSS, imported once by `BaseLayout`. Today only the `@kcstyles/reset.css` reset.                                                                                                                                                                                   |
+| `src/env.d.ts`      | The `PUBLIC_*` build variables on `ImportMetaEnv`, and the reset's `row` / `block` attributes.                                                                                                                                                                           |
+| `public/`           | Copied to `dist/` unchanged. `public/assets/` holds the icons (served at `/assets/...`, never inlined) and `index.json`, the catalog; `public/.assetsignore` keeps that index out of the deploy.                                                                         |
+| `scripts/`          | The two asset programs and their helpers in `scripts/utils/`.                                                                                                                                                                                                            |
+| `tests/`            | Every test, mirroring `src/` and `scripts/` (`src/lib/combi/codec.ts` → `tests/lib/combi/codec.test.ts`), plus build, config, deploy and skills checks.                                                                                                                  |
+| `docs/superpowers/` | Design specs and implementation plans.                                                                                                                                                                                                                                   |
 
-Cross-directory imports go through `#lib/*` and `#components/*`, declared in `package.json`'s `imports` field, so a route writes `from "#components/card-group"` rather than counting `../`s. The subpaths keep their short names — the alias is `#lib/*`, not `#src/lib/*` — so moving a directory is a change in `package.json` and nowhere else.
+### Imports
 
-No import carries a file extension. The two aliases supply it (`"#lib/*": "./src/lib/*.ts"`), and a relative import is resolved without one, so `tsconfig.json` needs no `allowImportingTsExtensions`. `#assets/*` is the exception: it maps to `./assets/*` unchanged, since `#assets/index.json` names the extension itself. `lit/decorators.js` is another: it is a published package subpath, not a local import, and the extension is part of its name — the no-extension rule only governs imports this repository resolves itself.
+Cross-directory imports go through the aliases in `package.json`'s `imports` field:
 
-- `src/lib/` is code more than one route uses, reached as `#lib/*`. Today that is the tool registry, `hrefFor`, and `build-info` — which commit the page was built from and when. It owns no DOM, with one deliberate exception documented in the `ui-components` skill.
-- `src/components/` is every custom element — a `LitElement` with its own shadow root — reached as `#components/*`. It imports from `src/lib/` and the shared style chunks in `src/components/theme.ts`, and never from `src/routes/`.
-- `src/routes/<slug>/` is one page: `index.html`, `index.css`, `index.ts`, and that route's own logic and tests. `src/routes/index.*` is the home pane. `src/routes/base.css` is the page frame — the reset, the body grid, the top bar, and shared typography — and belongs to no route; component styles live in the components, not here. `src/routes/tokens.css`, which `base.css` imports, defines every `--cr-*` custom property the page and the components both read.
-- `scripts/` holds the two asset programs and the helpers they share in `scripts/utils/`. Nothing else: a package script that is just a command lives in `package.json` as that command.
-- `tests/` is test configuration only. `bunfig.toml` preloads `tests/happydom.ts` for every run, so `document` and `window` exist in all test files, not just the DOM ones. No test lives there.
+- `#lib/*` → `./src/lib/*.ts` — no extension in the import (`#lib/combi/codec`, `#lib/gtm`).
+- `#components/*` → `./src/components/*` and `#layouts/*` → `./src/layouts/*` — with the extension (`#components/atoms/Seg.svelte`, `#layouts/BaseLayout.astro`).
+- `#assets/*` → `./public/assets/*` — `#assets/index.json` names its own extension.
 
-Route-only logic stays in the route. The combi codec is imported by exactly one page, so it lives at `src/routes/combi-name/codec.ts` rather than in `src/lib/`.
+No TypeScript import carries `.ts`; `.astro` and `.svelte` imports always carry theirs.
 
-## Where the rest of the guidance lives
+### Tiers
 
-| Skill               | Read it before                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `combi-codec`       | touching `src/routes/combi-name/` — the tables are the wire format, and their order is load-bearing                           |
-| `ui-components`     | editing `src/components/`, using a custom element, styling `src/routes/base.css`, or touching theming or `src/lib/href.ts`    |
-| `adding-a-page`     | adding a `src/routes/<slug>/` page, or debugging one that fails `src/lib/tools.test.ts`, paints unstyled, or 404s             |
-| `repo-scripts`      | editing `scripts/`, or fixing a `check:type` / `check:biome` failure — the two checks are stricter together than either alone |
-| `build-and-deploy`  | changing the build, a stylesheet's import chain, `wrangler.jsonc`, or `.github/workflows/`                                    |
-| `assets`            | touching `assets/` or putting an icon in a page — a new icon is inlined by default, which has a size consequence              |
-| `shipping-a-change` | starting any change — worktree, test first, checks, PR and preview URL                                                        |
-| `landing-a-change`  | merging an approved PR — changelog entry, merge, worktree cleanup                                                             |
-| `changelog`         | writing or editing a `CHANGELOG.md` entry                                                                                     |
+Components follow Atomic Design, enforced by `tests/components/atomic.test.ts`: an atom imports no component, a molecule only atoms, an organism atoms, molecules and organisms. Layouts and pages may import any tier. `src/components/` imports from `src/lib/` and `src/styles/`, never from `src/layouts/` or `src/pages/`; `src/lib/` imports from none of them.
+
+### Where the combi logic lives
+
+`src/lib/combi/` is the whole combi wire format and everything derived from it, with tests in `tests/lib/combi/`. The format does not change in the redesign: `codec.ts`, `catalog.ts`, `loadout.ts` and `full-code.ts` moved here unchanged, and their tests — the exhaustive round-trip over every combi included — carry over. Read the `project-combi-codec` skill before touching any of it.
+
+## Hosting
+
+A Cloudflare Worker named `cr-tools` serving `dist/` as static assets. Production is `https://cr-tools.kc.in.th`, deployed from `main`; every pull request gets a preview at `https://pr-<number>-cr-tools.kcinth.workers.dev/`. The deploy workflows pass `PUBLIC_DEPLOY_ENV`, `PUBLIC_COMMIT_SHA`, `PUBLIC_BUILT_AT`, and for previews `PUBLIC_PR_NUMBER` and `PUBLIC_BRANCH`, which `src/lib/build-info.ts` reads; production alone passes `PUBLIC_GTM_ID`. See the `project-deploy` skill.
+
+## Working here
+
+- Every change gets its own worktree, is built test-first, and ends in a pull request with a preview URL — see `project-shipping`. Redesign pull requests target `redesign` while it exists.
+- `gh` may have a work account active; run GitHub commands for this repository as `GH_TOKEN=$(gh auth token --user kamontat) gh …`.
+- Commits are conventional, lower case and scoped (`feat(frame): …`, `build: …`, `ci: …`, `test: …`).
+
+## Skills
+
+| Skill                 | Read it before                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `project-shipping`    | starting any change — worktree, base branch, test first, checks, PR and preview URL                                   |
+| `project-landing`     | merging an approved PR — changelog entry, merge, worktree cleanup                                                     |
+| `project-changelog`   | writing or editing a `CHANGELOG.md` entry                                                                             |
+| `project-combi-codec` | touching `src/lib/combi/` — the tables are the wire format, and their order is load-bearing                           |
+| `project-assets`      | touching `public/assets/`, the asset scripts, or showing an icon in a page                                            |
+| `project-components`  | writing a component in `src/components/`, `.astro` or `.svelte`, or its test                                          |
+| `project-layouts`     | changing `BaseLayout` or adding a layout in `src/layouts/`                                                            |
+| `project-pages`       | adding or editing a page in `src/pages/` or a tool in `src/lib/tools.ts`                                              |
+| `project-scripts`     | changing a package script or `scripts/`, running the tests, or fixing a `check` failure                               |
+| `project-deploy`      | changing the build, `astro.config.ts`, `public/`, `wrangler.jsonc`, the `PUBLIC_*` variables, or `.github/workflows/` |

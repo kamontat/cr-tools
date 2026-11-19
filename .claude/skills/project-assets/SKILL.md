@@ -1,6 +1,6 @@
 ---
-name: assets
-description: Use when touching assets/, assets/index.json, scripts/fetch-assets.ts, scripts/verify-assets.ts, scripts/utils/asset-ids.ts, scripts/utils/cookierunhub.ts or scripts/utils/hub-index.ts, or when planning to show a cookie, pet, treasure, boost or episode icon in a page — an icon is inlined as a data URI by default, so wiring a new one in has a size consequence (the combi page's own icons are the one deliberate exception, see the `build-and-deploy` skill). Read it before hand-editing the boosts or episodes section, which no sync writes.
+name: project-assets
+description: Use when touching public/assets/, public/assets/index.json, public/.assetsignore, scripts/fetch-assets.ts, scripts/verify-assets.ts, scripts/utils/asset-ids.ts, scripts/utils/cookierunhub.ts or scripts/utils/hub-index.ts, or when planning to show a cookie, pet, treasure, boost or episode icon in a page — icons are served as static files under /assets/, never inlined. Read it before hand-editing the boosts or episodes section, which no sync writes.
 ---
 
 # Assets
@@ -11,7 +11,7 @@ Two commands own this directory, and both read [cookierunhub.com](https://www.co
 - `scripts/utils/hub-index.ts` — `entriesFrom(section, rows)`, the pure mapping from API rows to index entries, icons to download, and problems. Both scripts call it, so they cannot disagree about what the site lists.
 - `scripts/utils/asset-ids.ts` — the file: wire ids, entry types, `parseIndex`, `serializeIndex`, `verifyStructure`.
 
-`bun run fetch:assets` costs three API requests plus one per icon not already on disk. It verifies what it wrote before writing it, deletes any icon under `assets/{cookies,pets,treasures}/` no entry names any more, prints a per-section report (`added`, `updated`, `retired`, `restored`, `unchanged`), and records the run in the top-level `fetchedAt`.
+`bun run fetch:assets` costs three API requests plus one per icon not already on disk. It verifies what it wrote before writing it, deletes any icon under `public/assets/{cookies,pets,treasures}/` no entry names any more, prints a per-section report (`added`, `updated`, `retired`, `restored`, `unchanged`), and records the run in the top-level `fetchedAt`.
 
 `fetchedAt` is written only when the run was a complete success. A failed icon download is the one partial-success path — a listing the mapping cannot represent and a failed structure check both bail before the write — so a run that lost an icon writes the index and leaves the previous timestamp standing. A **404** is not a failure: the site lists a handful of pictures it does not serve (its own page shows a placeholder for them), so the entry is written with `image: null` and the next run tries again. Because a successful run always writes `fetchedAt`, a rescrape that changes nothing still produces a one-line diff.
 
@@ -23,7 +23,7 @@ Two commands own this directory, and both read [cookierunhub.com](https://www.co
     "01": {
       "name": "GingerBrave",
       "url": "https://www.cookierunhub.com/en/encyclopedia/cookies/1",
-      "image": "cookies/brave_cookie.webp", // relative to assets/, or null where the site has no picture
+      "image": "cookies/brave_cookie.webp", // relative to public/assets/, or null where the site has no picture
       "key": "GingerBrave"
     }
   },
@@ -45,7 +45,7 @@ A **blessed** treasure is the exception the site forces. It has no row, number o
 
 **The ids moved once, wholesale.** Until the switch to cookierunhub.com they were cookierundb.com slugs numbered append-only from zero; the owner chose a clean break over a translation table, so every loadout code written before it names different entries now. `LOADOUT_VERSION` stayed `1`.
 
-An entry the site stops listing is not deleted — `fetch-assets` keeps the previous entry with `"retired": true`, icon included, since its id may sit in a published code. `src/routes/combi-name/catalog.ts` and `describe.ts` still resolve a retired entry and the page names it with a `(no longer listed)` suffix. If the site lists it again it comes back under the same id, reported as `restored`. A retired evolved or blessed form is exempt from the chain's point-back check, since its base no longer names it.
+An entry the site stops listing is not deleted — `fetch-assets` keeps the previous entry with `"retired": true`, icon included, since its id may sit in a published code. `src/lib/combi/catalog.ts` and `describe.ts` still resolve a retired entry and the page names it with a `(no longer listed)` suffix. If the site lists it again it comes back under the same id, reported as `restored`. A retired evolved or blessed form is exempt from the chain's point-back check, since its base no longer names it.
 
 ## Treasure chains and families
 
@@ -55,7 +55,7 @@ An entry the site stops listing is not deleted — `fetch-assets` keeps the prev
 
 ## Icons
 
-Each icon is saved under its section by the site's own file name — the site serves most from `/images/<section>/…` and editor-added ones from `/uploads/<section>/…`, and `iconUrl` resolves both. A file name that is not plain ASCII (eight treasures have Korean ones) is saved as `hub-<number>.<ext>` instead, because macOS stores such names decomposed and Linux composed, so the same name would not match itself between a checkout and CI. Two different URLs claiming one local name is reported, not overwritten. Formats are whatever the site sent — mostly WebP, the rest PNG — which is why the `--statics` glob names both (see `build-and-deploy`).
+Each icon is saved under its section by the site's own file name — the site serves most from `/images/<section>/…` and editor-added ones from `/uploads/<section>/…`, and `iconUrl` resolves both. A file name that is not plain ASCII (eight treasures have Korean ones) is saved as `hub-<number>.<ext>` instead, because macOS stores such names decomposed and Linux composed, so the same name would not match itself between a checkout and CI. Two different URLs claiming one local name is reported, not overwritten. Formats are whatever the site sent — mostly WebP, the rest PNG — and Astro copies both from `public/` unchanged (see the `project-deploy` skill).
 
 ## The two sections nobody syncs
 
@@ -74,17 +74,17 @@ Each icon is saved under its section by the site's own file name — the site se
 
 They are here because the game has a fixed set of each, and a page wanting a boost or episode icon should not need a second file to find one. Neither is a catalog that grows: five boosts and thirteen episodes, unchanged for years. Their icons and episode urls predate the move to cookierunhub.com and still point at cookierundb.com; nothing reads the urls, so they were left as written.
 
-**The keys are authored, not assigned, and they are not wire values.** `src/routes/combi-name/codec.ts` carries its own character for an episode (`EPISODE_CHARS`) and its own letter for a boost (`BOOST_SLOT`); a code never carries `ep1`. So none of the id machinery above applies here, and an entry can be renamed, rekeyed or deleted without breaking a published code. `STATIC_KEY` requires a key to be lowercase and start with a letter, which keeps `serializeIndex`'s sorted order equal to the file's own order: a key that is a canonical integer string enumerates ahead of everything else whatever order it was written in.
+**The keys are authored, not assigned, and they are not wire values.** `src/lib/combi/codec.ts` carries its own character for an episode (`EPISODE_CHARS`) and its own letter for a boost (`BOOST_SLOT`); a code never carries `ep1`. So none of the id machinery above applies here, and an entry can be renamed, rekeyed or deleted without breaking a published code. `STATIC_KEY` requires a key to be lowercase and start with a letter, which keeps `serializeIndex`'s sorted order equal to the file's own order: a key that is a canonical integer string enumerates ahead of everything else whatever order it was written in.
 
 Neither script touches them. `fetch-assets` has no source for them, so it copies both sections from what was on disk into the file it rewrites — that copy is the only reason a sync does not delete them — and its icon pruning only looks at the three synced directories. `verify:assets` says nothing about these two.
 
-What does check them is `verifyStructure`, through `staticProblems`: the key shape, a non-empty `name`, a `url` that is a string or `null`, an `image` that is `null` or a path under the section's own directory, and no two entries claiming one `url` or one `image`. `asset-ids.test.ts` adds the one check that needs the directory rather than the text: every `image` any entry names, static or synced, is on disk.
+What does check them is `verifyStructure`, through `staticProblems`: the key shape, a non-empty `name`, a `url` that is a string or `null`, an `image` that is `null` or a path under the section's own directory, and no two entries claiming one `url` or one `image`. `tests/scripts/utils/asset-ids.test.ts` adds the one check that needs the directory rather than the text: every `image` any entry names, static or synced, is on disk.
 
 `url` is `null` for every boost. Episodes all have one, and the index lists thirteen against the eleven the codec can encode — `601` Coin Palace Rush and `701` Party Run have no combi character. That is not drift: the index describes the game, the codec describes what a code can say.
 
 ## What else guards the file
 
-`verifyStructure` also checks that the file parses, that `fetchedAt` is `null` or an ISO 8601 instant, and that the file is byte-identical to what `serializeIndex` would write — `ordered()` fixes one field order for every entry so a sync rewrites no entry it did not change. `scripts/utils/asset-ids.test.ts` runs it over the committed file, so `bun run test` fails on a broken index without anyone remembering a script. What it cannot catch is the site renumbering its own pages: then an id would still agree with its url, but the url would show a different entry. **Read `git diff assets/index.json` when a sync renames entries.**
+`verifyStructure` also checks that the file parses, that `fetchedAt` is `null` or an ISO 8601 instant, and that the file is byte-identical to what `serializeIndex` would write — `ordered()` fixes one field order for every entry so a sync rewrites no entry it did not change. `tests/scripts/utils/asset-ids.test.ts` runs it over the committed file, so `bun run test` fails on a broken index without anyone remembering a script. What it cannot catch is the site renumbering its own pages: then an id would still agree with its url, but the url would show a different entry. **Read `git diff public/assets/index.json` when a sync renames entries.**
 
 Counts as of this writing: 96 cookies, 103 pets, 1,179 treasures (903 site rows plus 276 blessed forms); 30 entries have no picture.
 
@@ -103,10 +103,16 @@ It exits non-zero on any mismatch, on an unreachable site, and on an index it ca
 
 ## What consumes it
 
-`src/routes/combi-name/catalog.ts` reads `assets/index.json` through the `#assets/*` import mapping (`package.json`'s `imports` field) to resolve every id a loadout carries and to build the picker options. One id it resolves is not in the file: `anyIdFor` is `_` repeated to the section's width, the "anything fits here" a cookie, relay or pet slot can carry, deliberately outside the `[0-9A-Z]` alphabet every wire id is written in — so no catalog growth can collide with it. `labelFor` names it; `hasId` denies it, which keeps it out of every list built from the catalog. Its `staticImage` is the one reader of the two authored sections, and it reads only their pictures: display names come from `labels.ts`. `src/routes/combi-name/art.ts` maps each codec boost and episode to the key its icon is filed under, and uses `imageForKey` — which finds an entry's picture by its `key` rather than its wire id — to give each cookie power+ the faces of the cookies or pets it belongs to (`FairyCookie`, `MsDoReMi`, …) without the codec ever learning a cookie id. `art.test.ts` pins those keys to real icons, so a rename on the site that changes a key fails the suite.
+`src/lib/combi/catalog.ts` reads `public/assets/index.json` through the `#assets/*` import mapping (`package.json`'s `imports` field) to resolve every id a loadout carries and to build the picker options. One id it resolves is not in the file: `anyIdFor` is `_` repeated to the section's width, the "anything fits here" a cookie, relay or pet slot can carry, deliberately outside the `[0-9A-Z]` alphabet every wire id is written in — so no catalog growth can collide with it. `labelFor` names it; `hasId` denies it, which keeps it out of every list built from the catalog. Its `staticImage` is the one reader of the two authored sections, and it reads only their pictures: display names come from `labels.ts`. `src/lib/combi/art.ts` maps each codec boost and episode to the key its icon is filed under, and uses `imageForKey` — which finds an entry's picture by its `key` rather than its wire id — to give each cookie power+ the faces of the cookies or pets it belongs to (`FairyCookie`, `MsDoReMi`, …) without the codec ever learning a cookie id. `tests/lib/combi/art.test.ts` pins those keys to real icons, so a rename on the site that changes a key fails the suite.
 
-`HIDDEN_TREASURE_FAMILIES` in `catalog.ts` is what `family` is for: `optionsFor("treasures")` leaves out a family it names (none today). A hidden or retired entry is still resolved by `nameFor`, `labelFor` and `hasId`, and the combi page appends a carried id the picker does not offer to that slot's own `options` before writing the pick, so opening a saved build never drops it. The page build inlines the JSON into the bundle like any other imported module, but the icons are too large to inline — see the `build-and-deploy` skill for how the combi page instead ships `dist/assets/` as a sibling folder. Read that skill before wiring a new icon into a page; it has a size consequence.
+`HIDDEN_TREASURE_FAMILIES` in `catalog.ts` is what `family` is for: `optionsFor("treasures")` leaves out a family it names (none today). A hidden or retired entry is still resolved by `nameFor`, `labelFor` and `hasId`, and a picker must append a carried id it does not offer to its own options before writing the pick, so opening a saved build never drops it (see the `project-combi-codec` skill).
 
-`assets/` is 10 MB (882 treasure icon files, 6.6 MB, shared across 1,179 treasure entries; the 13 episode icons are a further 808 KB, which is why an episode icon belongs in `dist/assets/` and not inlined) and, unlike `dist/`, is committed on purpose: `catalog.ts` reads it, so the sync output stays in the repository rather than being fetched per clone.
+## How it ships
 
-`biome.json` ignores `assets/` — reformatting generated sync output would bury every real diff.
+Everything under `public/` is copied to the root of `dist/` unchanged, so an icon at `public/assets/cookies/fairy_cookie.png` is served at `/assets/cookies/fairy_cookie.png` — in `bun run dev` and in a build alike. Icons are always served as files, never inlined into a page: `catalog.ts` hands out paths relative to `public/assets/`, and `art.ts`'s functions take the `base` to put in front of them. `BaseLayout`'s favicon is one of these icons (`/assets/cookies/fairy_cookie.png`).
+
+`index.json` is the exception in the other direction. A page that imports `#assets/index.json` gets it bundled into its JavaScript like any other module, so serving it as a file too would be 400 KB for nothing. `public/.assetsignore` lists `assets/index.json` (a path inside `dist/`), and Cloudflare's static assets upload skips what that file names: the build still writes `dist/assets/index.json`, but the deploy leaves it out. `tests/build/output.test.ts` builds the site and checks both halves — an icon is in `dist/assets/`, and `dist/.assetsignore` names the index.
+
+`public/assets/` is about 10 MB (882 treasure icon files, 6.6 MB, shared across 1,179 treasure entries; the 13 episode icons are a further 808 KB) and, unlike `dist/`, is committed on purpose: `catalog.ts` reads the index, so the sync output stays in the repository rather than being fetched per clone.
+
+`biome.json` ignores `public/` — reformatting generated sync output would bury every real diff.

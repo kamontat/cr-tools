@@ -1,5 +1,5 @@
 ---
-name: changelog
+name: project-changelog
 description: Create or update CHANGELOG.md entries for this project in its fixed format (`## YYYY-MM-DD: <summary>` with BREAKING CHANGES, Features, Improvements, Bug fixes and Decisions sections). Use this whenever the user asks to add, write, update, fix up or reformat a changelog entry, record what shipped, summarise recent commits or a merged PR into the changelog, or says things like "log this change", "add release notes", or "update the changelog" -- even if they don't name the file.
 ---
 
@@ -122,7 +122,7 @@ sections, keep the section order and drop any section that becomes empty.
 
 Older entries may use `### Added`, `### Changed`, `### Phase ...` or other headings. When
 converting one, re-sort every bullet using the table above rather than mapping headings
-one-to-one: "Changed" usually splits between Improvements and Bug fixes, "Added" is usually
+one-to-one: "Changed" usually divides between Improvements and Bug fixes, "Added" is usually
 Features, and any of them may also need a BREAKING CHANGES bullet. Keep every fact and every reason -- reformatting must not lose history.
 Keep `### Decisions` as it is.
 
