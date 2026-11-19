@@ -23,13 +23,13 @@ export type BuildEnv = {
 }
 
 export type BuildInfo = {
-	environment: Environment
-	commit: string | null
-	shortCommit: string | null
-	commitUrl: string | null
-	builtAt: Date | null
-	pr: number | null
-	branch: string | null
+	readonly environment: Environment
+	readonly commit: string | null
+	readonly shortCommit: string | null
+	readonly commitUrl: string | null
+	readonly builtAt: Date | null
+	readonly pr: number | null
+	readonly branch: string | null
 }
 
 /**
@@ -76,9 +76,9 @@ export function readBuildInfo(env: BuildEnv = inlinedEnv()): BuildInfo {
 }
 
 export type AboutRow = {
-	key: "environment" | "built" | "source" | "commit" | "changelog"
-	text: string
-	href?: string
+	readonly key: "environment" | "built" | "source" | "commit" | "changelog"
+	readonly text: string
+	readonly href?: string
 }
 
 const LABELS: Record<Environment, string> = {
