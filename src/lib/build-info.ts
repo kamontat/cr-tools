@@ -1,57 +1,57 @@
 /**
- * What the page says about itself: which commit it was built from and when.
+ * What the page says about itself: which environment it runs in, which commit
+ * it was built from, when, and for a preview which pull request and branch.
  *
- * The two values arrive as `BUN_PUBLIC_*` environment variables, which the
- * production build rewrites into string literals (`env: "BUN_PUBLIC_*"` in
- * `bun-server build`). Nothing else rewrites them - the dev server inlines
- * nothing and ships no `process` shim, and a local `bun run build` sets
- * neither - so both are absent far more often than they are present, and
- * every field here is nullable by design rather than by caution.
+ * The values arrive as `PUBLIC_*` variables that Astro inlines at build time
+ * (see `src/env.d.ts`), plus `import.meta.env.DEV`, which is true under
+ * `astro dev`. A local build sets none of the `PUBLIC_*` ones, so every field
+ * is nullable by design rather than by caution.
  */
 export const REPO_URL = "https://github.com/kamontat/cr-tools"
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`
 
-/**
- * Declared so the two reads below can be written as property access, which is
- * the only form the bundler rewrites - `noPropertyAccessFromIndexSignature`
- * would otherwise push them to bracket notation and the build would inline
- * nothing. Optional, because a build that sets neither is the ordinary case.
- */
-declare module "bun" {
-	interface Env {
-		BUN_PUBLIC_COMMIT_SHA?: string
-		BUN_PUBLIC_BUILT_AT?: string
-	}
-}
+export type Environment = "development" | "local" | "preview" | "production"
 
-/** The two inlined strings, as they arrive: absent, empty, or a value. */
+/** The inlined strings, as they arrive: absent, empty, or a value. */
 export type BuildEnv = {
-	readonly commit: string | undefined
-	readonly builtAt: string | undefined
+	dev: boolean
+	deploy?: string | undefined
+	commit?: string | undefined
+	builtAt?: string | undefined
+	pr?: string | undefined
+	branch?: string | undefined
 }
 
 export type BuildInfo = {
-	readonly commit: string | null
-	readonly shortCommit: string | null
-	readonly commitUrl: string | null
-	readonly builtAt: Date | null
+	environment: Environment
+	commit: string | null
+	shortCommit: string | null
+	commitUrl: string | null
+	builtAt: Date | null
+	pr: number | null
+	branch: string | null
 }
 
 /**
- * The build rewrites these two member expressions and leaves everything else
- * alone, so the reads have to be written exactly like this - a computed
- * `process.env[name]` is not rewritten, and an untouched `process` is a
- * ReferenceError in a browser. Hence the wrap: under the dev server this
- * throws on the first line and the page falls back to knowing nothing.
+ * Vite replaces these exact member expressions and nothing else, so each read
+ * is written out literally - a computed `import.meta.env[name]` is not
+ * replaced.
  */
 function inlinedEnv(): BuildEnv {
-	try {
-		return {
-			commit: process.env.BUN_PUBLIC_COMMIT_SHA,
-			builtAt: process.env.BUN_PUBLIC_BUILT_AT,
-		}
-	} catch {
-		return { commit: undefined, builtAt: undefined }
+	return {
+		dev: import.meta.env.DEV === true,
+		deploy: import.meta.env.PUBLIC_DEPLOY_ENV,
+		commit: import.meta.env.PUBLIC_COMMIT_SHA,
+		builtAt: import.meta.env.PUBLIC_BUILT_AT,
+		pr: import.meta.env.PUBLIC_PR_NUMBER,
+		branch: import.meta.env.PUBLIC_BRANCH,
 	}
+}
+
+const environmentOf = (env: BuildEnv): Environment => {
+	if (env.dev) return "development"
+	if (env.deploy === "preview" || env.deploy === "production") return env.deploy
+	return "local"
 }
 
 /**
@@ -62,16 +62,68 @@ function inlinedEnv(): BuildEnv {
 export function readBuildInfo(env: BuildEnv = inlinedEnv()): BuildInfo {
 	const commit = env.commit ? env.commit : null
 	const parsed = env.builtAt ? new Date(env.builtAt) : null
+	const pr = env.pr && /^\d+$/.test(env.pr) ? Number(env.pr) : null
 
 	return {
+		environment: environmentOf(env),
 		commit,
 		shortCommit: commit === null ? null : commit.slice(0, 7),
 		commitUrl: commit === null ? null : `${REPO_URL}/commit/${commit}`,
 		builtAt: parsed !== null && !Number.isNaN(parsed.getTime()) ? parsed : null,
+		pr: pr !== null && pr > 0 ? pr : null,
+		branch: env.branch ? env.branch : null,
 	}
 }
 
-/** UTC to the minute, so everyone reading the page reads the same string. */
-export function formatBuiltAt(date: Date): string {
-	return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`
+export type AboutRow = {
+	key: "environment" | "built" | "source" | "commit" | "changelog"
+	text: string
+	href?: string
+}
+
+const LABELS: Record<Environment, string> = {
+	development: "Development",
+	local: "Local",
+	preview: "Preview",
+	production: "Production",
+}
+
+/**
+ * The rows the About panel shows. `built` carries the raw ISO instant; the
+ * page formats it in the viewer's time zone. An unknown build time reads
+ * "Unknown", and a missing commit drops its row.
+ */
+export function aboutRows(info: BuildInfo): AboutRow[] {
+	const { environment } = info
+	const rows: AboutRow[] = []
+
+	const label = LABELS[environment]
+	rows.push({
+		key: "environment",
+		text: environment === "preview" && info.pr !== null ? `${label} pr-${info.pr}` : label,
+	})
+
+	if (environment !== "development") {
+		rows.push({ key: "built", text: info.builtAt === null ? "Unknown" : info.builtAt.toISOString() })
+	}
+
+	const source =
+		environment === "preview"
+			? [info.branch, info.pr === null ? null : `#${info.pr}`].filter((part) => part !== null)
+			: []
+	rows.push({
+		key: "source",
+		text: source.length > 0 ? source.join(" · ") : "kamontat/cr-tools",
+		href: REPO_URL,
+	})
+
+	if ((environment === "preview" || environment === "production") && info.shortCommit !== null) {
+		rows.push({ key: "commit", text: info.shortCommit, ...(info.commitUrl && { href: info.commitUrl }) })
+	}
+
+	if (environment === "production") {
+		rows.push({ key: "changelog", text: "CHANGELOG.md", href: CHANGELOG_URL })
+	}
+
+	return rows
 }

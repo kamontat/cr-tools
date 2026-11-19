@@ -22,4 +22,14 @@ describe("deploy URLs", () => {
 			`https://pr-\${{ github.event.number }}-${await workerName()}.kcinth.workers.dev/`,
 		)
 	})
+
+	test.each([
+		["deploy-production.yml", "production"],
+		["deploy-preview.yml", "preview"],
+	])("%s tells the build it is %s", async (workflow, name) => {
+		const text = await read(`.github/workflows/${workflow}`)
+
+		expect(text).toMatch(new RegExp(`^\\s+PUBLIC_DEPLOY_ENV:\\s*${name}\\s*$`, "m"))
+		expect(text).not.toContain("BUN_PUBLIC")
+	})
 })

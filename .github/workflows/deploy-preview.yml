@@ -33,8 +33,11 @@ jobs:
       - uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4.0.0
         id: deploy
         env:
-          BUN_PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-          BUN_PUBLIC_BUILT_AT: ${{ steps.stamp.outputs.at }}
+          PUBLIC_DEPLOY_ENV: preview
+          PUBLIC_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          PUBLIC_BUILT_AT: ${{ steps.stamp.outputs.at }}
+          PUBLIC_PR_NUMBER: ${{ github.event.number }}
+          PUBLIC_BRANCH: ${{ github.head_ref }}
         with:
           command: versions upload --preview-alias pr-${{ github.event.number }}
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
