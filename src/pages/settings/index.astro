@@ -1,7 +1,8 @@
 ---
-import BaseLayout from "#layouts/BaseLayout.astro"
+import SettingsApp from "#components/organisms/SettingsApp.svelte"
+import AppLayout from "#layouts/AppLayout.astro"
 ---
 
-<BaseLayout title="Settings">
-	<h1>Settings</h1>
-</BaseLayout>
+<AppLayout title="Settings" current="settings">
+	<SettingsApp client:only="svelte" />
+</AppLayout>

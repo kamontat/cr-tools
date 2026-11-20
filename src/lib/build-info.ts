@@ -89,6 +89,23 @@ const LABELS: Record<Environment, string> = {
 }
 
 /**
+ * The build time in the viewer's locale and time zone, with the zone as an
+ * offset ("Nov 20, 2026, 10:25 AM GMT+7") so a shared screenshot says which.
+ * `locale` and `timeZone` default to the viewer's.
+ */
+export function formatBuilt(at: Date, locale?: string, timeZone?: string): string {
+	return at.toLocaleString(locale, {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		timeZoneName: "shortOffset",
+		...(timeZone && { timeZone }),
+	})
+}
+
+/**
  * The rows the About panel shows. `built` carries the raw ISO instant; the
  * page formats it in the viewer's time zone. An unknown build time reads
  * "Unknown", and a missing commit drops its row.
@@ -97,11 +114,7 @@ export function aboutRows(info: BuildInfo): AboutRow[] {
 	const { environment } = info
 	const rows: AboutRow[] = []
 
-	const label = LABELS[environment]
-	rows.push({
-		key: "environment",
-		text: environment === "preview" && info.pr !== null ? `${label} pr-${info.pr}` : label,
-	})
+	rows.push({ key: "environment", text: LABELS[environment] })
 
 	if (environment !== "development") {
 		rows.push({ key: "built", text: info.builtAt === null ? "Unknown" : info.builtAt.toISOString() })
@@ -114,7 +127,7 @@ export function aboutRows(info: BuildInfo): AboutRow[] {
 	rows.push({
 		key: "source",
 		text: source.length > 0 ? source.join(" · ") : "kamontat/cr-tools",
-		href: REPO_URL,
+		href: environment === "preview" && info.pr !== null ? `${REPO_URL}/pull/${info.pr}` : REPO_URL,
 	})
 
 	if ((environment === "preview" || environment === "production") && info.shortCommit !== null) {

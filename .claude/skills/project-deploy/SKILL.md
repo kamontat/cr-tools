@@ -59,8 +59,9 @@ frontmatter at build time but never reach the browser.
 `build-info.ts` turns them into `readBuildInfo()`: an `Environment` (`development` under
 `astro dev`, `preview` / `production` from `PUBLIC_DEPLOY_ENV`, `local` otherwise), the
 commit and its link, the build time, and for a preview the PR and branch. `aboutRows`
-formats them for an About panel. Nothing renders them yet; the redesign's frame (environment
-line, Settings → About) will. The preview uses the PR's head SHA because on a
+formats them for the About panel. `BaseLayout` puts the environment on `<html data-env>`,
+which colours the top bar's environment line (none in production); `TopBar` shows a `pr-<n>`
+badge on previews; Settings → About (`SettingsApp`) lists every row. The preview uses the PR's head SHA because on a
 `pull_request` event `github.sha` is the merge commit the runner checked out, which exists
 nowhere on GitHub and whose link would 404.
 

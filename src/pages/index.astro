@@ -1,7 +1,31 @@
 ---
-import BaseLayout from "#layouts/BaseLayout.astro"
+import ToolCard from "#components/molecules/ToolCard.astro"
+import AppLayout from "#layouts/AppLayout.astro"
+import { TOOLS } from "#lib/tools"
 ---
 
-<BaseLayout title="Cookie Run tools">
+<AppLayout title="Cookie Run tools" current="home">
 	<h1>Cookie Run tools</h1>
-</BaseLayout>
+	<p class="intro">Small tools for what the game doesn't write down. Everything stays in your browser.</p>
+	<div class="tools">
+		{TOOLS.map((tool) => <ToolCard {...tool} />)}
+	</div>
+</AppLayout>
+
+<style>
+h1 {
+	margin: 0 0 6px;
+	font-size: 1.5rem;
+}
+
+.intro {
+	margin: 0 0 20px;
+	color: var(--muted);
+}
+
+.tools {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+	gap: 12px;
+}
+</style>

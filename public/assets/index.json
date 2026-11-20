@@ -1,5 +1,5 @@
 {
-  "fetchedAt": "2026-10-25T17:46:30.120Z",
+  "fetchedAt": "2026-11-20T02:15:42.124Z",
   "cookies": {
     "10": {
       "name": "Cheesecake Cookie",
@@ -576,6 +576,12 @@
       "url": "https://www.cookierunhub.com/en/encyclopedia/cookies/96",
       "image": "cookies/mango_cookie.webp",
       "key": "MangoCookie"
+    },
+    "2P": {
+      "name": "Ube Ice Cookie",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/cookies/97",
+      "image": "cookies/ube_ice_cookie.webp",
+      "key": "UbeIceCookie"
     }
   },
   "pets": {
@@ -1196,6 +1202,12 @@
       "url": "https://www.cookierunhub.com/en/encyclopedia/pets/103",
       "image": "pets/mango_toucan.webp",
       "key": "MangoToucan"
+    },
+    "2W": {
+      "name": "Dj",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/pets/104",
+      "image": "pets/dj.webp",
+      "key": "Dj"
     }
   },
   "treasures": {
@@ -11240,6 +11252,93 @@
       ],
       "key": "AppleMangoJelly"
     },
+    "0PT": {
+      "name": "Mint Limited Edition Sticker",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/929",
+      "image": "treasures/game_item_d32ac0a73a.webp",
+      "family": "gacha",
+      "type": "N",
+      "targets": [
+        "0PU",
+        "IPU"
+      ],
+      "key": "MintLimitedEditionSticker"
+    },
+    "0PU": {
+      "name": "Game Item 3a53490795",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/930",
+      "image": "treasures/game_item_3a53490795.webp",
+      "family": "gacha",
+      "type": "E",
+      "source": "0PT",
+      "key": "GameItem3a53490795"
+    },
+    "0PV": {
+      "name": "Top Nutrients for Cookie kids",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/931",
+      "image": "treasures/game_item_5f71de6dba.webp",
+      "family": "gacha",
+      "type": "N",
+      "targets": [
+        "0PW",
+        "IPW"
+      ],
+      "key": "TopNutrientsForCookieKids"
+    },
+    "0PW": {
+      "name": "Vitamin Dose for Adults",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/932",
+      "image": "treasures/game_item_e725e538a2.webp",
+      "family": "gacha",
+      "type": "E",
+      "source": "0PV",
+      "key": "VitaminDoseForAdults"
+    },
+    "0PX": {
+      "name": "Game Item 39f6513447",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/933",
+      "image": "treasures/game_item_39f6513447.webp",
+      "family": "gacha",
+      "type": "N",
+      "targets": [
+        "0PY",
+        "IPY"
+      ],
+      "key": "GameItem39f6513447"
+    },
+    "0PY": {
+      "name": "Game Item Ff61552265",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/934",
+      "image": "treasures/game_item_ff61552265.webp",
+      "family": "gacha",
+      "type": "E",
+      "source": "0PX",
+      "key": "GameItemFf61552265"
+    },
+    "0PZ": {
+      "name": "Game Item D4f377f590",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/935",
+      "image": "treasures/game_item_d4f377f590.webp",
+      "family": "cookie",
+      "type": "N",
+      "targets": [
+        null,
+        null
+      ],
+      "key": "GameItemD4f377f590"
+    },
+    "0Q0": {
+      "name": "Dj",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/936",
+      "image": "treasures/dj.webp",
+      "family": "pet",
+      "type": "N",
+      "targets": [
+        null,
+        null
+      ],
+      "key": "Dj"
+    },
     "I98": {
       "name": "Blessed Skeleton Necklace of Bravery",
       "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/332#blessed",
@@ -13723,6 +13822,33 @@
       "type": "B",
       "source": "0PL",
       "key": "BlessedPumpkinInjeolmi"
+    },
+    "IPU": {
+      "name": "Blessed Game Item 3a53490795",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/930#blessed",
+      "image": "treasures/game_item_3a53490795.webp",
+      "family": "gacha",
+      "type": "B",
+      "source": "0PT",
+      "key": "BlessedGameItem3a53490795"
+    },
+    "IPW": {
+      "name": "Blessed Vitamin Dose for Adults",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/932#blessed",
+      "image": "treasures/game_item_e725e538a2.webp",
+      "family": "gacha",
+      "type": "B",
+      "source": "0PV",
+      "key": "BlessedVitaminDoseForAdults"
+    },
+    "IPY": {
+      "name": "Blessed Game Item Ff61552265",
+      "url": "https://www.cookierunhub.com/en/encyclopedia/treasures/934#blessed",
+      "image": "treasures/game_item_ff61552265.webp",
+      "family": "gacha",
+      "type": "B",
+      "source": "0PX",
+      "key": "BlessedGameItemFf61552265"
     }
   },
   "boosts": {

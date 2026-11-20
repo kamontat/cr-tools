@@ -14,7 +14,13 @@ the `project-pages` skill.
 `src/layouts/BaseLayout.astro` is the only file that writes `<html>`, `<head>` and `<body>`.
 It:
 
-- imports `src/styles/global.css` (today only `@kcstyles/reset.css`), so every page gets it;
+- imports `src/styles/global.css` (the `@kcstyles/reset.css` reset and `tokens.css`), so
+  every page gets it;
+- puts `data-env={readBuildInfo().environment}` on `<html>`, which `tokens.css` turns into
+  the `--env` colour the top bar's environment line and badge use;
+- runs an `is:inline` theme boot in `<head>` before first paint: it reads the `theme` key
+  inside a `try` and sets `data-theme` on `<html>` when it is `dark` or `light` (System
+  leaves it off, so the media query decides);
 - sets `charset`, `viewport`, the favicon (`/assets/cookies/fairy_cookie.png`, the one
   favicon — no `favicon.svg` or `.ico`), the generator tag and `<title>` from its required
   `title` prop;
@@ -28,10 +34,30 @@ Every page renders inside `BaseLayout`, directly or through another layout;
 tag, a font preload) goes here, not into pages. `tests/layouts/BaseLayout.test.ts` checks
 the GTM call and the favicon in the source text.
 
-The redesign (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) adds the frame
-here and in a layout around it: an inline theme boot script, `data-env` on `<html>` from
-`readBuildInfo().environment`, the top bar, the environment line and the sidebar. Until that
-lands, a page's body is only what the page puts in it.
+## AppLayout is the frame
+
+`src/layouts/AppLayout.astro` wraps `BaseLayout` and is what every page renders in
+(`tests/pages/pages.test.ts` fails a page that does not reach it). Its props are `title`
+(forwarded to `BaseLayout` and shown in the top bar) and `current`, a `FramePage` from
+`#lib/frame` — `"home"`, `"settings"` or a tool slug — that marks the sidebar's current link.
+It renders:
+
+- a `define:vars` boot script, before the frame's markup, that sets
+  `<body data-sidebar="closed">` when the window is at least `FULL_MIN_WIDTH` wide and
+  `SIDEBAR_KEY` says the visitor closed the sidebar, so a closed sidebar does not flash
+  open. Both constants come from `#lib/frame` through `define:vars`, never as literals —
+  `tests/layouts/AppLayout.test.ts` checks that;
+- `TopBar` (☰, the page title, the `pr-<n>` badge on previews, the environment line);
+- a grid of `Sidebar`, its scrim (`#sidebar-scrim`) and `main#content`;
+- inside `main`, `<div class="wrap">` around the page's `<slot />`: the one page gutter
+  (28px 24px and 640px wide; 20px 16px under 700px; 32px 40px and 1100px wide from 1400px).
+  Pages never pad their own outer edge, so they line up;
+- a processed `<script>` that calls `initFrame(document, localStore())`, which wires ☰,
+  the scrim, Escape and the breakpoints (see `#lib/frame`).
+
+The grid's breakpoints (700px and 1100px) follow `sidebarMode` in `#lib/frame`; CSS cannot
+read the constants, so the comments in `AppLayout` and `Sidebar` point back to it. Change
+them together.
 
 ## Rules
 
@@ -48,7 +74,7 @@ lands, a page's body is only what the page puts in it.
 
 ## Example — a template wrapping BaseLayout
 
-A frame layout built from organisms (the components are illustrations):
+A sketch of the shape (the real one is `AppLayout`, above):
 
 ```astro
 ---
@@ -109,7 +135,12 @@ test("renders the title and the page", async () => {
 })
 ```
 
-The Container does not run processed `<script>` tags, so `tests/layouts/BaseLayout.test.ts`
-checks the GTM call in the source text, and `loadGtm` itself is tested in
-`tests/lib/gtm.test.ts`. Head contents that only a browser shows (favicon, styles applied)
+The layout tests in `tests/layouts/` run in the `node` project, so the Container works there
+without the `// @vitest-environment node` line components need. The Container does not run
+processed or inline `<script>` tags, so `tests/layouts/BaseLayout.test.ts` checks the GTM
+call, the theme boot's `try` and `data-env` in the source text, and
+`tests/layouts/AppLayout.test.ts` checks the sidebar boot's `define:vars` and the `.wrap`
+gutter the same way; `tests/build/output.test.ts` checks each built page sits in
+`main#content > .wrap`. `initFrame` is tested in `tests/lib/frame.test.ts`, and `loadGtm`
+in `tests/lib/gtm.test.ts`. Head contents that only a browser shows (favicon, styles applied)
 are preview checks in the PR.
