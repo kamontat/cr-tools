@@ -110,10 +110,10 @@ export function issue<I extends IssueId>(
 export class CodeError extends Error {
 	readonly issue: Issue
 
-	constructor(issue: Issue) {
-		super(issueText(issue, en))
+	constructor(found: Issue) {
+		super(issueText(found, en))
 		this.name = "CodeError"
-		this.issue = issue
+		this.issue = found
 	}
 }
 
