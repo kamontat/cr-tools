@@ -36,7 +36,6 @@ const { current } = Astro.props
 nav {
 	position: sticky;
 	top: 52px;
-	align-self: start;
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
@@ -131,5 +130,10 @@ nav {
 	:global(body[data-sidebar]) nav {
 		transition: none;
 	}
+}
+
+:global(body[data-resizing]) nav,
+:global(body[data-resizing][data-sidebar]) nav {
+	transition: none;
 }
 </style>

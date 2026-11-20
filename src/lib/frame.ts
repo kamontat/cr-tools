@@ -18,6 +18,9 @@ export const SIDEBAR_KEY = "frame:sidebar"
 export const FULL_MIN_WIDTH = 1100
 export const RAIL_MIN_WIDTH = 700
 
+/** How long after the last resize event the sidebar animates again. */
+const RESIZE_SETTLE_MS = 200
+
 /**
  * - `drawer` (phones): hidden; open slides it in over the page with a scrim.
  * - `rail`: a 60px icon rail; open lays the full sidebar over the page.
@@ -83,7 +86,14 @@ export function initFrame(doc: Document, store: Storage | null): void {
 		toggle.focus()
 	})
 
+	// While the window is dragged the sidebar's shape flips with the media
+	// queries; `data-resizing` turns its animation off so it never slides
+	// across the page mid-drag.
+	let settle: number | undefined
 	win.addEventListener("resize", () => {
+		doc.body.setAttribute("data-resizing", "")
+		win.clearTimeout(settle)
+		settle = win.setTimeout(() => doc.body.removeAttribute("data-resizing"), RESIZE_SETTLE_MS)
 		const next = sidebarMode(win.innerWidth)
 		if (next === mode) return
 		mode = next

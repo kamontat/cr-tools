@@ -4,6 +4,8 @@
 
 import type { FramePage } from "#lib/frame"
 
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { experimental_AstroContainer as AstroContainer } from "astro/container"
 import { Window } from "happy-dom"
 import { expect, test } from "vitest"
@@ -48,4 +50,17 @@ test("is the labelled navigation landmark ☰ controls", async () => {
 	const nav = doc.getElementById("sidebar")
 	expect(nav?.tagName).toBe("NAV")
 	expect(nav?.getAttribute("aria-label")).toBeTruthy()
+})
+
+// Layout happy-dom cannot compute, pinned at the source.
+const css = readFileSync(join(import.meta.dirname, "../../../src/components/organisms/Sidebar.astro"), "utf8")
+
+test("the sidebar never aligns to the start of its grid row", () => {
+	// Fixed over the page, a grid child keeps align-self, and start shrinks it
+	// to its links instead of reaching the bottom of the screen.
+	expect(css).not.toMatch(/align-self:\s*start/)
+})
+
+test("the sidebar does not animate while the window is resized", () => {
+	expect(css).toMatch(/body\[data-resizing\]\)? nav[^{]*\{[^}]*transition:\s*none/)
 })

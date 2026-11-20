@@ -202,6 +202,16 @@ test("crossing a breakpoint resets to that mode's default", () => {
 	expect(toggle().getAttribute("aria-expanded")).toBe("false")
 })
 
+test("while the window is resized the sidebar holds still, then animates again", async () => {
+	width(1280)
+	initFrame(doc, memory())
+	width(900)
+	win.dispatchEvent(new happy.Event("resize") as unknown as Event)
+	expect(doc.body.hasAttribute("data-resizing")).toBe(true)
+	await happy.happyDOM.waitUntilComplete()
+	expect(doc.body.hasAttribute("data-resizing")).toBe(false)
+})
+
 test("storage that throws still toggles", () => {
 	width(1280)
 	initFrame(doc, throwing)
