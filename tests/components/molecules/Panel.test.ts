@@ -164,6 +164,22 @@ test("dragging the separator sizes the panel from the right edge and remembers i
 	expect(panelWidth()).toBe("500px")
 })
 
+test("a drag ends when the button comes up off the handle, or the handle loses the pointer", async () => {
+	const { container } = open()
+	const separator = screen.getByRole("separator")
+	const layer = () => container.querySelector(".panel-layer") as HTMLElement
+
+	await fireEvent.pointerDown(separator, { clientX: 740, button: 0, pointerId: 1 })
+	expect(layer().classList.contains("resizing")).toBe(true)
+	await fireEvent.pointerUp(window, { clientX: 100, pointerId: 1 })
+	expect(layer().classList.contains("resizing")).toBe(false)
+	expect(window.localStorage.getItem("frame:panel-width:about")).not.toBeNull()
+
+	await fireEvent.pointerDown(separator, { clientX: 740, button: 0, pointerId: 2 })
+	await fireEvent(separator, new Event("lostpointercapture"))
+	expect(layer().classList.contains("resizing")).toBe(false)
+})
+
 test("a stored width wider than the page allows opens clamped", () => {
 	viewport(1000)
 	window.localStorage.setItem("frame:panel-width:about", "1400")

@@ -58,6 +58,7 @@ const onpointermove = (event: PointerEvent) => {
 	if (dragging) resize(viewport - event.clientX)
 }
 
+/** Ends a drag wherever the button comes up, or when the handle loses the pointer. */
 const onpointerup = () => {
 	if (!dragging) return
 	dragging = false
@@ -79,7 +80,11 @@ const ondblclick = () => {
 }
 </script>
 
-<svelte:window onresize={() => (viewport = window.innerWidth)} />
+<svelte:window
+	onresize={() => (viewport = window.innerWidth)}
+	{onpointerup}
+	onpointercancel={onpointerup}
+	onblur={onpointerup} />
 
 {#if open}
 	<div class="panel-layer" class:sheet={phone} class:resizing={dragging}>
@@ -121,6 +126,7 @@ const ondblclick = () => {
 					{onpointermove}
 					{onpointerup}
 					onpointercancel={onpointerup}
+					onlostpointercapture={onpointerup}
 					onkeydown={onseparatorkeydown}
 					{ondblclick}></div>
 			{/if}
