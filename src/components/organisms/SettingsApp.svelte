@@ -2,6 +2,8 @@
 import Segmented from "#components/atoms/Segmented.svelte"
 import Panel from "#components/molecules/Panel.svelte"
 import { type AboutRow, aboutRows, type BuildEnv, formatBuilt, readBuildInfo } from "#lib/build-info"
+import { messagesFor } from "#lib/i18n/messages"
+import { applyLang, currentLang, LANG_NAMES, LANGS, type Lang, LOCALES, onLangChange, writeLang } from "#lib/lang"
 import { applyTheme, readTheme, type Theme, writeTheme } from "#lib/theme"
 
 interface Props {
@@ -10,24 +12,10 @@ interface Props {
 
 let { env }: Props = $props()
 
-// All visible text lives here, for the language piece to replace.
-const text = {
-	appearance: "Appearance",
-	theme: "Theme",
-	themes: [
-		{ value: "system", label: "System" },
-		{ value: "dark", label: "Dark" },
-		{ value: "light", label: "Light" },
-	],
-	about: "About",
-	rows: {
-		environment: "Environment",
-		built: "Built",
-		source: "Source",
-		commit: "Commit",
-		changelog: "Changelog",
-	} satisfies Record<AboutRow["key"], string>,
-}
+let lang = $state<Lang>(currentLang(document))
+const m = $derived(messagesFor(lang))
+
+$effect(() => onLangChange(document, (next) => (lang = next)))
 
 let theme = $state<Theme>(readTheme())
 let aboutOpen = $state(false)
@@ -35,10 +23,23 @@ let aboutOpen = $state(false)
 const info = $derived(readBuildInfo(env))
 const rows = $derived(aboutRows(info))
 const summary = $derived(
-	[rows[0]?.text, info.environment === "preview" || info.environment === "production" ? info.shortCommit : null]
+	[
+		m.settings.environments[info.environment],
+		info.environment === "preview" || info.environment === "production" ? info.shortCommit : null,
+	]
 		.filter((part) => part)
 		.join(" · "),
 )
+const themes = $derived(
+	(["system", "dark", "light"] as const).map((value) => ({ value, label: m.settings.themes[value] })),
+)
+const langs = LANGS.map((l) => ({ value: l, label: LANG_NAMES[l] }))
+
+const pickLang = (value: string) => {
+	const next = value as Lang
+	writeLang(next)
+	applyLang(next, document)
+}
 
 const pick = (value: string) => {
 	theme = value as Theme
@@ -46,24 +47,32 @@ const pick = (value: string) => {
 	applyTheme(theme, document.documentElement)
 }
 
-const shown = (row: AboutRow) => (row.key === "built" && info.builtAt !== null ? formatBuilt(info.builtAt) : row.text)
+const shown = (row: AboutRow) => {
+	if (row.key === "environment") return m.settings.environments[info.environment]
+	if (row.key === "built") return info.builtAt === null ? m.settings.unknown : formatBuilt(info.builtAt, LOCALES[lang])
+	return row.text
+}
 </script>
 
 <div class="settings">
-	<h1>Settings</h1>
+	<h1>{m.settings.title}</h1>
 
 	<section aria-labelledby="set-appearance">
-		<h2 id="set-appearance">{text.appearance}</h2>
+		<h2 id="set-appearance">{m.settings.appearance}</h2>
 		<div class="rows">
 			<div class="row">
-				<span>{text.theme}</span>
-				<Segmented label={text.theme} options={text.themes} value={theme} onchange={pick} />
+				<span>{m.settings.language}</span>
+				<Segmented label={m.settings.language} options={langs} value={lang} onchange={pickLang} />
+			</div>
+			<div class="row">
+				<span>{m.settings.theme}</span>
+				<Segmented label={m.settings.theme} options={themes} value={theme} onchange={pick} />
 			</div>
 		</div>
 	</section>
 
 	<section aria-labelledby="set-about">
-		<h2 id="set-about">{text.about}</h2>
+		<h2 id="set-about">{m.settings.about}</h2>
 		<div class="rows">
 			<button type="button" class="row nav" onclick={() => (aboutOpen = true)}>
 				<span>{summary}</span>
@@ -73,11 +82,17 @@ const shown = (row: AboutRow) => (row.key === "built" && info.builtAt !== null ?
 	</section>
 </div>
 
-<Panel id="about" title={text.about} open={aboutOpen} onclose={() => (aboutOpen = false)}>
+<Panel
+	id="about"
+	title={m.settings.about}
+	closeLabel={m.frame.close}
+	resizeLabel={m.frame.resize}
+	open={aboutOpen}
+	onclose={() => (aboutOpen = false)}>
 	<dl class="about">
 		{#each rows as row (row.key)}
 			<div class="item">
-				<dt>{text.rows[row.key]}</dt>
+				<dt>{m.settings.rows[row.key]}</dt>
 				<dd>
 					{#if row.href}
 						<a href={row.href} target="_blank" rel="noopener">{shown(row)}</a>
