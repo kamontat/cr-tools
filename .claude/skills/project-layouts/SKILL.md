@@ -14,8 +14,8 @@ the `project-pages` skill.
 `src/layouts/BaseLayout.astro` is the only file that writes `<html>`, `<head>` and `<body>`.
 It:
 
-- imports `src/styles/global.css` (the `@kcstyles/reset.css` reset and `tokens.css`), so
-  every page gets it;
+- imports `src/styles/global.css` (the `@kcstyles/reset.css` reset, `tokens.css`, and
+  `lang.css`, which hides the language `<html lang>` does not name), so every page gets it;
 - puts `data-env={readBuildInfo().environment}` on `<html>`, which `tokens.css` turns into
   the `--env` colour the top bar's environment line and badge use;
 - runs an `is:inline` theme boot in `<head>` before first paint: it reads the `theme` key
@@ -57,9 +57,15 @@ It renders:
   (28px 24px and 640px wide; 20px 16px under 700px; 32px 40px and 1100px wide from 1400px).
   Pages never pad their own outer edge, so they line up;
 - a processed `<script>` that calls `localizeAttrs(document, currentLang(document))` (so
-  the frame's `l10nAttr` attributes follow the language the head's boot chose) and then
-  `initFrame(document, localStore())`, which wires ☰, the scrim, Escape and the
-  breakpoints (see `#lib/frame`).
+  the frame's `l10nAttr` attributes follow the language the head's boot chose), then
+  `syncFromStorage(document, store)` (re-applies the stored theme, and the stored language
+  when it differs, so a boot that did not run still corrects itself) and
+  `syncOnRestore(window, document, store)` (does the same on a `pageshow` whose `persisted`
+  is true: the back-forward cache restores a frozen page without re-running the head's
+  boots, so Back after switching language on Settings would otherwise show the old one),
+  and then `initFrame(document, store)`, which wires ☰, the scrim, Escape and the
+  breakpoints (see `#lib/frame`). Both sync functions live in `#lib/lang` and are tested in
+  `tests/lib/lang.test.ts`.
 
 ## Text in two languages
 
@@ -157,10 +163,13 @@ The layout tests in `tests/layouts/` run in the `node` project, so the Container
 without the `// @vitest-environment node` line components need. The Container renders
 `is:inline` and `define:vars` scripts into the HTML but does not run them, and leaves
 processed `<script>` tags out, so `tests/layouts/BaseLayout.test.ts` checks the rendered
-`<html lang="th">`, both titles and the language boot's place in `<head>`, and checks the
-GTM call, the theme boot's `try`, `data-env` and the boot order in the source text;
+`<html lang="th">`, both titles and the language boot's place in `<head>`, runs the
+rendered language boot itself (loading the HTML into a happy-dom document and running the
+script with `node:vm` against a stubbed `localStorage`: `en` switches it, anything else or a
+`localStorage` that throws leaves it Thai), and checks the GTM call, the theme boot's
+`try`, `data-env` and the boot order in the source text;
 `tests/layouts/AppLayout.test.ts` checks the sidebar boot's `define:vars`, the `.wrap`
-gutter and `localizeAttrs` before `initFrame` the same way; `tests/build/output.test.ts` checks each built page sits in
+gutter, `localizeAttrs` and the storage sync before `initFrame` the same way; `tests/build/output.test.ts` checks each built page sits in
 `main#content > .wrap`. `initFrame` is tested in `tests/lib/frame.test.ts`, and `loadGtm`
 in `tests/lib/gtm.test.ts`. Head contents that only a browser shows (favicon, styles applied)
 are preview checks in the PR.

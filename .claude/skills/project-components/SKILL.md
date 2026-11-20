@@ -13,12 +13,12 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 |---|---|---|---|
 | `Text` | atom | `.astro` | One string in both languages: `pick` (a `Pick`). Renders `<span data-lang="th">…</span><span data-lang="en">…</span>` with no wrapper. See "Text in two languages". |
 | `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label` (`Record<Lang, string>`, from `both`), `current` (sets `aria-current="page"`). The label is a `.label` span, holding both language spans, that the sidebar hides in the rail; `title` is the tooltip in both languages. |
-| `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`. |
+| `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label, lang? }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`; an option's `lang` goes on its button, for a label in another language than the page's (a language's own name). |
 | `ToolCard` | molecule | `.astro` | A Home card: `slug`, `icon` — a `TOOLS` entry spreads straight in. Name and tagline come from the catalogues' `tools[slug]` through `Text`. |
 | `Panel` | molecule | `.svelte` | The one pop-up: side panel from the right, bottom sheet under 700px. See below. |
 | `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`, named through `l10nAttr`), the page `title` (a `Pick`, rendered with `Text`), the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
 | `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
-| `SettingsApp` | organism | `.svelte` | The Settings page island: Appearance (theme) and About (a `Panel` of `aboutRows`). All its visible text sits in one `text` object for the language piece. |
+| `SettingsApp` | organism | `.svelte` | The Settings page island: Language, Appearance (theme) and About (a `Panel` of `aboutRows`). Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
 
 The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
 components still to come and their tiers; the rules below are what every one follows.
@@ -26,7 +26,9 @@ components still to come and their tiers; the rules below are what every one fol
 ### Panel
 
 `Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
-snippet, and `closeLabel` / `resizeLabel` for the language piece. It renders nothing while
+snippet, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
+handle's names, which the caller passes in the page's language (`m.frame.close`,
+`m.frame.resize`); there is no English default. It renders nothing while
 `open` is false.
 
 - `id` names the remembered width — `frame:panel-width:<id>` through `#lib/panel-width` —
