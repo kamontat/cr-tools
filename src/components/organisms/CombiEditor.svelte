@@ -240,7 +240,10 @@ function menuFocusout(event: FocusEvent) {
 
 async function toggleMenu() {
 	menuOpen = !menuOpen
-	if (!menuOpen) return
+	if (!menuOpen) {
+		moreButton?.focus()
+		return
+	}
 	await tick()
 	menu?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
 }
@@ -260,9 +263,19 @@ function menuKeydown(event: KeyboardEvent) {
 	}
 }
 
-function choose(action: () => void) {
+/**
+ * Safari and iOS give a pressed button no focus: focus leaves the typing row or
+ * the menu for nowhere, which closes it before the click lands. Stopping the
+ * press at mousedown keeps focus where it is, so the click arrives.
+ */
+const keepFocus = (event: MouseEvent) => event.preventDefault()
+
+/** Runs a menu item; focus, still on the item, goes back to ⋯ if the editor is still there. */
+async function choose(action: () => void) {
 	menuOpen = false
 	action()
+	await tick()
+	if (moreButton?.isConnected && !typing) moreButton.focus()
 }
 
 function saveOrUpdate() {
@@ -312,7 +325,9 @@ function onclick(event: MouseEvent) {
 						value={typed}
 						oninput={typeInputChanged}
 						onkeydown={typeKeydown}>
-					<button type="button" class="btn done" onclick={commitTyped}>{m.combi.editor.done}</button>
+					<button type="button" class="btn done" onmousedown={keepFocus} onclick={commitTyped}>
+						{m.combi.editor.done}
+					</button>
 				</div>
 				<p class="type-status" class:error={reading.kind === "error"} id="{uid}-type-status" aria-live="polite">
 					{reading.text}
@@ -361,6 +376,7 @@ function onclick(event: MouseEvent) {
 					title={m.combi.editor.more}
 					aria-haspopup="menu"
 					aria-expanded={menuOpen}
+					onmousedown={keepFocus}
 					onclick={toggleMenu}>
 					⋯
 				</button>
@@ -371,6 +387,7 @@ function onclick(event: MouseEvent) {
 						tabindex="-1"
 						aria-label={m.combi.editor.more}
 						bind:this={menu}
+						onmousedown={keepFocus}
 						onkeydown={menuKeydown}>
 						<button type="button" role="menuitem" onclick={startTyping}>{m.combi.editor.typeCode}</button>
 						<button type="button" role="menuitem" onclick={() => choose(onreset)}>{m.combi.editor.reset}</button>

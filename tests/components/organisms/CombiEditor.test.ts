@@ -256,6 +256,50 @@ test("the menu closes when focus leaves it", async () => {
 	expect(screen.queryByRole("menu")).toBeNull()
 })
 
+/**
+ * A press the way Safari makes one: a button takes no focus, so unless the
+ * press is stopped at mousedown, focus leaves whatever had it for nowhere
+ * before the click lands.
+ */
+const safariPress = async (target: HTMLElement) => {
+	const down = new MouseEvent("mousedown", { bubbles: true, cancelable: true })
+	if (target.dispatchEvent(down)) {
+		const focused = document.activeElement
+		if (focused instanceof HTMLElement && focused !== document.body)
+			await fireEvent.focusOut(focused, { relatedTarget: null })
+	}
+	await fireEvent.mouseUp(target)
+	await fireEvent.click(target)
+}
+
+test("in Safari, Done applies the typed code", async () => {
+	const { ontypecode } = setup()
+	const input = await openTyping()
+	input.focus()
+	const code = codeOf(setEpisode(newDraft(), "episode3"))
+	await fireEvent.input(input, { target: { value: code } })
+	await safariPress(screen.getByRole("button", { name: en.combi.editor.done }))
+	expect(ontypecode).toHaveBeenCalledWith(code)
+})
+
+test("in Safari, ⋯ opens the menu and a second press closes it", async () => {
+	setup()
+	const more = screen.getByRole("button", { name: en.combi.editor.more })
+	await safariPress(more)
+	expect(screen.queryByRole("menu")).not.toBeNull()
+	await safariPress(more)
+	expect(screen.queryByRole("menu")).toBeNull()
+	await vi.waitFor(() => expect(document.activeElement).toBe(more))
+})
+
+test("in Safari, a menu item does what it says", async () => {
+	const { onreset } = setup()
+	await safariPress(screen.getByRole("button", { name: en.combi.editor.more }))
+	await safariPress(screen.getByRole("menuitem", { name: en.combi.editor.reset }))
+	expect(onreset).toHaveBeenCalledTimes(1)
+	expect(screen.queryByRole("menu")).toBeNull()
+})
+
 test("an unreadable stat is marked invalid with its issue", async () => {
 	setup()
 	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
