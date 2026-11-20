@@ -2,6 +2,7 @@
 import type { FramePage } from "#lib/frame"
 
 import NavItem from "#components/atoms/NavItem.astro"
+import { both, l10nAttr } from "#lib/i18n/messages"
 import { TOOLS } from "#lib/tools"
 
 interface Props {
@@ -11,13 +12,13 @@ interface Props {
 const { current } = Astro.props
 ---
 
-<nav id="sidebar" aria-label="Site">
-	<NavItem href="/" icon="⌂" label="Home" current={current === "home"} />
-	{TOOLS.map(({ slug, name, icon }) => (
-		<NavItem href={`/${slug}/`} icon={icon} label={name} current={current === slug} />
+<nav id="sidebar" {...l10nAttr("aria-label", (m) => m.frame.nav)}>
+	<NavItem href="/" icon="⌂" label={both((m) => m.frame.home)} current={current === "home"} />
+	{TOOLS.map(({ slug, icon }) => (
+		<NavItem href={`/${slug}/`} icon={icon} label={both((m) => m.tools[slug].name)} current={current === slug} />
 	))}
 	<div class="bottom">
-		<NavItem href="/settings/" icon="⚙" label="Settings" current={current === "settings"} />
+		<NavItem href="/settings/" icon="⚙" label={both((m) => m.frame.settings)} current={current === "settings"} />
 	</div>
 </nav>
 

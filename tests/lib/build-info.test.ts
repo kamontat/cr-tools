@@ -99,7 +99,7 @@ describe("aboutRows", () => {
 	test("a preview names its pull request and branch", () => {
 		const rows = aboutRows(readBuildInfo({ dev: false, deploy: "preview", ...all }))
 
-		expect(row(rows, "environment")?.text).toBe("Preview")
+		expect(row(rows, "environment")?.text).toBe("preview")
 		expect(row(rows, "source")).toMatchObject({ text: "feat/x · #31", href: `${REPO_URL}/pull/31` })
 	})
 
@@ -123,6 +123,11 @@ describe("aboutRows", () => {
 		const rows = aboutRows(readBuildInfo({ dev: false, builtAt: AT }))
 
 		expect(row(rows, "built")?.text).toBe("2026-09-24T14:02:11.000Z")
+	})
+
+	test("the environment row holds the id, and an unknown built time is empty", () => {
+		expect(row(aboutRows(readBuildInfo({ dev: false, deploy: "production" })), "environment")?.text).toBe("production")
+		expect(row(aboutRows(readBuildInfo({ dev: false })), "built")?.text).toBe("")
 	})
 
 	test("a local build with no values never prints a placeholder", () => {

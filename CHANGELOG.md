@@ -2,6 +2,41 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-20: Thai and English, Thai by default
+
+### Features
+
+- The site speaks Thai and English. Thai is the default; Settings → Appearance has a
+  ไทย / English switch that changes the page in place and is remembered in this browser.
+  The page title, the ☰ button's name and the About panel follow it, and so does going
+  Back to a page seen before the switch.
+- Settings' About shows its build time in the chosen language, with Thai months and the
+  Gregorian year (2026).
+- The combi reader's interface words — goals, modes, actions, field names, "None", "Any
+  goal" — come in both languages, ready for the combi page, along with that page's list,
+  editor and share labels and a short help text for each field.
+
+### Improvements
+
+- Every interface string lives in one typed catalogue per language
+  (`src/lib/i18n/en.ts` and `th.ts`); a key missing from either fails `astro check` and a
+  test.
+- An English visitor never sees Thai first: a script in `<head>` picks the language before
+  the page paints, and the hidden language is removed from screen readers and copy-paste.
+- The language buttons carry their own `lang`, so a screen reader says each in its own
+  voice.
+- A code set to any episode now reads "Any episode" rather than "Any", matching "Any goal"
+  and "Any floor".
+
+### Decisions
+
+- Item names stay English in both languages (cookies, pets, treasures, boosts, cookie
+  powers, episodes), as cookierunhub.com names them.
+- Static pages ship both languages and CSS hides one, rather than swapping text in script,
+  so nothing flashes and pages work before JavaScript runs.
+- The combi reader's warning and error sentences, and the saved list's sort and filter
+  words, stay English until the combi page is rebuilt; nothing shows them yet.
+
 ## 2026-11-20: The new frame, Home and Settings
 
 ### Features

@@ -11,13 +11,14 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 
 | Component | Tier | Kind | What |
 |---|---|---|---|
-| `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label`, `current` (sets `aria-current="page"`). The label is a `.label` span the sidebar hides in the rail. |
-| `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`. |
-| `ToolCard` | molecule | `.astro` | A Home card: `slug`, `name`, `tagline`, `icon` — a `TOOLS` entry spreads straight in. |
+| `Text` | atom | `.astro` | One string in both languages: `pick` (a `Pick`). Renders `<span data-lang="th">…</span><span data-lang="en">…</span>` with no wrapper. See "Text in two languages". |
+| `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label` (`Record<Lang, string>`, from `both`), `current` (sets `aria-current="page"`). The label is a `.label` span, holding both language spans, that the sidebar hides in the rail; `title` is the tooltip in both languages. |
+| `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label, lang? }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`; an option's `lang` goes on its button, for a label in another language than the page's (a language's own name). |
+| `ToolCard` | molecule | `.astro` | A Home card: `slug`, `icon` — a `TOOLS` entry spreads straight in. Name and tagline come from the catalogues' `tools[slug]` through `Text`. |
 | `Panel` | molecule | `.svelte` | The one pop-up: side panel from the right, bottom sheet under 700px. See below. |
-| `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`), the page title, the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
-| `Sidebar` | organism | `.astro` | `nav#sidebar`: Home, one `NavItem` per `TOOLS` entry (its `icon`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
-| `SettingsApp` | organism | `.svelte` | The Settings page island: Appearance (theme) and About (a `Panel` of `aboutRows`). All its visible text sits in one `text` object for the language piece. |
+| `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`, named through `l10nAttr`), the page `title` (a `Pick`, rendered with `Text`), the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
+| `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
+| `SettingsApp` | organism | `.svelte` | The Settings page island: Language, Appearance (theme) and About (a `Panel` of `aboutRows`). Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
 
 The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
 components still to come and their tiers; the rules below are what every one follows.
@@ -25,7 +26,9 @@ components still to come and their tiers; the rules below are what every one fol
 ### Panel
 
 `Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
-snippet, and `closeLabel` / `resizeLabel` for the language piece. It renders nothing while
+snippet, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
+handle's names, which the caller passes in the page's language (`m.frame.close`,
+`m.frame.resize`); there is no English default. It renders nothing while
 `open` is false.
 
 - `id` names the remembered width — `frame:panel-width:<id>` through `#lib/panel-width` —
@@ -41,6 +44,38 @@ snippet, and `closeLabel` / `resizeLabel` for the language piece. It renders not
   and the frame's Escape stands aside while any is open. Render a second panel as a
   sibling of the first, not inside its body: the slide-in animation transforms `.panel`,
   which makes it the containing block of a `position: fixed` layer opened inside it.
+
+## Text in two languages
+
+The site speaks Thai (the default) and English. There are no hard-coded strings in
+components, layouts or pages: every string is a key in the catalogues `src/lib/i18n/th.ts`
+and `src/lib/i18n/en.ts` (`Messages` is `typeof en`, so `th` must name the same keys), and
+code names a string with a `Pick` — `(m: Messages) => string`, from `#lib/i18n/messages`.
+
+An `.astro` file renders both languages into the HTML and lets CSS choose, so a static page
+switches with no JavaScript and no flash:
+
+- **Visible text** goes through the `Text` atom: `<Text pick={(m) => m.frame.home} />`
+  renders `<span data-lang="th">หน้าแรก</span><span data-lang="en">Home</span>`, no
+  wrapper. `src/styles/lang.css` hides the language `<html lang>` does not name (anything
+  but `lang="en"` shows Thai). Put `Text` inside the element that styles it
+  (`<span class="name"><Text … /></span>`).
+- **An attribute** (`aria-label`, `title`) is spread from `l10nAttr(name, pick)`:
+  `{...l10nAttr("aria-label", (m) => m.frame.menu)}` gives `aria-label` in Thai plus
+  `data-aria-label-th`, `data-aria-label-en` and `data-l10n`. `localizeAttrs(doc, lang)`
+  from `#lib/lang` (which `AppLayout` and `applyLang` call) copies the chosen pair over it.
+- **A value handed to a component** that renders it itself is `both(pick)`, a
+  `Record<Lang, string>`. An atom imports no component, so it cannot use `Text`: `NavItem`
+  takes `label: Record<Lang, string>` and writes the two `data-lang` spans and the
+  `l10nAttr`-shaped `title` attributes by hand.
+- **A title** (`BaseLayout`, `AppLayout`, `TopBar`) is a `Pick`, never a string.
+
+A tool's name, title and tagline live in the catalogues under `tools[slug]`, not in
+`TOOLS`; `en.ts` types that map `Record<ToolSlug, ToolText>`, so a registered tool missing
+from it fails `astro check`.
+
+Test both languages: render, then query `[data-lang="th"]` and `[data-lang="en"]` (or the
+`data-<name>-en` attribute) and compare against `th` / `en` from `#lib/i18n/*`.
 
 ## Shared logic in `src/lib/`
 
@@ -104,7 +139,8 @@ importing a molecule included.
   molecule that needs another molecule is an organism. Move it up instead of loosening the
   rule.
 - Components take their content through props or slots (`<slot />` in Astro, snippets and
-  `children` in Svelte); none hardcodes page copy. Copy lives in pages.
+  `children` in Svelte); none hardcodes copy. Every string lives in the catalogues (see
+  "Text in two languages").
 - Moving a component between tiers moves its test too (`tests/components/<tier>/`), and
   every import of it.
 
@@ -218,7 +254,8 @@ A `<style>` in an Astro or Svelte component is **scoped**: `p { … }` only hits
 component's paragraphs, not those passed in through a slot or rendered by a child
 component. Use `:global(…)` for a selector that must reach further.
 
-`src/styles/global.css` holds the reset and anything global; `BaseLayout` imports it, so
+`src/styles/global.css` holds the reset, the tokens and `lang.css` (which hides the
+language not chosen), and anything global; `BaseLayout` imports it, so
 every page gets it. Theme values belong in custom properties defined once on `:root` and
 read with `var(--…)`; a component that hardcodes a colour also hardcodes a theme.
 `src/styles/tokens.css` holds the token set — `--bg`, `--surface`, `--hover`, `--text`,

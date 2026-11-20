@@ -1,7 +1,12 @@
 ---
+import type { Pick } from "#lib/i18n/messages"
+
+import Text from "#components/atoms/Text.astro"
 import AppLayout from "#layouts/AppLayout.astro"
+
+const title: Pick = (m) => m.tools["combi-name"].title
 ---
 
-<AppLayout title="Cookie Run combi codes" current="combi-name">
-	<h1>Cookie Run combi codes</h1>
+<AppLayout title={title} current="combi-name">
+	<h1><Text pick={title} /></h1>
 </AppLayout>

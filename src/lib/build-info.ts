@@ -81,13 +81,6 @@ export type AboutRow = {
 	readonly href?: string
 }
 
-const LABELS: Record<Environment, string> = {
-	development: "Development",
-	local: "Local",
-	preview: "Preview",
-	production: "Production",
-}
-
 /**
  * The build time in the viewer's locale and time zone, with the zone as an
  * offset ("Nov 20, 2026, 10:25 AM GMT+7") so a shared screenshot says which.
@@ -107,17 +100,18 @@ export function formatBuilt(at: Date, locale?: string, timeZone?: string): strin
 
 /**
  * The rows the About panel shows. `built` carries the raw ISO instant; the
- * page formats it in the viewer's time zone. An unknown build time reads
- * "Unknown", and a missing commit drops its row.
+ * page formats it in the viewer's time zone. `text` is data only: the
+ * environment's id, and `""` for an unknown build time; the page supplies the
+ * words. A missing commit drops its row.
  */
 export function aboutRows(info: BuildInfo): AboutRow[] {
 	const { environment } = info
 	const rows: AboutRow[] = []
 
-	rows.push({ key: "environment", text: LABELS[environment] })
+	rows.push({ key: "environment", text: environment })
 
 	if (environment !== "development") {
-		rows.push({ key: "built", text: info.builtAt === null ? "Unknown" : info.builtAt.toISOString() })
+		rows.push({ key: "built", text: info.builtAt === null ? "" : info.builtAt.toISOString() })
 	}
 
 	const source =

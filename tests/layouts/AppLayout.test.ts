@@ -1,5 +1,11 @@
+import type { Messages } from "#lib/i18n/messages"
+
 import { readFile } from "node:fs/promises"
+import { experimental_AstroContainer as AstroContainer } from "astro/container"
+import { Window } from "happy-dom"
 import { expect, test } from "vitest"
+
+import AppLayout from "#layouts/AppLayout.astro"
 
 test("AppLayout's pre-paint boot script takes the key and breakpoint from #lib/frame", async () => {
 	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
@@ -18,6 +24,34 @@ test("AppLayout gives every page one padded, width-capped wrapper", async () => 
 	const wrap = source.match(/\n\.wrap \{([^}]*)\}/)?.[1]
 	expect(wrap).toMatch(/max-width:/)
 	expect(wrap).toMatch(/padding:/)
+})
+
+test("AppLayout localizes the frame's attributes before it wires the frame", async () => {
+	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
+	const localize = source.indexOf("localizeAttrs(document, currentLang(document))")
+	expect(localize).toBeGreaterThan(-1)
+	expect(source.indexOf("initFrame(document")).toBeGreaterThan(localize)
+})
+
+test("AppLayout re-syncs language and theme from storage on load and on a back-forward restore", async () => {
+	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
+	const script = source.match(/<script>([\s\S]*?)<\/script>/)?.[1] ?? ""
+	expect(script).toMatch(/import \{[^}]*\bsyncFromStorage\b[^}]*\bsyncOnRestore\b[^}]*\} from "#lib\/lang"/)
+	expect(script).toContain("syncFromStorage(document, store)")
+	expect(script).toContain("syncOnRestore(window, document, store)")
+	expect(script.indexOf("syncFromStorage(document")).toBeLessThan(script.indexOf("initFrame(document"))
+})
+
+test("AppLayout takes its title as a Pick, shown in both languages", async () => {
+	const container = await AstroContainer.create()
+	const html = await container.renderToString(AppLayout, {
+		props: { title: (m: Messages) => m.settings.title, current: "settings" },
+		slots: { default: "<p>Body</p>" },
+	})
+	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
+	expect(doc.documentElement.getAttribute("data-title-en")).toBe("Settings")
+	expect(doc.querySelector('.top-bar [data-lang="th"]')?.textContent).toBe("ตั้งค่า")
+	expect(doc.querySelector('.top-bar [data-lang="en"]')?.textContent).toBe("Settings")
 })
 
 test("SettingsApp leaves the gutter to the frame", async () => {

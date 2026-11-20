@@ -1,15 +1,9 @@
+import type { Messages } from "#lib/i18n/messages"
+
 import { type CatalogSection, isRetired, labelFor } from "./catalog"
 import { ALL_GOALS, type Combi, type Episode, type Goal, isSemiAuto, limitsOf } from "./codec"
 import { carriesRelay, type FullCode, isSemiAutoBuild } from "./full-code"
-import {
-	ACTION_LABELS,
-	BOOST_LABELS,
-	COOKIE_POWER_LABELS,
-	EPISODE_LABELS,
-	GOAL_LABELS,
-	MODE_LABELS,
-	RANDOM_BOOST_LABELS,
-} from "./labels"
+import { BOOST_LABELS, COOKIE_POWER_LABELS, EPISODE_LABELS, RANDOM_BOOST_LABELS } from "./labels"
 import { type Loadout, levelRuns, type TreasurePick } from "./loadout"
 
 export type DescribedRow = {
@@ -29,27 +23,24 @@ export type DescribedCombi = {
 	auto: AutoVerdict | null
 }
 
-const NONE = "None"
 /**
  * The goals a run aims for, in table order, or Any naming its field — a bare
- * "Any" beside a mode and an episode reads as nothing.
+ * "Any" beside a mode and an episode reads as nothing. A reader that splits
+ * them splits on `m.combi.describe.goalsJoin`.
  */
-export function goalsText(goals: readonly Goal[]): string {
+export function goalsText(goals: readonly Goal[], m: Messages): string {
 	return goals.length === 0
-		? "Any goal"
+		? m.combi.describe.anyGoal
 		: ALL_GOALS.filter((goal) => goals.includes(goal))
-				.map((goal) => GOAL_LABELS[goal])
-				.join(GOALS_JOIN)
+				.map((goal) => m.combi.goals[goal])
+				.join(m.combi.describe.goalsJoin)
 }
 
-/** What `goalsText` puts between two goals, for a reader that splits them. */
-export const GOALS_JOIN = " + "
-
-function list(values: string[]): string {
-	return values.length === 0 ? NONE : values.join(", ")
+function list(values: string[], m: Messages): string {
+	return values.length === 0 ? m.combi.describe.none : values.join(", ")
 }
 
-function verdict(combi: Combi): AutoVerdict | null {
+function verdict(combi: Combi, m: Messages): AutoVerdict | null {
 	if (combi.mode === "manual") return null
 
 	const reasons: string[] = []
@@ -57,26 +48,23 @@ function verdict(combi: Combi): AutoVerdict | null {
 	if (combi.randomBoost !== null) {
 		reasons.push(RANDOM_BOOST_LABELS[combi.randomBoost])
 	}
-	if (combi.action !== "none") reasons.push(ACTION_LABELS[combi.action])
+	if (combi.action !== "none") reasons.push(m.combi.actions[combi.action])
 
 	return { semi: isSemiAuto(combi), reasons }
 }
-
-/** What the relay reads as in the verdict, where it is one reason among four. */
-const RELAY_REASON = "Relay cookie"
 
 /**
  * The verdict for a whole build rather than for its ten characters: the combi's
  * own three reasons plus the loadout's one. A relay cookie is swapped in by
  * hand, so a run carrying one never plays itself through.
  */
-export function describeBuild(full: FullCode): AutoVerdict | null {
-	const own = verdict(full.combi)
+export function describeBuild(full: FullCode, m: Messages): AutoVerdict | null {
+	const own = verdict(full.combi, m)
 	if (own === null) return null
 
 	return {
 		semi: isSemiAutoBuild(full),
-		reasons: carriesRelay(full) ? [...own.reasons, RELAY_REASON] : own.reasons,
+		reasons: carriesRelay(full) ? [...own.reasons, m.combi.describe.relayCookie] : own.reasons,
 	}
 }
 
@@ -96,109 +84,121 @@ function shortEpisode(episode: Episode): string {
  * The mode is the build's, so a relay makes it Semi-auto; Any names its field,
  * since a bare "Any" beside two others reads as nothing.
  */
-export function describeRun(full: FullCode): string[] {
+export function describeRun(full: FullCode, m: Messages): string[] {
 	const { combi } = full
 	const mode =
 		combi.mode !== "manual" && isSemiAutoBuild(full)
-			? MODE_LABELS.semiauto
-			: MODE_LABELS[combi.mode === "semiauto" ? "auto" : combi.mode]
+			? m.combi.modes.semiauto
+			: m.combi.modes[combi.mode === "semiauto" ? "auto" : combi.mode]
 	return [
 		mode,
-		goalsText(combi.goals),
-		combi.episode === "any" ? "Any episode" : shortEpisode(combi.episode),
-		...(limitsOf(combi.episode).floor ? [floorText(combi.floor)] : []),
+		goalsText(combi.goals, m),
+		combi.episode === "any" ? m.combi.describe.anyEpisode : shortEpisode(combi.episode),
+		...(limitsOf(combi.episode).floor ? [floorText(combi.floor, m)] : []),
 	]
 }
 
-/** What a field the episode has no room for reads as. */
-export const NOT_USED = "Not used in this episode"
-
-/** The floor as a reader says it: a number, or any floor at all. */
-export function floorText(floor: number | null): string {
-	return floor === null ? "Any floor" : `Floor ${floor}`
+/** An episode by name, or "any episode" in the catalogue's words: Any is the interface's word, not an episode's name. */
+export function episodeText(episode: Episode, m: Messages): string {
+	return episode === "any" ? m.combi.describe.anyEpisode : EPISODE_LABELS[episode]
 }
 
-export function describeCombi(combi: Combi): DescribedCombi {
+/** The floor as a reader says it: a number, or any floor at all. */
+export function floorText(floor: number | null, m: Messages): string {
+	return floor === null ? m.combi.describe.anyFloor : m.combi.describe.floor(floor)
+}
+
+export function describeCombi(combi: Combi, m: Messages): DescribedCombi {
+	const { describe: text } = m.combi
+	const { fields } = text
 	const limits = limitsOf(combi.episode)
 	const carried: DescribedRow[] = limits.boosts
 		? [
 				{
-					field: "Boosts",
-					value: list(combi.boosts.map((boost) => BOOST_LABELS[boost])),
+					field: fields.boosts,
+					value: list(
+						combi.boosts.map((boost) => BOOST_LABELS[boost]),
+						m,
+					),
 				},
 				{
-					field: "Random boost",
-					value: combi.randomBoost === null ? NONE : RANDOM_BOOST_LABELS[combi.randomBoost],
+					field: fields.randomBoost,
+					value: combi.randomBoost === null ? text.none : RANDOM_BOOST_LABELS[combi.randomBoost],
 				},
 				{
-					field: "Cookie power+",
-					value: list(combi.cookiePowers.map((power) => COOKIE_POWER_LABELS[power])),
+					field: fields.cookiePower,
+					value: list(
+						combi.cookiePowers.map((power) => COOKIE_POWER_LABELS[power]),
+						m,
+					),
 				},
 			]
-		: [{ field: "Boosts", value: NOT_USED }]
+		: [{ field: fields.boosts, value: text.notUsed }]
 
 	return {
 		rows: [
-			{ field: "Goal", value: goalsText(combi.goals) },
-			{ field: "Mode", value: MODE_LABELS[combi.mode] },
-			{ field: "Episode", value: EPISODE_LABELS[combi.episode] },
-			...(limits.floor ? [{ field: "Floor", value: floorText(combi.floor) }] : []),
+			{ field: fields.goal, value: goalsText(combi.goals, m) },
+			{ field: fields.mode, value: m.combi.modes[combi.mode] },
+			{ field: fields.episode, value: episodeText(combi.episode, m) },
+			...(limits.floor ? [{ field: fields.floor, value: floorText(combi.floor, m) }] : []),
 			...carried,
-			{ field: "Action", value: ACTION_LABELS[combi.action] },
+			{ field: fields.action, value: m.combi.actions[combi.action] },
 		],
-		auto: verdict(combi),
+		auto: verdict(combi, m),
 	}
 }
-
-const RETIRED_SUFFIX = " (no longer listed)"
 
 /**
  * A code stays readable after the site drops an entry, so the entry is still
  * named — with a note, because the reader will not find it in the game.
  */
-function entryName(section: CatalogSection, id: string): string {
+function entryName(section: CatalogSection, id: string, m: Messages): string {
 	const name = labelFor(section, id)
-	return isRetired(section, id) ? name + RETIRED_SUFFIX : name
+	return isRetired(section, id) ? m.combi.describe.retired(name) : name
 }
 
-/** Runs joined by commas: " or " is what separates two treasures. */
+/** Runs joined by commas: `orTreasure` is what separates two treasures. */
 function levelText({ levels }: TreasurePick): string {
 	return levelRuns(levels)
 		.map(([min, max]) => (min === max ? `+${min}` : `+${min}-${max}`))
 		.join(", ")
 }
 
-function slotName(slot: TreasurePick[]): string {
-	return slot.map((pick) => `${entryName("treasures", pick.id)} ${levelText(pick)}`).join(" or ")
+function slotName(slot: TreasurePick[], m: Messages): string {
+	return slot
+		.map((pick) => `${entryName("treasures", pick.id, m)} ${levelText(pick)}`)
+		.join(m.combi.describe.orTreasure)
 }
 
-function treasureRow(loadout: Loadout): DescribedRow {
+function treasureRow(loadout: Loadout, m: Messages): DescribedRow {
+	const { fields, none } = m.combi.describe
 	const { treasures, ordered } = loadout
-	if (treasures.length === 0) return { field: "Treasures", value: NONE }
+	if (treasures.length === 0) return { field: fields.treasures, value: none }
 
 	if (ordered && treasures.length > 1) {
 		return {
-			field: "Treasures (exact order)",
-			value: treasures.map((slot, position) => `${position + 1}. ${slotName(slot)}`).join("; "),
+			field: fields.treasuresOrdered,
+			value: treasures.map((slot, position) => `${position + 1}. ${slotName(slot, m)}`).join("; "),
 		}
 	}
 
 	return {
-		field: "Treasures",
-		value: treasures.map(slotName).join("; "),
+		field: fields.treasures,
+		value: treasures.map((slot) => slotName(slot, m)).join("; "),
 	}
 }
 
-export function describeLoadout(loadout: Loadout): DescribedRow[] {
+export function describeLoadout(loadout: Loadout, m: Messages): DescribedRow[] {
+	const { fields, none } = m.combi.describe
 	const single = (field: string, section: CatalogSection, id: string | null): DescribedRow => ({
 		field,
-		value: id === null ? NONE : entryName(section, id),
+		value: id === null ? none : entryName(section, id, m),
 	})
 
 	return [
-		single("Cookie", "cookies", loadout.cookie),
-		single("Relay", "cookies", loadout.relay),
-		single("Pet", "pets", loadout.pet),
-		treasureRow(loadout),
+		single(fields.cookie, "cookies", loadout.cookie),
+		single(fields.relay, "cookies", loadout.relay),
+		single(fields.pet, "pets", loadout.pet),
+		treasureRow(loadout, m),
 	]
 }

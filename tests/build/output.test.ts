@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from "node:fs"
 import { Window } from "happy-dom"
 import { beforeAll, expect, test } from "vitest"
 
+import { en } from "#lib/i18n/en"
+import { th } from "#lib/i18n/th"
 import { TOOLS } from "#lib/tools"
 
 const root = `${import.meta.dirname}/../..`
@@ -24,13 +26,20 @@ test("pages build as folders, so /combi-name/ and its hash links still open", ()
 	expect(existsSync(`${root}/dist/settings.html`)).toBe(false)
 })
 
+test("Home starts Thai and carries English too", () => {
+	const html = readFileSync(`${root}/dist/index.html`, "utf8")
+	expect(html).toContain('<html lang="th"')
+	expect(html).toContain("เครื่องมือ Cookie Run")
+	expect(html).toContain("Cookie Run tools")
+})
+
 test("Home has the heading and one card per tool", () => {
 	const html = readFileSync(`${root}/dist/index.html`, "utf8")
 	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
-	expect(doc.querySelector("h1")?.textContent).toBe("Cookie Run tools")
-	expect(doc.querySelector("main h1 + p.intro")?.textContent).toBe(
-		"Small tools for what the game doesn't write down. Everything stays in your browser.",
-	)
+	expect(doc.querySelector('main h1 [data-lang="th"]')?.textContent).toBe(th.site.name)
+	expect(doc.querySelector('main h1 [data-lang="en"]')?.textContent).toBe(en.site.name)
+	expect(doc.querySelector('main h1 + p.intro [data-lang="th"]')?.textContent).toBe(th.site.intro)
+	expect(doc.querySelector('main h1 + p.intro [data-lang="en"]')?.textContent).toBe(en.site.intro)
 	const hrefs = [...doc.querySelectorAll("main a.tool-card")].map((a) => a.getAttribute("href"))
 	expect(hrefs).toEqual(TOOLS.map(({ slug }) => `/${slug}/`))
 })

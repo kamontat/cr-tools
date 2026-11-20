@@ -10,6 +10,8 @@ const children = createRawSnippet(() => ({
 	render: () => `<div><button type="button">Inside</button></div>`,
 }))
 const footer = createRawSnippet(() => ({ render: () => `<p>Footer note</p>` }))
+/** The caller names the controls in its language; there is no English default. */
+const labels = { closeLabel: "Shut", resizeLabel: "Widen" }
 
 const original = Object.getOwnPropertyDescriptor(window, "localStorage")
 
@@ -35,6 +37,7 @@ const open = (props: Partial<{ id: string; onclose: () => void; withFooter: bool
 			open: true,
 			onclose,
 			children,
+			...labels,
 			...(props.withFooter ? { footer } : {}),
 		},
 	})
@@ -44,7 +47,7 @@ const open = (props: Partial<{ id: string; onclose: () => void; withFooter: bool
 const panelWidth = () => screen.getByRole("dialog").style.getPropertyValue("--panel-width")
 
 test("renders nothing when closed", () => {
-	render(Panel, { props: { id: "about", title: "About", open: false, onclose: vi.fn(), children } })
+	render(Panel, { props: { id: "about", title: "About", open: false, onclose: vi.fn(), children, ...labels } })
 	expect(screen.queryByRole("dialog")).toBeNull()
 	expect(screen.queryByText("Inside")).toBeNull()
 })
@@ -66,7 +69,9 @@ test("Escape calls onclose once", async () => {
 
 test("Escape while closed, or already consumed inside, does not call onclose", async () => {
 	const onclose = vi.fn()
-	const { rerender } = render(Panel, { props: { id: "about", title: "About", open: false, onclose, children } })
+	const { rerender } = render(Panel, {
+		props: { id: "about", title: "About", open: false, onclose, children, ...labels },
+	})
 	await fireEvent.keyDown(document.body, { key: "Escape" })
 	expect(onclose).not.toHaveBeenCalled()
 	await rerender({ open: true })
@@ -79,8 +84,12 @@ test("Escape while closed, or already consumed inside, does not call onclose", a
 const stack = () => {
 	const closeEditor = vi.fn()
 	const closeShare = vi.fn()
-	const editor = render(Panel, { props: { id: "editor", title: "Editor", open: true, onclose: closeEditor, children } })
-	const share = render(Panel, { props: { id: "share", title: "Share", open: true, onclose: closeShare, children } })
+	const editor = render(Panel, {
+		props: { id: "editor", title: "Editor", open: true, onclose: closeEditor, children, ...labels },
+	})
+	const share = render(Panel, {
+		props: { id: "share", title: "Share", open: true, onclose: closeShare, children, ...labels },
+	})
 	return { editor, share, closeEditor, closeShare }
 }
 
@@ -115,7 +124,7 @@ test("clicking the scrim or the close button calls onclose", async () => {
 	const scrim = container.querySelector(".panel-scrim") as HTMLElement
 	await fireEvent.click(scrim)
 	expect(onclose).toHaveBeenCalledTimes(1)
-	await fireEvent.click(screen.getByRole("button", { name: "Close" }))
+	await fireEvent.click(screen.getByRole("button", { name: "Shut" }))
 	expect(onclose).toHaveBeenCalledTimes(2)
 })
 
@@ -134,12 +143,12 @@ test("Tab stays inside the open panel", async () => {
 	const separator = screen.getByRole("separator")
 	separator.focus()
 	await fireEvent.keyDown(separator, { key: "Tab" })
-	expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close" }))
+	expect(document.activeElement).toBe(screen.getByRole("button", { name: "Shut" }))
 })
 
 test("opens at 460px, and ArrowLeft on the separator widens it by 16 and remembers it", async () => {
 	open()
-	const separator = screen.getByRole("separator")
+	const separator = screen.getByRole("separator", { name: "Widen" })
 	expect(separator.getAttribute("aria-orientation")).toBe("vertical")
 	expect(separator.getAttribute("aria-valuenow")).toBe("460")
 	expect(panelWidth()).toBe("460px")

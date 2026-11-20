@@ -1,12 +1,13 @@
 ---
+import Text from "#components/atoms/Text.astro"
 import ToolCard from "#components/molecules/ToolCard.astro"
 import AppLayout from "#layouts/AppLayout.astro"
 import { TOOLS } from "#lib/tools"
 ---
 
-<AppLayout title="Cookie Run tools" current="home">
-	<h1>Cookie Run tools</h1>
-	<p class="intro">Small tools for what the game doesn't write down. Everything stays in your browser.</p>
+<AppLayout title={(m) => m.site.name} current="home">
+	<h1><Text pick={(m) => m.site.name} /></h1>
+	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
 	<div class="tools">
 		{TOOLS.map((tool) => <ToolCard {...tool} />)}
 	</div>

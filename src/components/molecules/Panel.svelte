@@ -14,11 +14,13 @@ interface Props {
 	onclose: () => void
 	children: Snippet
 	footer?: Snippet
-	closeLabel?: string
-	resizeLabel?: string
+	/** The close button's name, in the page's language. */
+	closeLabel: string
+	/** The resize handle's name, in the page's language. */
+	resizeLabel: string
 }
 
-let { id, title, open, onclose, children, footer, closeLabel = "Close", resizeLabel = "Resize panel" }: Props = $props()
+let { id, title, open, onclose, children, footer, closeLabel, resizeLabel }: Props = $props()
 
 const store = localStore()
 

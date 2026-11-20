@@ -3,6 +3,7 @@
 // refuse to render; the Container needs the server build.
 
 import type { FramePage } from "#lib/frame"
+import type { Lang } from "#lib/lang"
 
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
@@ -11,6 +12,8 @@ import { Window } from "happy-dom"
 import { expect, test } from "vitest"
 
 import Sidebar from "#components/organisms/Sidebar.astro"
+import { en } from "#lib/i18n/en"
+import { th } from "#lib/i18n/th"
 import { TOOLS } from "#lib/tools"
 
 const render = async (current: FramePage) => {
@@ -28,11 +31,16 @@ test("links Home, each tool and Settings, in that order", async () => {
 		...TOOLS.map(({ slug }) => `/${slug}/`),
 		"/settings/",
 	])
-	expect(links.map((link) => link.textContent?.trim())).toEqual([
-		expect.stringContaining("Home"),
-		...TOOLS.map(({ name }) => expect.stringContaining(name)),
-		expect.stringContaining("Settings"),
-	])
+	const label = (lang: Lang) => links.map((link) => link.querySelector(`.label [data-lang="${lang}"]`)?.textContent)
+	expect(label("th")).toEqual([th.frame.home, ...TOOLS.map(({ slug }) => th.tools[slug].name), th.frame.settings])
+	expect(label("en")).toEqual([en.frame.home, ...TOOLS.map(({ slug }) => en.tools[slug].name), en.frame.settings])
+})
+
+test("the navigation is named in both languages", async () => {
+	const nav = (await render("home")).getElementById("sidebar")
+	expect(nav?.getAttribute("aria-label")).toBe(th.frame.nav)
+	expect(nav?.getAttribute("data-aria-label-en")).toBe(en.frame.nav)
+	expect(nav?.hasAttribute("data-l10n")).toBe(true)
 })
 
 test.each<[FramePage, string]>([
