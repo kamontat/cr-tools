@@ -41,7 +41,7 @@ export const th: Messages = {
 			anyEpisode: "ตอนใดก็ได้",
 			anyFloor: "ชั้นใดก็ได้",
 			floor: (n: number) => `ชั้น ${n}`,
-			notUsed: "ตอนนี้ไม่ใช้",
+			notUsed: "ไม่ใช้ในด่านนี้",
 			relayCookie: "คุกกี้รีเลย์",
 			retired: (name: string) => `${name} (ไม่อยู่ในรายการแล้ว)`,
 			orTreasure: " หรือ ",
@@ -74,7 +74,7 @@ export const th: Messages = {
 			formatVersion: "เวอร์ชันรูปแบบโค้ด",
 			treasureOrder: "ลำดับสมบัติ",
 			treasureSlot: (n: number) => `ช่องสมบัติ ${n}`,
-			separator: "คั่นระหว่างชุดตัวละครกับชื่อคอมโบ",
+			separator: "คั่นระหว่างการจัดทีมกับชื่อคอมโบ",
 		},
 	},
 }
