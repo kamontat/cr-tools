@@ -71,7 +71,7 @@
   - `DEFAULT_LANG: Lang = "th"`
   - `LANG_KEY = "lang"`
   - `LANG_NAMES: Record<Lang, string> = { th: "ไทย", en: "English" }`
-  - `LOCALES: Record<Lang, string> = { th: "th-TH", en: "en-US" }`
+  - `LOCALES: Record<Lang, string> = { th: "th-TH-u-ca-gregory", en: "en-US" }` (Thai months, Gregorian year: the owner chose 2026 over 2569)
   - `isLang(value: unknown): value is Lang`
   - `readLang(store?: Storage | null): Lang`
   - `writeLang(lang: Lang, store?: Storage | null): void`. This writes `th` too: unlike theme, the default is not "absent", so a later default change cannot flip a visitor who chose Thai.
@@ -262,7 +262,7 @@ Expected: PASS.
   - The dialog's rows read `Environment` and `Built`, and the close button's name is `Close`.
 - `"Built follows the language's date format"`:
   - Use `builtAt` `2026-11-19T10:00:00Z`, and pin `timeZone` by mocking `formatBuilt`'s caller. Simpler: pin `Intl.DateTimeFormat`'s default time zone, with `process.env.TZ = "Asia/Bangkok"` set in the test file header.
-  - In Thai the Built row contains `พ.ย.` and `2569`. In English it contains `Nov` and `2026`.
+  - In Thai the Built row contains `พ.ย.` and `2026`, never `2569`. In English it contains `Nov` and `2026`.
 
 `build-info.test.ts`: the environment row's `text` is `"preview"` / `"production"` (ids), and an unknown built time gives `text === ""`.
 
