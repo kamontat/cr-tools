@@ -167,9 +167,11 @@ const act = (event: MouseEvent, run: (entry: SavedCode) => void, entry: SavedCod
 .list {
 	gap: 14px;
 	min-width: 0;
+	/* The list sits beside the docked editor, so it reads its own width, not the window's. */
+	container: list / inline-size;
 }
 
-/* Under 700px (RAIL_MIN_WIDTH in #lib/frame) New code and search take the width, and filter and sort share a row. */
+/* A narrow list gives New code and search the width, and filter and sort share a row. */
 .tools {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -182,7 +184,7 @@ const act = (event: MouseEvent, run: (entry: SavedCode) => void, entry: SavedCod
 	grid-column: 1 / -1;
 }
 
-@media (min-width: 700px) {
+@container list (min-width: 560px) {
 	.tools {
 		grid-template-columns: auto minmax(0, 1fr) auto auto;
 	}
@@ -245,7 +247,7 @@ table {
 	overflow: hidden;
 }
 
-/* Below 1100px (FULL_MIN_WIDTH in #lib/frame) each row is a card: code, icons, note and money on the left, the actions on the right. */
+/* A list narrower than the table needs shows each row as a card: code, icons, note and money on the left, the actions on the right. */
 thead {
 	display: none;
 }
@@ -359,7 +361,11 @@ td.none {
 	color: var(--text);
 }
 
-@media (min-width: 1100px) {
+/*
+ * The table from 720px of list: its columns need about that much with the
+ * longest goal mix, and a narrower table would clip under its rounded border.
+ */
+@container list (min-width: 720px) {
 	table {
 		display: table;
 	}

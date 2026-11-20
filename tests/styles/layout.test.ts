@@ -1,0 +1,34 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+import { expect, test } from "vitest"
+
+// happy-dom computes no layout, so the layout rules a real engine depends on
+// are checked in the source.
+
+const root = join(import.meta.dirname, "..", "..")
+const read = (path: string) => readFileSync(join(root, path), "utf8")
+
+/** The declarations of the first rule whose selector is exactly `selector`. */
+const rule = (source: string, selector: string): string => {
+	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+	return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(source)?.[1] ?? ""
+}
+
+test("the combi page lays the list and the docked editor side by side", () => {
+	// The reset makes every div a column; the page must ask for a row.
+	expect(rule(read("src/components/organisms/CombiApp.svelte"), ".combi")).toMatch(/flex-direction:\s*row/)
+})
+
+test("the docked editor stays in view and keeps its footer on screen", () => {
+	const docked = rule(read("src/components/organisms/CombiApp.svelte"), ".docked :global(.panel.docked)")
+	expect(docked).toMatch(/position:\s*sticky/)
+	expect(docked).toMatch(/align-self:\s*flex-start/)
+	expect(docked).toMatch(/max-height:\s*calc\(100dvh/)
+})
+
+test("the saved list picks the table or the cards by its own width, not the window's", () => {
+	const list = read("src/components/organisms/CombiList.svelte")
+	expect(rule(list, ".list")).toMatch(/container(?:-type)?:\s*(?:list\s*\/\s*)?inline-size/)
+	expect(list).toMatch(/@container list \(min-width: \d+px\)\s*\{\s*table\s*\{/)
+	expect(list).not.toMatch(/@media \(min-width: 1100px\)/)
+})

@@ -59,6 +59,28 @@ let share = $state<{ code: string; note: string; stats: RunStats } | null>(null)
 
 let width = $state(window.innerWidth)
 const docked = $derived(width >= DOCK_MIN_WIDTH)
+const dockedOpen = $derived(docked && draft !== null)
+
+/** The sticky top bar's 52px, and 16px under it: where the docked editor sticks. */
+const DOCK_TOP = 52 + 16
+let combiBox = $state<HTMLElement | null>(null)
+/** Where the docked editor's top is now: under the heading before the page scrolls, at DOCK_TOP after. */
+let dockTop = $state(DOCK_TOP)
+
+$effect(() => {
+	if (!dockedOpen || combiBox === null) return
+	const box = combiBox
+	const measure = () => {
+		dockTop = Math.max(DOCK_TOP, Math.round(box.getBoundingClientRect().top))
+	}
+	measure()
+	window.addEventListener("scroll", measure, { passive: true })
+	window.addEventListener("resize", measure)
+	return () => {
+		window.removeEventListener("scroll", measure)
+		window.removeEventListener("resize", measure)
+	}
+})
 
 /**
  * The draft as it was last opened or saved, to tell an edit from none: a paste
@@ -354,7 +376,11 @@ const shareEntry = (entry: SavedCode) => {
 <svelte:window bind:innerWidth={width} {onhashchange} />
 <svelte:document {onpaste} />
 
-<div class="combi" class:docked={docked && draft !== null}>
+<div
+	class="combi"
+	class:docked={dockedOpen}
+	bind:this={combiBox}
+	style:--dock-top={dockedOpen ? `${dockTop}px` : undefined}>
 	<div class="list">
 		<CombiList
 			{entries}
@@ -387,8 +413,10 @@ const shareEntry = (entry: SavedCode) => {
 <Toast message={notice?.message ?? null} tone={notice?.tone ?? "info"} ondismiss={dismiss} />
 
 <style>
+/* The reset makes every div a column; the list and the docked editor sit in a row. */
 .combi {
 	display: flex;
+	flex-direction: row;
 	align-items: flex-start;
 	gap: 24px;
 	min-width: 0;
@@ -399,12 +427,18 @@ const shareEntry = (entry: SavedCode) => {
 	min-width: 0;
 }
 
-/* Docked (DOCK_MIN_WIDTH in #lib/frame): the editor is a column that stays in view while the list scrolls. */
+/*
+ * Docked (DOCK_MIN_WIDTH in #lib/frame): the editor is a column that stays in
+ * view while the list scrolls, below the sticky top bar (DOCK_TOP), and ends
+ * 16px above the window's bottom from wherever its top is (--dock-top), so its
+ * footer is on screen before the page scrolls and after.
+ */
 .docked :global(.panel.docked) {
 	position: sticky;
-	/* Below the sticky 52px top bar, with the wrapper's 32px gutter to spare. */
-	top: calc(52px + 16px);
-	height: calc(100dvh - 52px - 32px);
+	top: 68px;
+	align-self: flex-start;
+	height: calc(100dvh - var(--dock-top, 68px) - 16px);
+	max-height: calc(100dvh - var(--dock-top, 68px) - 16px);
 	border: 1px solid var(--line);
 	border-radius: 10px;
 }
