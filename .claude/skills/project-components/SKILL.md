@@ -194,6 +194,7 @@ divides the suite into two projects: `dom` (happy-dom) for `tests/components/**`
 An Astro component renders to an HTML string with the Container API:
 
 ```ts
+// @vitest-environment node
 import { experimental_AstroContainer as AstroContainer } from "astro/container"
 import { expect, test } from "vitest"
 import Button from "#components/atoms/Button.astro"
@@ -205,6 +206,12 @@ test("renders the label", async () => {
 })
 ```
 
+- The `// @vitest-environment node` line is required: `tests/components/**` runs in the
+  `dom` project, and under happy-dom Vite compiles `.astro` files for the browser, where the
+  component only throws "Astro components cannot be used in the browser" and the Container
+  reports `NoMatchingRenderer`. To query the HTML, parse it with happy-dom explicitly:
+  `new new Window().DOMParser().parseFromString(html, "text/html")` (`import { Window } from
+  "happy-dom"`), as `tests/components/organisms/Sidebar.test.ts` does.
 - Elements carry `data-astro-cid-*` attributes when the component has a scoped style, so
   match `<button[^>]*>` rather than `<button>`.
 - The Container renders the frontmatter and template only; it does not run or emit
