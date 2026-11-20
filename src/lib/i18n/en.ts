@@ -7,7 +7,7 @@ const tools: Record<ToolSlug, ToolText> = {
 		name: "Combi name codes",
 		title: "Cookie Run combi codes",
 		tagline:
-			"Pack a run configuration - type, episode, boosts, random boost, cookie power+, and action - into a 10-character combi name.",
+			"Pack a run configuration - mode, episode, boosts, random boost, cookie power+, and action - into a 10-character combi name.",
 	},
 }
 
@@ -94,7 +94,7 @@ export const en = {
 			copy: "Copy",
 			share: "Share",
 			copied: "Copied",
-			empty: "No saved codes yet. Press New code to make one.",
+			empty: "No saved codes yet. Press “New code” to make one.",
 			noMatch: "No saved code matches.",
 			rounds: (n: number) => `${n} ${n === 1 ? "round" : "rounds"}`,
 			average: "Average",

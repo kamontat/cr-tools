@@ -98,6 +98,11 @@ export function describeRun(full: FullCode, m: Messages): string[] {
 	]
 }
 
+/** An episode by name, or "any episode" in the catalogue's words: Any is the interface's word, not an episode's name. */
+export function episodeText(episode: Episode, m: Messages): string {
+	return episode === "any" ? m.combi.describe.anyEpisode : EPISODE_LABELS[episode]
+}
+
 /** The floor as a reader says it: a number, or any floor at all. */
 export function floorText(floor: number | null, m: Messages): string {
 	return floor === null ? m.combi.describe.anyFloor : m.combi.describe.floor(floor)
@@ -134,7 +139,7 @@ export function describeCombi(combi: Combi, m: Messages): DescribedCombi {
 		rows: [
 			{ field: fields.goal, value: goalsText(combi.goals, m) },
 			{ field: fields.mode, value: m.combi.modes[combi.mode] },
-			{ field: fields.episode, value: EPISODE_LABELS[combi.episode] },
+			{ field: fields.episode, value: episodeText(combi.episode, m) },
 			...(limits.floor ? [{ field: fields.floor, value: floorText(combi.floor, m) }] : []),
 			...carried,
 			{ field: fields.action, value: m.combi.actions[combi.action] },

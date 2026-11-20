@@ -161,3 +161,8 @@ test("hints read in Thai", () => {
 	expect(described[0]?.name).toBe(th.combi.hints.slot1Mode)
 	expect(described[0]?.name).not.toBe(en.combi.hints.slot1Mode)
 })
+
+test("an Any episode's slot 4 reads in the catalogue's words", () => {
+	expect(hintsIn("MS0A000000", th)[3]?.hint).toBe(`${th.combi.hints.slot4Episode} · ตอนใดก็ได้`)
+	expect(hints("MS0A000000")[3]).toBe("Slot 4 · Episode · Any episode")
+})

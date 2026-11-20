@@ -12,9 +12,9 @@
 import type { Messages } from "#lib/i18n/messages"
 
 import { CODE_LENGTH, type Combi, limitsOf } from "./codec"
-import { describeLoadout, floorText, goalsText } from "./describe"
+import { describeLoadout, episodeText, floorText, goalsText } from "./describe"
 import { combiSectionOf, decodeFull, SECTION_SEPARATOR } from "./full-code"
-import { BOOST_LABELS, COOKIE_POWER_LABELS, EPISODE_LABELS, RANDOM_BOOST_LABELS } from "./labels"
+import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "./labels"
 import { type Loadout, SLOT_SEPARATOR } from "./loadout"
 
 export type CharHint = {
@@ -112,7 +112,7 @@ function spansOfCombi(combi: Combi, m: Messages): Span[] {
 			combi.action === "none" ? modes[combi.mode] : `${modes[combi.mode]}, ${actions[combi.action]}`,
 		),
 		span(2, "goal", hints.slots23Goal, goalsText(combi.goals, m)),
-		span(1, "episode", hints.slot4Episode, EPISODE_LABELS[combi.episode]),
+		span(1, "episode", hints.slot4Episode, episodeText(combi.episode, m)),
 		...carriedSpans(combi, m),
 	]
 }

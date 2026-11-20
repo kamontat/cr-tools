@@ -42,6 +42,37 @@ test("help names its slots", () => {
 	}
 })
 
+test("Thai help opens with its slots and a colon, as English opens with them and a full stop", () => {
+	const help = th.combi.help
+	expect(help.mode).toMatch(/^ช่อง 1: /)
+	expect(help.goal).toMatch(/^ช่อง 2-3: /)
+	expect(help.episode).toMatch(/^ช่อง 4: /)
+	expect(help.floor).toMatch(/^ช่อง 5-7: /)
+	expect(help.boosts).toMatch(/^ช่อง 5: /)
+	expect(help.randomBoost).toMatch(/^ช่อง 6-7: /)
+	expect(help.cookiePower).toMatch(/^ช่อง 8-10: /)
+})
+
+test("the empty list quotes the New code button by its own label", () => {
+	expect(th.combi.list.empty).toContain(`“${th.combi.list.newCode}”`)
+	expect(en.combi.list.empty).toContain(`“${en.combi.list.newCode}”`)
+})
+
+test("the episode stays ตอน in Thai, never ด่าน", () => {
+	expect(th.combi.describe.notUsed).toBe("ไม่ใช้กับตอนที่เลือก")
+	expect(JSON.stringify(th.combi)).not.toContain("ด่าน")
+})
+
+test("treasures in an exact order say so in both languages", () => {
+	expect(en.combi.describe.fields.treasuresOrdered).toBe("Treasures (exact order)")
+	expect(th.combi.describe.fields.treasuresOrdered).toBe("สมบัติ (ต้องเรียงตามนี้)")
+})
+
+test("the combi tool's tagline calls the mode a mode", () => {
+	expect(en.tools["combi-name"].tagline).toContain("mode")
+	expect(en.tools["combi-name"].tagline).not.toMatch(/\btype\b/)
+})
+
 test("counts read naturally", () => {
 	expect(en.combi.list.rounds(1)).toBe("1 round")
 	expect(en.combi.list.rounds(3)).toBe("3 rounds")
