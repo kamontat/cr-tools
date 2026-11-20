@@ -1,6 +1,7 @@
 import type { Messages } from "#lib/i18n/messages"
 
 import { readFile } from "node:fs/promises"
+import { runInNewContext } from "node:vm"
 import { experimental_AstroContainer as AstroContainer } from "astro/container"
 import { Window } from "happy-dom"
 import { expect, test } from "vitest"
@@ -37,6 +38,47 @@ test("the language boot runs in head, before body", async () => {
 	expect(boot).toContain('"lang"')
 	expect(boot).toContain('"en"')
 	expect(boot).toMatch(/try\s*\{[\s\S]*\}\s*catch/)
+})
+
+/**
+ * Renders BaseLayout, loads it into a happy-dom document (which runs no script
+ * itself) and runs the head's language boot, as the browser would before first
+ * paint, against the given localStorage.
+ */
+const runLangBoot = async (localStorage: () => unknown) => {
+	const html = await renderBase()
+	const doc = new Window().document
+	doc.write(html)
+	const boot = [...doc.head.querySelectorAll("script")]
+		.map((script) => script.textContent ?? "")
+		.find((script) => script.includes("LANG_KEY"))
+	expect(boot).toBeDefined()
+	const context = { document: doc }
+	Object.defineProperty(context, "localStorage", { get: localStorage })
+	runInNewContext(boot ?? "", context)
+	return doc
+}
+
+const storing = (lang: string) => () => ({ getItem: (key: string) => (key === "lang" ? lang : null) })
+
+test("the language boot switches the page to English when English is stored", async () => {
+	const doc = await runLangBoot(storing("en"))
+	expect(doc.documentElement.getAttribute("lang")).toBe("en")
+	expect(doc.title).toBe("Settings")
+})
+
+test("the language boot leaves the page Thai for any other stored value", async () => {
+	const doc = await runLangBoot(storing("fr"))
+	expect(doc.documentElement.getAttribute("lang")).toBe("th")
+	expect(doc.title).toBe("ตั้งค่า")
+})
+
+test("the language boot leaves the page Thai, and throws nothing, when localStorage cannot be reached", async () => {
+	const doc = await runLangBoot(() => {
+		throw new Error("denied")
+	})
+	expect(doc.documentElement.getAttribute("lang")).toBe("th")
+	expect(doc.title).toBe("ตั้งค่า")
 })
 
 test("BaseLayout passes LANG_KEY to the language boot rather than writing the key", async () => {
