@@ -104,6 +104,16 @@ test("Save adds a third entry, and Copy copies the 10 characters", async () => {
 	await waitFor(() => expect(notice()).toBe(en.combi.notices.copied(combiSectionOf(code))))
 })
 
+test("a notice shown over the pop-up editor is inside it, so it is seen and heard", async () => {
+	viewport(1000)
+	render(CombiApp)
+	await fireEvent.click(button(en.combi.list.newCode))
+	await fireEvent.click(button(en.combi.editor.save))
+	await Promise.resolve()
+	const shown = screen.getByRole("button", { name: en.combi.notices.saved(combiSectionOf(stored()[0]?.code ?? "")) })
+	expect(editor()?.contains(shown)).toBe(true)
+})
+
 test("a row's Copy copies that row's 10 characters", async () => {
 	const writeText = vi.fn(() => Promise.resolve())
 	setClipboard({ writeText })

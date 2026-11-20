@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest"
 
-import { focusables, holdFocus, isModalOpen, lockScroll } from "#lib/modal"
+import { focusables, holdFocus, isModalOpen, lockScroll, topModal } from "#lib/modal"
 
 afterEach(() => {
 	document.body.innerHTML = ""
@@ -189,4 +189,17 @@ test("lockScroll hides the page's overflow until the last release, and a second 
 	second()
 	expect(root.style.overflow).toBe("auto")
 	root.style.overflow = ""
+})
+
+test("topModal names the topmost open modal, and null when none is open", () => {
+	const { lower, upper } = stacked()
+	expect(topModal(document)).toBeNull()
+	const releaseLower = holdFocus(lower)
+	expect(topModal(document)).toBe(lower)
+	const releaseUpper = holdFocus(upper)
+	expect(topModal(document)).toBe(upper)
+	releaseUpper()
+	expect(topModal(document)).toBe(lower)
+	releaseLower()
+	expect(topModal(document)).toBeNull()
 })

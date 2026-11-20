@@ -205,7 +205,7 @@ const ondblclick = () => {
 .panel-layer {
 	position: fixed;
 	inset: 0;
-	z-index: 40;
+	z-index: var(--z-panel);
 	display: flex;
 	flex-direction: row;
 	justify-content: flex-end;

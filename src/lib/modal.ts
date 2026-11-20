@@ -78,6 +78,11 @@ export function isModalOpen(doc: Document): boolean {
 	return stack.some((entry) => entry.ownerDocument === doc)
 }
 
+/** The topmost open modal in `doc`, or null when none is open: where a notice goes to be seen and heard. */
+export function topModal(doc: Document): HTMLElement | null {
+	return stack.findLast((entry) => entry.ownerDocument === doc) ?? null
+}
+
 /**
  * Moves focus to `dialog` (which should carry `tabindex="-1"`) and holds it
  * there while it is the topmost open modal: a modal opened over it takes

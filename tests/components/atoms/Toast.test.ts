@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/svelte"
 import { afterEach, expect, test, vi } from "vitest"
 
 import Toast from "#components/atoms/Toast.svelte"
+import { holdFocus } from "#lib/modal"
 
 afterEach(() => {
 	document.body.innerHTML = ""
@@ -41,4 +42,30 @@ test("an info message lands in the status region and the alert region stays empt
 	render(Toast, { props: { message: "Hi", tone: "info", ondismiss: vi.fn() } })
 	expect(screen.getByRole("status").textContent).toContain("Hi")
 	expect(screen.getByRole("alert").textContent?.trim()).toBe("")
+})
+
+test("while a pop-up is open the notice lives inside it, so it shows above it and a screen reader still hears it", async () => {
+	render(Toast, { props: { message: "Saved", tone: "info", ondismiss: vi.fn() } })
+	const dialog = document.createElement("div")
+	dialog.setAttribute("role", "dialog")
+	dialog.setAttribute("aria-modal", "true")
+	dialog.tabIndex = -1
+	document.body.append(dialog)
+	const release = holdFocus(dialog)
+	await Promise.resolve()
+	expect(dialog.contains(screen.getByRole("status"))).toBe(true)
+	expect(dialog.contains(screen.getByRole("alert"))).toBe(true)
+
+	release()
+	dialog.remove()
+	await Promise.resolve()
+	expect(document.body.contains(screen.getByRole("status"))).toBe(true)
+	expect(dialog.contains(screen.getByRole("status"))).toBe(false)
+})
+
+test("with no pop-up open the notice sits at the end of the page", () => {
+	const later = document.createElement("div")
+	render(Toast, { props: { message: "Saved", tone: "info", ondismiss: vi.fn() } })
+	document.body.append(later)
+	expect(screen.getByRole("status").closest("body")).toBe(document.body)
 })

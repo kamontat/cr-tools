@@ -32,3 +32,22 @@ test("the saved list picks the table or the cards by its own width, not the wind
 	expect(list).toMatch(/@container list \(min-width: \d+px\)\s*\{\s*table\s*\{/)
 	expect(list).not.toMatch(/@media \(min-width: 1100px\)/)
 })
+
+/** The stacking tokens `tokens.css` defines, by name. */
+const layer = (name: string): number => {
+	const value = new RegExp(`--z-${name}:\\s*(\\d+);`).exec(read("src/styles/tokens.css"))?.[1]
+	return value === undefined ? Number.NaN : Number(value)
+}
+
+test("notices stack above pop-ups, pop-ups above the top bar, the top bar above the sidebar", () => {
+	expect(layer("toast")).toBeGreaterThan(layer("panel"))
+	expect(layer("panel")).toBeGreaterThan(layer("topbar"))
+	expect(layer("topbar")).toBeGreaterThan(layer("sidebar"))
+	expect(layer("sidebar")).toBeGreaterThan(layer("scrim"))
+})
+
+test("the frame's layers take their z-index from the tokens", () => {
+	expect(rule(read("src/components/atoms/Toast.svelte"), ".host")).toMatch(/z-index:\s*var\(--z-toast\)/)
+	expect(rule(read("src/components/molecules/Panel.svelte"), ".panel-layer")).toMatch(/z-index:\s*var\(--z-panel\)/)
+	expect(rule(read("src/components/organisms/TopBar.astro"), ".top-bar")).toMatch(/z-index:\s*var\(--z-topbar\)/)
+})

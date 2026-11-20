@@ -33,7 +33,7 @@ const badge = info.environment === "preview" && info.pr !== null ? `pr-${info.pr
 .top-bar {
 	position: sticky;
 	top: 0;
-	z-index: 30;
+	z-index: var(--z-topbar);
 	display: flex;
 	flex-direction: row;
 	align-items: center;

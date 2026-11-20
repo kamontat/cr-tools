@@ -18,6 +18,12 @@
 	--radius-lg: 10px;
 	--mono: ui-monospace, sfmono-regular, menlo, monospace;
 	--tap: 2.75rem;
+	/* Stacking, lowest first: the drawer's scrim, the sidebar over the page, the top bar, pop-ups, notices. */
+	--z-scrim: 15;
+	--z-sidebar: 20;
+	--z-topbar: 30;
+	--z-panel: 40;
+	--z-toast: 50;
 }
 
 @media (prefers-color-scheme: light) {
