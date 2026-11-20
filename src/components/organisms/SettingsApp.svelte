@@ -97,7 +97,6 @@ const shown = (row: AboutRow) =>
 .settings {
 	gap: 20px;
 	max-width: 640px;
-	padding: 20px;
 }
 
 h1 {
@@ -110,8 +109,6 @@ h2 {
 	color: var(--muted);
 	font-size: 13px;
 	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
 }
 
 .rows {

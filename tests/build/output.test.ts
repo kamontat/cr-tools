@@ -34,3 +34,16 @@ test("Home has the heading and one card per tool", () => {
 	const hrefs = [...doc.querySelectorAll("main a.tool-card")].map((a) => a.getAttribute("href"))
 	expect(hrefs).toEqual(TOOLS.map(({ slug }) => `/${slug}/`))
 })
+
+// One gutter for every page: the frame wraps the page in main > .wrap, so no
+// page pads itself and Home, the tools and Settings line up.
+test.each([
+	["index.html", "h1"],
+	["combi-name/index.html", "h1"],
+	["settings/index.html", "astro-island"],
+])("%s renders inside the frame's one content wrapper", (page, content) => {
+	const html = readFileSync(`${root}/dist/${page}`, "utf8")
+	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
+	expect(doc.querySelectorAll("main#content > .wrap")).toHaveLength(1)
+	expect(doc.querySelector(`main#content > .wrap > ${content}`)).not.toBeNull()
+})
