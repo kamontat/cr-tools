@@ -7,9 +7,62 @@ description: Use when writing, editing or moving a component in src/components/ 
 
 Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 
-`src/components/` is empty on this branch (each tier holds a `.gitkeep`). The redesign spec
-(`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the components to come
-and their tiers; the rules below are what they must follow.
+## The components today
+
+| Component | Tier | Kind | What |
+|---|---|---|---|
+| `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label`, `current` (sets `aria-current="page"`). The label is a `.label` span the sidebar hides in the rail. |
+| `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`. |
+| `ToolCard` | molecule | `.astro` | A Home card: `slug`, `name`, `tagline`, `icon` — a `TOOLS` entry spreads straight in. |
+| `Panel` | molecule | `.svelte` | The one pop-up: side panel from the right, bottom sheet under 700px. See below. |
+| `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`), the page title, the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
+| `Sidebar` | organism | `.astro` | `nav#sidebar`: Home, one `NavItem` per `TOOLS` entry (its `icon`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
+| `SettingsApp` | organism | `.svelte` | The Settings page island: Appearance (theme) and About (a `Panel` of `aboutRows`). All its visible text sits in one `text` object for the language piece. |
+
+The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
+components still to come and their tiers; the rules below are what every one follows.
+
+### Panel
+
+`Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
+snippet, and `closeLabel` / `resizeLabel` for the language piece. It renders nothing while
+`open` is false.
+
+- `id` names the remembered width — `frame:panel-width:<id>` through `#lib/panel-width` —
+  and the title's id. `id="editor"` gets the editor's wider default (640px) and share (70%
+  of the window, 60% for the others); every width is clamped to at least 360px.
+- On a wide screen the left edge is a `role="separator"` handle: drag, or ←/→ in 16px
+  steps; double-click resets to the default. Under 700px (`RAIL_MIN_WIDTH`) it is a bottom
+  sheet with no handle.
+- It is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
+  `#lib/modal`: focus moves in when it opens, Tab wraps inside it, Escape and the scrim
+  call `onclose`, and focus returns on close to what held it before.
+- Panels stack (Share over the editor): only the topmost handles Tab, focus and Escape,
+  and the frame's Escape stands aside while any is open. Render a second panel as a
+  sibling of the first, not inside its body: the slide-in animation transforms `.panel`,
+  which makes it the containing block of a `position: fixed` layer opened inside it.
+
+## Shared logic in `src/lib/`
+
+A component reaches for these rather than re-implementing them:
+
+- **`#lib/storage`** — the one `localStorage` wrapper: `localStore()` (the store, or `null`
+  when the browser refuses access), `readKey(key, store?)` and `writeKey(key, value, store?)`
+  (`null` removes; `false` when the write failed). Every call is inside a `try`, and each
+  takes the store as an argument so a test can hand in one that throws.
+- **`#lib/theme`** — `Theme` (`system`, `dark`, `light`), `THEME_KEY` (`"theme"`),
+  `readTheme`, `writeTheme`, and `applyTheme(theme, root)`, which sets or clears
+  `data-theme`.
+- **`#lib/modal`** — `holdFocus(dialog, onescape?)` for any modal (returns the release),
+  `isModalOpen(doc)`, and `focusables(root)`. One module-level stack, which the build emits
+  once, so every modal on a page shares it.
+- **`#lib/frame`** — `FramePage`, `SIDEBAR_KEY`, the breakpoints `RAIL_MIN_WIDTH` (700)
+  and `FULL_MIN_WIDTH` (1100), `sidebarMode(width)`, and `initFrame(doc, store)`, which
+  `AppLayout` calls once per page. Use the constants rather than writing 700 or 1100 in a
+  script; CSS cannot read them, so a stylesheet's breakpoint carries a comment pointing
+  here.
+- **`#lib/panel-width`** — `Panel`'s width rules (`clampWidth`, `readWidth`, `writeWidth`).
+- **`#lib/build-info`** — `readBuildInfo(env?)` and `aboutRows(info)`.
 
 ## Two kinds of component
 
@@ -116,10 +169,13 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
 
 ## Rules every interactive component keeps
 
-- **Storage is always wrapped.** Every `localStorage` read and write sits in a `try`; a
-  browser that throws on access (private mode, blocked storage) gets the defaults and a
-  working page for that visit. Take the `Storage` as an argument where possible, as
-  `src/lib/combi/state.ts` and `saved.ts` do, so a test can hand in one that throws.
+- **Storage is always wrapped.** Every `localStorage` read and write goes through
+  `#lib/storage` (or sits in its own `try`); a browser that throws on access (private mode,
+  blocked storage) gets the defaults and a working page for that visit. Take the `Storage`
+  as an argument where possible, as `#lib/frame`, `#lib/theme` and
+  `src/lib/combi/state.ts` do, so a test can hand in one that throws.
+- **Modals hold focus with `holdFocus`** from `#lib/modal` — or are a `Panel` — so they
+  stack with the others and the frame's Escape stands aside.
 - **Sets are written in table order.** A control that holds a set the codec encodes (goals,
   boosts, cookie powers, a treasure slot's alternatives) reports it filtered from its own
   options, never in click order — click order would give one build two codes. See the
@@ -144,8 +200,8 @@ Interactivity that does not warrant Svelte goes in a `<script>` tag inside the c
 Astro bundles it with Vite (TypeScript and `#lib/*` imports work), dedupes it across every
 instance of the component, and emits it as a module script — inlined when small, a hashed
 file in `dist/_astro/` otherwise. `<script is:inline>` opts out of all of that and ships the
-tag verbatim (the redesign's theme boot script must be inline, so it runs before first
-paint).
+tag verbatim (`BaseLayout`'s theme boot is inline so it runs before first paint, and
+`AppLayout`'s sidebar boot uses `define:vars`, which implies it).
 
 `import.meta.env.PUBLIC_*` inside such a script is replaced at build time. A variable unset
 at build time becomes `undefined`, and when that lets the bundler prove a call does nothing
@@ -164,9 +220,18 @@ component. Use `:global(…)` for a selector that must reach further.
 
 `src/styles/global.css` holds the reset and anything global; `BaseLayout` imports it, so
 every page gets it. Theme values belong in custom properties defined once on `:root` and
-read with `var(--…)`; a component that hardcodes a colour also hardcodes a theme. The
-redesign adds `src/styles/tokens.css` with the token set (`--bg`, `--surface`, `--text`,
-`--accent`, `--code`, …), dark by default with a light variant under `data-theme`.
+read with `var(--…)`; a component that hardcodes a colour also hardcodes a theme.
+`src/styles/tokens.css` holds the token set — `--bg`, `--surface`, `--hover`, `--text`,
+`--muted`, `--line`, `--accent`, `--on-accent`, `--code`, `--danger`, `--success`, `--env`,
+`--radius`, `--radius-lg`, `--mono`, `--tap` — dark by default, light under
+`data-theme="light"` or, with no `data-theme`, the system's light preference; `--env` is
+the environment colour from `<html data-env>`.
+
+Labels are sentence case: no `text-transform: uppercase` and no `letter-spacing` (the
+spec's Look; letter-spacing also pulls Thai combining marks off their base).
+`tests/styles/look.test.ts` fails on either in any component, layout, page or stylesheet.
+A page's outer gutter is `AppLayout`'s `.wrap`; a component never pads the page edge
+itself.
 
 `@kcstyles/reset.css` makes every bare `div` `display: flex; flex-direction: column`
 (opt out with `<div row>` for a row or `<div block>` for block). A `div` that wants a row
@@ -211,7 +276,8 @@ test("renders the label", async () => {
   component only throws "Astro components cannot be used in the browser" and the Container
   reports `NoMatchingRenderer`. To query the HTML, parse it with happy-dom explicitly:
   `new new Window().DOMParser().parseFromString(html, "text/html")` (`import { Window } from
-  "happy-dom"`), as `tests/components/organisms/Sidebar.test.ts` does.
+  "happy-dom"`), as `tests/components/organisms/Sidebar.test.ts` does. Every Astro
+  component test under `tests/components/` starts with that line.
 - Elements carry `data-astro-cid-*` attributes when the component has a scoped style, so
   match `<button[^>]*>` rather than `<button>`.
 - The Container renders the frontmatter and template only; it does not run or emit

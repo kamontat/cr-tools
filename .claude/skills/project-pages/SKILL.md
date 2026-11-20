@@ -17,8 +17,11 @@ A page holds the copy and data; layouts (`project-layouts` skill) arrange it, an
 | `src/pages/combi-name/index.astro` | `/combi-name/` | The combi tool |
 | `src/pages/settings/index.astro` | `/settings/` | Settings — part of the site, not a tool |
 
-All three are placeholders on this branch: a `BaseLayout` and a heading. The redesign spec
-(`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) describes what each becomes.
+Every page renders in `AppLayout` (the frame: top bar, sidebar, environment line and the
+page gutter). Home shows the title, a one-line intro and a `ToolCard` per registered tool;
+Settings renders the `SettingsApp` island (Appearance and About); the combi page is still a
+heading only. The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
+describes what it becomes.
 
 ## How routes map
 
@@ -39,31 +42,40 @@ Dynamic routes (`[slug].astro`) need `getStaticPaths()` because the site is buil
 ## The tool registry
 
 Every page except Home and Settings is a tool, listed in `TOOLS` in `src/lib/tools.ts` —
-`slug`, `name`, `tagline`. The slug is the directory and the URL, so a tool cannot be
+`slug`, `name`, `tagline`, `icon`. The slug is the directory and the URL, so a tool cannot be
 registered under one name and served under another. `tests/lib/tools.test.ts` holds the
 registry and the directory to each other in both directions: every slug has
 `src/pages/<slug>/index.astro`, and every `src/pages/*/index.astro` is a registered tool or
 `settings`. A tool page the registry does not name would build and ship with nothing linking
-to it. The redesign's sidebar reads this registry.
+to it. The sidebar (`Sidebar.astro`) and Home's cards (`ToolCard.astro`) both read this
+registry, icon included. `icon` is required by the `Tool` type, so a tool registered without
+one fails `pnpm run check`. `FramePage` in `#lib/frame` is `"home" | "settings"` plus every
+tool slug, so a new tool is a valid `current` as soon as it is registered.
 
 ## Steps
 
-1. For a tool, add an entry to `TOOLS` in `src/lib/tools.ts`.
-2. Create `src/pages/<slug>/index.astro`. Wrap the content in `BaseLayout`:
+1. For a tool, add an entry to `TOOLS` in `src/lib/tools.ts` — `slug`, `name`, `tagline`
+   and `icon`.
+2. Create `src/pages/<slug>/index.astro`. Wrap the content in `AppLayout`, passing the
+   page's `title` and `current` (its slug, `"home"` or `"settings"` — the sidebar marks that
+   link as the current page):
 
    ```astro
    ---
-   import BaseLayout from "#layouts/BaseLayout.astro"
+   import AppLayout from "#layouts/AppLayout.astro"
    ---
 
-   <BaseLayout title="About">
-   	<h1>About</h1>
-   </BaseLayout>
+   <AppLayout title="Cookie Run combi codes" current="combi-name">
+   	<h1>Cookie Run combi codes</h1>
+   </AppLayout>
    ```
 
-   `BaseLayout` owns the `<html>` shell: `charset`, `viewport`, the favicon, the `<title>`,
-   the global stylesheet and the Google Tag Manager script. A page never writes its own
-   `<html>` or `<head>`.
+   `AppLayout` puts the page inside the frame — top bar, sidebar, environment line — and
+   inside `main > .wrap`, the one page gutter (padding and max width), so a page never pads
+   its own outer edge. It wraps `BaseLayout`, which owns the `<html>` shell: `charset`,
+   `viewport`, the favicon, the `<title>`, the theme boot, the global stylesheet and the
+   Google Tag Manager script. A page never writes its own `<html>` or `<head>`, and never
+   renders `BaseLayout` directly — it would ship without the frame.
 3. Import components and layouts through the `#components/*` and `#layouts/*` aliases,
    with the `.astro` or `.svelte` extension. An interactive Svelte component that reads
    `localStorage` or reacts to input is rendered with `client:only="svelte"` — nothing is
@@ -79,22 +91,26 @@ to it. The redesign's sidebar reads this registry.
 
 ## Example — a page composed from the tiers
 
+Home (`src/pages/index.astro`):
+
 ```astro
 ---
-import Seg from "#components/atoms/Seg.svelte"
-import Panel from "#components/organisms/Panel.astro"
-import BaseLayout from "#layouts/BaseLayout.astro"
+import ToolCard from "#components/molecules/ToolCard.astro"
+import AppLayout from "#layouts/AppLayout.astro"
+import { TOOLS } from "#lib/tools"
 ---
 
-<BaseLayout title="Settings">
-	<h1>Settings</h1>
-	<Panel heading="Appearance">
-		<Seg client:only="svelte" options={["System", "Dark", "Light"]} />
-	</Panel>
-</BaseLayout>
+<AppLayout title="Cookie Run tools" current="home">
+	<h1>Cookie Run tools</h1>
+	<p class="intro">Small tools for what the game doesn't write down. Everything stays in your browser.</p>
+	<div class="tools">
+		{TOOLS.map((tool) => <ToolCard {...tool} />)}
+	</div>
+</AppLayout>
 ```
 
-(The components here are illustrations; none exists yet.)
+A page whose content reads `localStorage` or reacts to input renders one Svelte island
+instead, as Settings does: `<SettingsApp client:only="svelte" />` inside `AppLayout`.
 
 - The copy and the `title` live here; nothing below the page hardcodes them.
 - Data shared by several pages (the tool list) lives in `src/lib/`, not copied into each.
@@ -106,6 +122,7 @@ import BaseLayout from "#layouts/BaseLayout.astro"
 not render a `#layouts/*` layout, or renders one that does not reach `BaseLayout` (directly
 or through other layouts). It also fails on any layout in `src/layouts/` that does not wrap
 `BaseLayout`. So a new page or template cannot silently drop analytics or the global styles.
+It also fails when a page does not reach `AppLayout`, so no page ships without the frame.
 Extend that test when another line becomes mandatory on every page.
 
 `tests/lib/tools.test.ts` catches a registry and a directory that disagree (above).

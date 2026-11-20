@@ -59,8 +59,8 @@ The same prefix goes on `gh pr checks`, `gh pr view`, `gh run view` and `gh api`
    is shared with every other checkout.
 2. **Test first.** REQUIRED SUB-SKILL: superpowers:test-driven-development. Write the
    failing test under `tests/`, mirroring the `src/` path (`src/lib/combi/codec.ts` →
-   `tests/lib/combi/codec.test.ts`, `src/components/atoms/Seg.svelte` →
-   `tests/components/atoms/Seg.test.ts`), run `pnpm run test <file>` and watch it fail for
+   `tests/lib/combi/codec.test.ts`, `src/components/atoms/Segmented.svelte` →
+   `tests/components/atoms/Segmented.test.ts`), run `pnpm run test <file>` and watch it fail for
    the right reason.
 3. **Code.** Write the smallest code that passes. Follow the layout in `AGENTS.md` and read
    the skill for the area first (`project-combi-codec`, `project-assets`,
