@@ -1,4 +1,4 @@
-# dependencies (bun install)
+# dependencies (pnpm install)
 node_modules
 
 # output
@@ -45,3 +45,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # agent scratch (ledgers, briefs, review packages)
 .superpowers
+
+# astro generated types
+.astro
+
+# fixture directories left by an interrupted test run
+tests/**/fixture-*
