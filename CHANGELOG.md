@@ -2,6 +2,46 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-20: Redesign groundwork on the Astro template
+
+### BREAKING CHANGES
+
+- The project no longer runs on Bun. Install with `pnpm install` and run every script with
+  `pnpm run <script>`; `package.json`'s `devEngines` pins Node.js 24.22.3 and pnpm 12.22.0,
+  and `mise` reads them from there.
+- The Lit components and `src/routes/` are gone. Pages live in `src/pages/` as Astro files,
+  and interactive parts are Svelte. On the `redesign` branch the three pages are
+  placeholders until the next pieces fill them in.
+- The combi logic moved from `src/routes/combi-name/` to `src/lib/combi/`, imported as
+  `#lib/combi/<module>`.
+
+### Features
+
+- Every build records its environment (Development, Local, Preview or Production), commit,
+  build time, and on previews the pull request number and branch, for the coming Settings
+  About list.
+
+### Improvements
+
+- The site is built on [ktemplates/astro](https://github.com/ktemplates/astro): Astro 7 with
+  static output, Svelte 5, Vitest, `astro check` and Biome. Pages build to folders
+  (`/combi-name/`), and `/combi-name` redirects there, so links already shared keep opening.
+- Icons ship from `public/assets/` and are served at `/assets/...`, not inlined into the
+  page. The favicon is Fairy Cookie again.
+- CI installs with the pinned Node.js and pnpm and refuses a lockfile that does not match
+  `package.json`.
+- Agent docs and skills (`project-*`) describe the new layout.
+
+### Decisions
+
+- The combi wire format did not change: the codec, catalog, loadout and full-code modules
+  moved as pure renames, and the exhaustive round-trip test over every combi still passes.
+- Node.js and pnpm replace Bun to follow the template, because Astro, Vitest and Wrangler
+  target Node.js and a second runtime only added friction.
+- The asset scripts import each other through a new `#scripts/*` alias, because plain Node.js
+  does not resolve extensionless relative imports and imports never carry `.ts`. A test keeps
+  `src/` from importing it, so scraper code never reaches the site.
+
 ## 2026-11-16: The site moves to cr-tools.kc.in.th
 
 ### BREAKING CHANGES
