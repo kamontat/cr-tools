@@ -132,9 +132,9 @@ export const en = {
 			goal: "Slots 2-3. What the run aims for: Score, Money, Exp or Box, or any mix of Money, Exp and Box. Score stands alone, and an auto run does not aim for it.",
 			episode:
 				"Slot 4. The episode the run is for, or Any. Special episodes take only what they use, so the slots they leave out read 0.",
-			floor: "Slots 5-7, in Tower of Frozen Waves only. The tower floor, 1 to 100, or any floor.",
+			floor: "Slots 5-7, on Special Episode 2 (Tower of Frozen Waves) only. The tower floor, 1 to 100, or any floor.",
 			action:
-				"What you do as the run starts. A jump at the start shares slot 1 with the mode and makes the run semi-auto.",
+				"What you do as the run starts. A jump at the start shares slot 1 with the mode and makes an auto run semi-auto.",
 			cookie:
 				"The cookie you run with. The game keeps it itself, so the code carries it in the loadout in front of the 10 characters.",
 			relay:
