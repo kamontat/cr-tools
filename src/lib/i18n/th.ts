@@ -240,7 +240,7 @@ export const th: Messages = {
 			linkSaved: (name: string) => `โค้ดในลิงก์นี้บันทึกไว้แล้วในชื่อ ${name}`,
 			pasted: "วางโค้ดแล้ว",
 			pastedSaved: (name: string) => `วางโค้ดแล้ว โค้ดนี้บันทึกไว้แล้ว จึงเปิด ${name} ให้`,
-			pasteRefused: "ตัวแก้ไขมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก บันทึกหรือปิดตัวแก้ไขก่อน แล้วค่อยวางอีกครั้ง",
+			unsavedEdits: "ตัวแก้ไขมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก บันทึกหรือปิดตัวแก้ไขก่อน",
 			codeUnreadable: (code: string, why: string) => `${code} อ่านไม่ได้: ${why}`,
 			unreadable: "อ่านไม่ได้",
 			saved: (code: string) => `บันทึก ${code} แล้ว`,

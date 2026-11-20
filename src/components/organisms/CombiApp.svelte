@@ -137,8 +137,39 @@ const savedAs = (code: string) => entries.find((entry) => entry.code === code)
 
 // --- Opening -----------------------------------------------------------------
 
+/** Whether the open draft holds edits since it was opened or last saved. */
+const hasEdits = () => {
+	if (draft === null || baseline === null || draft === baseline) return false
+	const kept: SavedCode = saved ?? {
+		code: codeOf(baseline),
+		description: cleanDescription(baseline.note),
+		...(isEmptyStats(baseline.stats) ? {} : { stats: baseline.stats }),
+		savedAt: 0,
+	}
+	return isDirty(draft, kept)
+}
+
+/**
+ * The docked editor is not modal, so a row, New code, a link or a paste can
+ * come while it holds edits nobody kept. Those edits stay, and the notice says
+ * why nothing opened.
+ */
+const keepsEdits = () => {
+	if (!hasEdits()) return false
+	say(m.combi.notices.unsavedEdits, "warn")
+	return true
+}
+
 const openNew = () => {
+	if (keepsEdits()) return
 	openDraft(newDraft(), [])
+}
+
+/** A row of the list: the entry already open stays as it is, edits and all. */
+const openRow = (entry: SavedCode) => {
+	if (draft !== null && draft.from === entry.code) return
+	if (keepsEdits()) return
+	openEntry(entry)
 }
 
 const openEntry = (entry: SavedCode, sentence?: string) => {
@@ -162,6 +193,11 @@ const openLink = (hash: string) => {
 	const stats = statsInHash(hash)
 	const carried = note !== null || !isEmptyStats(stats)
 	if (draft !== null && !carried && codeOf(draft) === code) return
+	if (keepsEdits()) {
+		// The address bar goes back to the code still in the editor.
+		writeHash(asked)
+		return
+	}
 
 	let read: ReturnType<typeof draftFromCode>
 	try {
@@ -232,18 +268,6 @@ $effect(() => {
 	}
 })
 
-/** Whether the open draft holds edits since it was opened or last saved. */
-const hasEdits = () => {
-	if (draft === null || baseline === null || draft === baseline) return false
-	const kept: SavedCode = saved ?? {
-		code: codeOf(baseline),
-		description: cleanDescription(baseline.note),
-		...(isEmptyStats(baseline.stats) ? {} : { stats: baseline.stats }),
-		savedAt: 0,
-	}
-	return isDirty(draft, kept)
-}
-
 /** Whether a paste is meant for something else: a text box, or a pop-up over the page. */
 const pasteIsElsewhere = () => {
 	const focused = document.activeElement
@@ -266,11 +290,7 @@ const onpaste = (event: ClipboardEvent) => {
 		return
 	}
 	event.preventDefault()
-	// The docked editor is not modal: a paste beside it must not wipe edits nobody kept.
-	if (hasEdits()) {
-		say(m.combi.notices.pasteRefused, "warn")
-		return
-	}
+	if (keepsEdits()) return
 	const entry = savedAs(codeOf(read.draft))
 	if (entry !== undefined) openEntry(entry, m.combi.notices.pastedSaved(nameOf(entry)))
 	else openDraft(read.draft, read.warnings, m.combi.notices.pasted)
@@ -405,7 +425,7 @@ const shareEntry = (entry: SavedCode) => {
 			{entries}
 			current={draft?.from ?? null}
 			onnew={openNew}
-			onopen={(entry) => openEntry(entry)}
+			onopen={openRow}
 			oncopy={(entry) => copy(entry.code)}
 			onshare={shareEntry} />
 	</div>

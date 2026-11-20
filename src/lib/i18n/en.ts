@@ -253,7 +253,7 @@ export const en = {
 			linkSaved: (name: string) => `This link's code is already saved as ${name}.`,
 			pasted: "Code pasted.",
 			pastedSaved: (name: string) => `Code pasted. It is already saved, so ${name} is open.`,
-			pasteRefused: "The editor has changes that are not saved. Save them, or close the editor, then paste again.",
+			unsavedEdits: "The editor has changes that are not saved. Save them, or close the editor, first.",
 			codeUnreadable: (code: string, why: string) => `${code} does not read: ${why}`,
 			unreadable: "it could not be read",
 			saved: (code: string) => `Saved ${code}.`,

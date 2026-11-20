@@ -286,7 +286,7 @@ test("a paste over unsaved edits in the docked editor is refused, and the edits 
 	await editNote("Edited")
 	;(document.activeElement as HTMLElement | null)?.blur()
 	paste(linkCode)
-	await waitFor(() => expect(notice()).toBe(en.combi.notices.pasteRefused))
+	await waitFor(() => expect(notice()).toBe(en.combi.notices.unsavedEdits))
 	expect(noteBox().value).toBe("Edited")
 	expect(location.hash).toBe(`#${scoreCode}`)
 })
@@ -327,4 +327,53 @@ test("a browser that refuses to rewrite the address bar does not break the edito
 	})
 	await fireEvent.click(screen.getByRole("button", { name: en.combi.modes.auto }))
 	expect(editor()).not.toBeNull()
+})
+
+/** The docked editor open on the score entry, with a note nobody saved. */
+const editedDocked = async () => {
+	viewport(1440)
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await editNote("Edited")
+}
+
+test("opening another row over unsaved edits in the docked editor is refused, and the edits stay", async () => {
+	await editedDocked()
+	await fireEvent.click(button(combiSectionOf(moneyCode)))
+	expect(notice()).toBe(en.combi.notices.unsavedEdits)
+	expect(noteBox().value).toBe("Edited")
+	expect(location.hash).toBe(`#${scoreCode}`)
+})
+
+test("New code over unsaved edits in the docked editor is refused, and the edits stay", async () => {
+	await editedDocked()
+	await fireEvent.click(button(en.combi.list.newCode))
+	expect(notice()).toBe(en.combi.notices.unsavedEdits)
+	expect(noteBox().value).toBe("Edited")
+})
+
+test("a new link in the address bar over unsaved edits is refused, and the address bar goes back", async () => {
+	await editedDocked()
+	history.replaceState(null, "", `/combi-name/#${linkCode}`)
+	window.dispatchEvent(new HashChangeEvent("hashchange"))
+	await Promise.resolve()
+	expect(notice()).toBe(en.combi.notices.unsavedEdits)
+	expect(noteBox().value).toBe("Edited")
+	expect(location.hash).toBe(`#${scoreCode}`)
+})
+
+test("pressing the open entry's own row again keeps its edits, without a word", async () => {
+	await editedDocked()
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	expect(noteBox().value).toBe("Edited")
+	expect(notice()).toBe("")
+})
+
+test("with no edits, another row opens straight away", async () => {
+	viewport(1440)
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await fireEvent.click(button(combiSectionOf(moneyCode)))
+	expect(location.hash).toBe(`#${moneyCode}`)
+	expect(notice()).toBe("")
 })
