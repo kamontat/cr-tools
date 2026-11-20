@@ -33,7 +33,7 @@ const summary = $derived(
 const themes = $derived(
 	(["system", "dark", "light"] as const).map((value) => ({ value, label: m.settings.themes[value] })),
 )
-const langs = LANGS.map((l) => ({ value: l, label: LANG_NAMES[l] }))
+const langs = LANGS.map((l) => ({ value: l, label: LANG_NAMES[l], lang: l }))
 
 const pickLang = (value: string) => {
 	const next = value as Lang

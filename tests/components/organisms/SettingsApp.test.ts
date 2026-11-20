@@ -75,6 +75,14 @@ test("starts in Thai", () => {
 	expect(screen.getByRole("button", { name: "ตามระบบ" })).toBeTruthy()
 })
 
+test("each language button is marked in its own language, whatever the page's", () => {
+	english()
+	render(SettingsApp, { props: { env: production } })
+	expect(screen.getByRole("button", { name: "ไทย" }).getAttribute("lang")).toBe("th")
+	expect(screen.getByRole("button", { name: "English" }).getAttribute("lang")).toBe("en")
+	expect(screen.getByRole("button", { name: "Dark" }).hasAttribute("lang")).toBe(false)
+})
+
 test("choosing English switches the page in place and remembers it", async () => {
 	render(SettingsApp, { props: { env: production } })
 	await fireEvent.click(screen.getByRole("button", { name: "English" }))

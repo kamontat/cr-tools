@@ -25,3 +25,15 @@ test("exactly one button is pressed, the current value", () => {
 	expect(pressed.map((b) => b.textContent?.trim())).toEqual(["Beta"])
 	expect(screen.getByRole("group", { name: "Pick" })).toBeTruthy()
 })
+
+test("an option given a language marks its button with it, and one without carries none", () => {
+	const named = [
+		{ value: "th", label: "ไทย", lang: "th" },
+		{ value: "en", label: "English", lang: "en" },
+		{ value: "x", label: "Other" },
+	]
+	render(Segmented, { props: { label: "Language", options: named, value: "th", onchange: vi.fn() } })
+	expect(screen.getByRole("button", { name: "ไทย" }).getAttribute("lang")).toBe("th")
+	expect(screen.getByRole("button", { name: "English" }).getAttribute("lang")).toBe("en")
+	expect(screen.getByRole("button", { name: "Other" }).hasAttribute("lang")).toBe(false)
+})

@@ -1,7 +1,8 @@
 <script lang="ts">
 interface Props {
 	label: string
-	options: { value: string; label: string }[]
+	/** `lang` marks an option written in another language than the page, such as a language's own name. */
+	options: { value: string; label: string; lang?: string }[]
 	value: string
 	onchange: (value: string) => void
 }
@@ -12,7 +13,11 @@ let { label, options, value, onchange }: Props = $props()
 <!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and layout to a row of buttons -->
 <div class="seg" role="group" aria-label={label}>
 	{#each options as option (option.value)}
-		<button type="button" aria-pressed={option.value === value} onclick={() => onchange(option.value)}>
+		<button
+			type="button"
+			lang={option.lang}
+			aria-pressed={option.value === value}
+			onclick={() => onchange(option.value)}>
 			{option.label}
 		</button>
 	{/each}
