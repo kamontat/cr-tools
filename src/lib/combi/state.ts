@@ -116,15 +116,15 @@ export function rememberCode(storage: Storage, code: string): void {
 }
 
 /**
- * Which tab was open in the workbench below the summary. A view preference
+ * Which tab was open in the editor. A view preference
  * rather than part of the build, so it is kept apart from the code and never
  * travels in a link.
  */
 export const TAB_KEY = "combi-name:tab"
 
-export type TabName = "main" | "cookies" | "treasures" | "boosts"
+export type TabName = "main" | "cookies" | "treasures" | "boosts" | "runLog"
 
-export const TAB_NAMES: readonly TabName[] = ["main", "cookies", "treasures", "boosts"]
+export const TAB_NAMES: readonly TabName[] = ["main", "cookies", "treasures", "boosts", "runLog"]
 
 function isTabName(value: string | null): value is TabName {
 	return (TAB_NAMES as readonly string[]).includes(value ?? "")
