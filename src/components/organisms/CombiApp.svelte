@@ -197,18 +197,37 @@ onMount(() => openLink(location.hash))
 // opens it again; closing the editor clears it. A link's note and stats stay
 // in it until they are saved or edited, so a reload before Save keeps the offer.
 let wasOpen = false
+/** The hash last asked for, as given: the browser may spell what it keeps differently. */
+let asked = ""
+
+/**
+ * Points the address bar at `hash` (empty for none), only when it changes:
+ * every note keystroke changes the draft, and Safari throws after 100 rewrites
+ * in 10 seconds. A refused rewrite only leaves the address bar behind.
+ */
+const writeHash = (hash: string) => {
+	const same = location.hash === hash || (hash === asked && location.hash === written)
+	if (!same) {
+		try {
+			history.replaceState(null, "", hash === "" ? location.pathname : hash)
+		} catch {
+			// The editor works the same; a reload just opens what the address bar still says.
+		}
+	}
+	asked = hash
+	written = location.hash
+}
+
 $effect(() => {
 	if (draft !== null) {
-		const hash =
+		writeHash(
 			offered !== null && draft === offered
 				? shareHashFor(codeOf(draft), draft.note, draft.stats)
-				: hashFor(codeOf(draft))
-		history.replaceState(null, "", hash)
-		written = location.hash
+				: hashFor(codeOf(draft)),
+		)
 		wasOpen = true
 	} else if (wasOpen) {
-		history.replaceState(null, "", location.pathname)
-		written = ""
+		writeHash("")
 		wasOpen = false
 	}
 })

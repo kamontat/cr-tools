@@ -307,3 +307,24 @@ test("a paste of a saved code says it opened that entry", async () => {
 	expect(notice()).toBe(en.combi.notices.pastedSaved("Score farm"))
 	expect(screen.queryByRole("button", { name: en.combi.editor.save })).toBeNull()
 })
+
+test("typing a note does not rewrite the address bar while the code stays the same", async () => {
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	const write = vi.spyOn(history, "replaceState")
+	await editNote("A")
+	await fireEvent.input(noteBox(), { target: { value: "AB" } })
+	await fireEvent.input(noteBox(), { target: { value: "ABC" } })
+	expect(write).not.toHaveBeenCalled()
+	expect(location.hash).toBe(`#${scoreCode}`)
+})
+
+test("a browser that refuses to rewrite the address bar does not break the editor", async () => {
+	render(CombiApp)
+	await fireEvent.click(button(en.combi.list.newCode))
+	vi.spyOn(history, "replaceState").mockImplementation(() => {
+		throw new DOMException("Attempt to use history.replaceState() more than 100 times per 10 seconds", "SecurityError")
+	})
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.modes.auto }))
+	expect(editor()).not.toBeNull()
+})
