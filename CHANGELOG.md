@@ -2,6 +2,14 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-20: Ube Ice Cookie and new treasures in the loadout picker
+
+### Features
+
+- The loadout picker offers the cookie, pet and 11 treasures cookierunhub.com added since the
+  last sync, Ube Ice Cookie among them, with their icons. A few new treasures carry the
+  site's own placeholder names (`Game Item 3a53490795`) until it publishes real ones.
+
 ## 2026-11-16: The site moves to cr-tools.kc.in.th
 
 ### BREAKING CHANGES
