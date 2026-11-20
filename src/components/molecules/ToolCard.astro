@@ -1,20 +1,20 @@
 ---
 import type { ToolSlug } from "#lib/tools"
 
+import Text from "#components/atoms/Text.astro"
+
 interface Props {
 	slug: ToolSlug
-	name: string
-	tagline: string
 	icon: string
 }
 
-const { slug, name, tagline, icon } = Astro.props
+const { slug, icon } = Astro.props
 ---
 
 <a class="tool-card" href={`/${slug}/`}>
 	<span class="icon" aria-hidden="true">{icon}</span>
-	<span class="name">{name}</span>
-	<span class="tagline">{tagline}</span>
+	<span class="name"><Text pick={(m) => m.tools[slug].name} /></span>
+	<span class="tagline"><Text pick={(m) => m.tools[slug].tagline} /></span>
 </a>
 
 <style>

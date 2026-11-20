@@ -1,17 +1,22 @@
 ---
+import type { Lang } from "#lib/lang"
+
 interface Props {
 	href: string
 	icon: string
-	label: string
+	/** Both languages: an atom imports no component, so it renders the spans `Text` would. */
+	label: Record<Lang, string>
 	current?: boolean
 }
 
 const { href, icon, label, current = false } = Astro.props
+// The shape l10nAttr("title", …) makes: Thai as the value, both as data, swapped by localizeAttrs.
+const title = { title: label.th, "data-title-th": label.th, "data-title-en": label.en, "data-l10n": "" }
 ---
 
-<a class="nav-item" href={href} title={label} aria-current={current ? "page" : undefined}>
+<a class="nav-item" href={href} {...title} aria-current={current ? "page" : undefined}>
 	<span class="icon" aria-hidden="true">{icon}</span>
-	<span class="label">{label}</span>
+	<span class="label"><span data-lang="th">{label.th}</span><span data-lang="en">{label.en}</span></span>
 </a>
 
 <style>

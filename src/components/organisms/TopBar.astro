@@ -1,8 +1,12 @@
 ---
+import type { Pick } from "#lib/i18n/messages"
+
+import Text from "#components/atoms/Text.astro"
 import { type BuildEnv, readBuildInfo } from "#lib/build-info"
+import { l10nAttr } from "#lib/i18n/messages"
 
 interface Props {
-	title: string
+	title: Pick
 	/** The build's own environment unless a test passes another. */
 	env?: BuildEnv
 }
@@ -13,8 +17,15 @@ const badge = info.environment === "preview" && info.pr !== null ? `pr-${info.pr
 ---
 
 <header class="top-bar">
-	<button id="menu-toggle" type="button" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">☰</button>
-	<span class="title">{title}</span>
+	<button
+		id="menu-toggle"
+		type="button"
+		{...l10nAttr("aria-label", (m) => m.frame.menu)}
+		aria-controls="sidebar"
+		aria-expanded="false">
+		☰
+	</button>
+	<span class="title"><Text pick={title} /></span>
 	{badge && <span class="badge">{badge}</span>}
 </header>
 

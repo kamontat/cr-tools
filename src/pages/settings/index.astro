@@ -3,6 +3,6 @@ import SettingsApp from "#components/organisms/SettingsApp.svelte"
 import AppLayout from "#layouts/AppLayout.astro"
 ---
 
-<AppLayout title="Settings" current="settings">
+<AppLayout title={(m) => m.settings.title} current="settings">
 	<SettingsApp client:only="svelte" />
 </AppLayout>

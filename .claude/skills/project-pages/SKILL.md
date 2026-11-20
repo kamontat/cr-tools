@@ -42,7 +42,11 @@ Dynamic routes (`[slug].astro`) need `getStaticPaths()` because the site is buil
 ## The tool registry
 
 Every page except Home and Settings is a tool, listed in `TOOLS` in `src/lib/tools.ts` —
-`slug`, `name`, `tagline`, `icon`. The slug is the directory and the URL, so a tool cannot be
+`slug` and `icon`, nothing else. Its words — `name` (sidebar and card), `title` (the page)
+and `tagline` (the card) — are copy, so they live in both catalogues under `tools[slug]`
+(`src/lib/i18n/en.ts`, `th.ts`); `en.ts` types that map `Record<ToolSlug, ToolText>`, so a
+tool missing from it fails `pnpm run check`, and `tests/lib/tools.test.ts` checks both
+catalogues name every slug. The slug is the directory and the URL, so a tool cannot be
 registered under one name and served under another. `tests/lib/tools.test.ts` holds the
 registry and the directory to each other in both directions: every slug has
 `src/pages/<slug>/index.astro`, and every `src/pages/*/index.astro` is a registered tool or
@@ -54,19 +58,24 @@ tool slug, so a new tool is a valid `current` as soon as it is registered.
 
 ## Steps
 
-1. For a tool, add an entry to `TOOLS` in `src/lib/tools.ts` — `slug`, `name`, `tagline`
-   and `icon`.
+1. For a tool, add an entry to `TOOLS` in `src/lib/tools.ts` — `slug` and `icon` — and
+   `tools[slug]` (`name`, `title`, `tagline`) to both `src/lib/i18n/en.ts` and `th.ts`.
 2. Create `src/pages/<slug>/index.astro`. Wrap the content in `AppLayout`, passing the
-   page's `title` and `current` (its slug, `"home"` or `"settings"` — the sidebar marks that
-   link as the current page):
+   page's `title` (a `Pick`) and `current` (its slug, `"home"` or `"settings"` — the
+   sidebar marks that link as the current page):
 
    ```astro
    ---
+   import type { Pick } from "#lib/i18n/messages"
+
+   import Text from "#components/atoms/Text.astro"
    import AppLayout from "#layouts/AppLayout.astro"
+
+   const title: Pick = (m) => m.tools["combi-name"].title
    ---
 
-   <AppLayout title="Cookie Run combi codes" current="combi-name">
-   	<h1>Cookie Run combi codes</h1>
+   <AppLayout title={title} current="combi-name">
+   	<h1><Text pick={title} /></h1>
    </AppLayout>
    ```
 
@@ -95,14 +104,15 @@ Home (`src/pages/index.astro`):
 
 ```astro
 ---
+import Text from "#components/atoms/Text.astro"
 import ToolCard from "#components/molecules/ToolCard.astro"
 import AppLayout from "#layouts/AppLayout.astro"
 import { TOOLS } from "#lib/tools"
 ---
 
-<AppLayout title="Cookie Run tools" current="home">
-	<h1>Cookie Run tools</h1>
-	<p class="intro">Small tools for what the game doesn't write down. Everything stays in your browser.</p>
+<AppLayout title={(m) => m.site.name} current="home">
+	<h1><Text pick={(m) => m.site.name} /></h1>
+	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
 	<div class="tools">
 		{TOOLS.map((tool) => <ToolCard {...tool} />)}
 	</div>
@@ -112,9 +122,21 @@ import { TOOLS } from "#lib/tools"
 A page whose content reads `localStorage` or reacts to input renders one Svelte island
 instead, as Settings does: `<SettingsApp client:only="svelte" />` inside `AppLayout`.
 
-- The copy and the `title` live here; nothing below the page hardcodes them.
+- The page chooses which strings it shows; the strings themselves live in the catalogues.
+  Nothing below the page hardcodes them.
 - Data shared by several pages (the tool list) lives in `src/lib/`, not copied into each.
 - A page is never imported by anything.
+
+## Text in two languages
+
+The site is Thai by default and English on request. There are no hard-coded strings in
+components, layouts or pages: page copy is a key in `src/lib/i18n/en.ts` and `th.ts`, and
+the page names it with a `Pick` — `(m) => m.site.intro`. Visible text is
+`<Text pick={…} />` (both `data-lang` spans; `lang.css` hides the other), an attribute is
+`{...l10nAttr("aria-label", pick)}`, a value a component renders itself is `both(pick)`,
+and the `title` passed to `AppLayout` is a `Pick`. The `project-components` skill's "Text
+in two languages" has the details. A new string goes into both catalogues at once;
+`tests/lib/i18n/messages.test.ts` fails when they name different keys.
 
 ## What the tests catch
 

@@ -3,6 +3,7 @@
 // refuse to render; the Container needs the server build.
 
 import type { BuildEnv } from "#lib/build-info"
+import type { Messages } from "#lib/i18n/messages"
 
 import { experimental_AstroContainer as AstroContainer } from "astro/container"
 import { Window } from "happy-dom"
@@ -12,7 +13,9 @@ import TopBar from "#components/organisms/TopBar.astro"
 
 const render = async (env: BuildEnv) => {
 	const container = await AstroContainer.create()
-	const html = await container.renderToString(TopBar, { props: { title: "Settings", env } })
+	const html = await container.renderToString(TopBar, {
+		props: { title: (m: Messages) => m.settings.title, env },
+	})
 	return new new Window().DOMParser().parseFromString(html, "text/html")
 }
 
@@ -26,9 +29,18 @@ test("renders the ☰ toggle controlling the sidebar, collapsed", async () => {
 	expect(toggle?.getAttribute("aria-label")).toBeTruthy()
 })
 
-test("renders the page title", async () => {
+test("the menu button is named in both languages", async () => {
+	const toggle = (await render({ dev: false })).getElementById("menu-toggle")
+	expect(toggle?.getAttribute("aria-label")).toBe("เมนู")
+	expect(toggle?.getAttribute("data-aria-label-th")).toBe("เมนู")
+	expect(toggle?.getAttribute("data-aria-label-en")).toBe("Menu")
+	expect(toggle?.hasAttribute("data-l10n")).toBe(true)
+})
+
+test("renders the page title in both languages", async () => {
 	const doc = await render({ dev: false })
-	expect(doc.body.textContent).toContain("Settings")
+	expect(doc.querySelector('.title [data-lang="th"]')?.textContent).toBe("ตั้งค่า")
+	expect(doc.querySelector('.title [data-lang="en"]')?.textContent).toBe("Settings")
 })
 
 test("shows the pr badge on a preview build", async () => {
