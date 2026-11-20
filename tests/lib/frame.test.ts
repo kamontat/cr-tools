@@ -136,6 +136,27 @@ test("on a phone the scrim closes the drawer", () => {
 	expect(doc.body.getAttribute("data-sidebar")).toBe("closed")
 })
 
+test("closing with the scrim returns focus to ☰ when it was inside the sidebar", () => {
+	width(390)
+	initFrame(doc, memory())
+	toggle().click()
+	link().focus()
+	;(doc.getElementById("sidebar-scrim") as HTMLElement).click()
+	expect(doc.body.getAttribute("data-sidebar")).toBe("closed")
+	expect(doc.activeElement).toBe(toggle())
+})
+
+test("closing with the scrim leaves focus alone when it was outside the sidebar", () => {
+	width(390)
+	const main = doc.getElementById("content") as HTMLElement
+	main.tabIndex = -1
+	initFrame(doc, memory())
+	toggle().click()
+	main.focus()
+	;(doc.getElementById("sidebar-scrim") as HTMLElement).click()
+	expect(doc.activeElement).toBe(main)
+})
+
 test("on a phone following a link closes the drawer", () => {
 	width(390)
 	initFrame(doc, memory())

@@ -13,7 +13,7 @@ export type FramePage = "home" | "settings" | ToolSlug
 
 export const SIDEBAR_KEY = "frame:sidebar"
 
-/** `AppLayout`'s inline boot script repeats this breakpoint and the key above. */
+/** `AppLayout`'s pre-paint boot script takes this breakpoint and the key above through `define:vars`. */
 export const FULL_MIN_WIDTH = 1100
 export const RAIL_MIN_WIDTH = 700
 
@@ -57,9 +57,18 @@ export function initFrame(doc: Document, store: Storage | null): void {
 
 	toggle.addEventListener("click", () => set(!isOpen(), true))
 
-	doc.getElementById("sidebar-scrim")?.addEventListener("click", () => set(false, false))
+	const sidebar = doc.getElementById("sidebar")
+	const scrim = doc.getElementById("sidebar-scrim")
+	// A press on the (unfocusable) scrim would otherwise blur to <body> before
+	// the click, losing where focus was.
+	scrim?.addEventListener("mousedown", (event) => event.preventDefault())
+	scrim?.addEventListener("click", () => {
+		const focusInside = sidebar?.contains(doc.activeElement) === true
+		set(false, false)
+		if (focusInside) toggle.focus()
+	})
 
-	doc.getElementById("sidebar")?.addEventListener("click", (event) => {
+	sidebar?.addEventListener("click", (event) => {
 		if (mode === "full" || !isOpen()) return
 		const target = event.target as Element | null
 		if (target?.closest("a[href]")) set(false, false)
