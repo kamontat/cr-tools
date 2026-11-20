@@ -2,24 +2,19 @@
 import type { FramePage } from "#lib/frame"
 
 import NavItem from "#components/atoms/NavItem.astro"
-import { TOOLS, type ToolSlug } from "#lib/tools"
+import { TOOLS } from "#lib/tools"
 
 interface Props {
 	current: FramePage
 }
 
 const { current } = Astro.props
-
-// Keyed by slug so a new tool in the registry fails `astro check` until it has an icon.
-const TOOL_ICONS: Record<ToolSlug, string> = {
-	"combi-name": "🍪",
-}
 ---
 
 <nav id="sidebar" aria-label="Site">
 	<NavItem href="/" icon="⌂" label="Home" current={current === "home"} />
-	{TOOLS.map(({ slug, name }) => (
-		<NavItem href={`/${slug}/`} icon={TOOL_ICONS[slug]} label={name} current={current === slug} />
+	{TOOLS.map(({ slug, name, icon }) => (
+		<NavItem href={`/${slug}/`} icon={icon} label={name} current={current === slug} />
 	))}
 	<div class="bottom">
 		<NavItem href="/settings/" icon="⚙" label="Settings" current={current === "settings"} />

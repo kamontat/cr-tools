@@ -5,18 +5,14 @@ interface Props {
 	slug: ToolSlug
 	name: string
 	tagline: string
+	icon: string
 }
 
-const { slug, name, tagline } = Astro.props
-
-// Keyed by slug so a new tool in the registry fails `astro check` until it has an icon.
-const TOOL_ICONS: Record<ToolSlug, string> = {
-	"combi-name": "🍪",
-}
+const { slug, name, tagline, icon } = Astro.props
 ---
 
 <a class="tool-card" href={`/${slug}/`}>
-	<span class="icon" aria-hidden="true">{TOOL_ICONS[slug]}</span>
+	<span class="icon" aria-hidden="true">{icon}</span>
 	<span class="name">{name}</span>
 	<span class="tagline">{tagline}</span>
 </a>

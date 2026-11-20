@@ -7,6 +7,8 @@ export type Tool = {
 	readonly slug: string
 	readonly name: string
 	readonly tagline: string
+	/** Shown in the sidebar and on the Home card; required, so a new tool fails `astro check` until it has one. */
+	readonly icon: string
 }
 
 export const TOOLS = [
@@ -15,6 +17,7 @@ export const TOOLS = [
 		name: "Combi name codes",
 		tagline:
 			"Pack a run configuration - type, episode, boosts, random boost, cookie power+, and action - into a 10-character combi name.",
+		icon: "🍪",
 	},
 ] as const satisfies readonly Tool[]
 
