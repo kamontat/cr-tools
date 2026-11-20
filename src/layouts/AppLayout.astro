@@ -10,9 +10,14 @@ import { FULL_MIN_WIDTH, SIDEBAR_KEY } from "#lib/frame"
 interface Props {
 	title: Pick
 	current: FramePage
+	/**
+	 * From the dock breakpoint (DOCK_MIN_WIDTH in #lib/frame) the wrapper fills
+	 * the width, for a page that sets a docked panel beside its content.
+	 */
+	wide?: boolean
 }
 
-const { title, current } = Astro.props
+const { title, current, wide = false } = Astro.props
 ---
 
 <BaseLayout title={title}>
@@ -29,7 +34,7 @@ const { title, current } = Astro.props
 		<Sidebar current={current} />
 		<div id="sidebar-scrim" class="scrim" aria-hidden="true"></div>
 		<main id="content">
-			<div class="wrap">
+			<div class="wrap" data-wide={wide ? "" : undefined}>
 				<slot />
 			</div>
 		</main>
@@ -109,6 +114,10 @@ main {
 	.wrap {
 		max-width: 1100px;
 		padding: 32px 40px;
+	}
+
+	.wrap[data-wide] {
+		max-width: none;
 	}
 }
 </style>

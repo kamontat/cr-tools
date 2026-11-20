@@ -20,10 +20,32 @@ test("AppLayout's pre-paint boot script takes the key and breakpoint from #lib/f
 
 test("AppLayout gives every page one padded, width-capped wrapper", async () => {
 	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
-	expect(source).toMatch(/<main id="content">\s*<div class="wrap">\s*<slot \/>\s*<\/div>\s*<\/main>/)
+	expect(source).toMatch(/<main id="content">\s*<div class="wrap"[^>]*>\s*<slot \/>\s*<\/div>\s*<\/main>/)
 	const wrap = source.match(/\n\.wrap \{([^}]*)\}/)?.[1]
 	expect(wrap).toMatch(/max-width:/)
 	expect(wrap).toMatch(/padding:/)
+})
+
+test("AppLayout's wide prop marks the wrapper, which fills the width from the dock breakpoint", async () => {
+	const container = await AstroContainer.create()
+	const render = (wide?: boolean) =>
+		container.renderToString(AppLayout, {
+			props: { title: (m: Messages) => m.settings.title, current: "combi-name", ...(wide ? { wide } : {}) },
+			slots: { default: "<p>Body</p>" },
+		})
+	const parse = (html: string) => new new Window().DOMParser().parseFromString(html, "text/html")
+	expect(
+		parse(await render(true))
+			.querySelector("main#content > .wrap")
+			?.hasAttribute("data-wide"),
+	).toBe(true)
+	expect(
+		parse(await render())
+			.querySelector("main#content > .wrap")
+			?.hasAttribute("data-wide"),
+	).toBe(false)
+	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
+	expect(source).toMatch(/@media \(width >= 1400px\) \{[\s\S]*\.wrap\[data-wide\] \{[^}]*max-width: none/)
 })
 
 test("AppLayout localizes the frame's attributes before it wires the frame", async () => {

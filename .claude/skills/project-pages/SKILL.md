@@ -19,8 +19,9 @@ A page holds the copy and data; layouts (`project-layouts` skill) arrange it, an
 
 Every page renders in `AppLayout` (the frame: top bar, sidebar, environment line and the
 page gutter). Home shows the title, a one-line intro and a `ToolCard` per registered tool;
-Settings renders the `SettingsApp` island (Appearance and About); the combi page is still a
-heading only. The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
+Settings renders the `SettingsApp` island (Appearance and About); the combi page renders its
+heading and the `CombiApp` island (the saved list, the editor, Share), in `AppLayout`'s `wide`
+wrapper. The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
 describes what it becomes.
 
 ## How routes map
