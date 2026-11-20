@@ -7,6 +7,19 @@ test("BaseLayout loads Google Tag Manager from PUBLIC_GTM_ID", async () => {
 	expect(source).toMatch(/loadGtm\(import\.meta\.env\.PUBLIC_GTM_ID, document\);?$/m)
 })
 
+test("BaseLayout boots the saved theme from an inline script guarded by try", async () => {
+	const source = await readFile("src/layouts/BaseLayout.astro", "utf8")
+	const match = source.match(/<script is:inline>([\s\S]*?)<\/script>/)
+	expect(match).not.toBeNull()
+	expect(match?.[1]).toMatch(/try\s*\{[\s\S]*localStorage\.getItem\("theme"\)[\s\S]*\}\s*catch/)
+})
+
+test("BaseLayout puts the build environment on <html> as data-env", async () => {
+	const source = await readFile("src/layouts/BaseLayout.astro", "utf8")
+	expect(source).toContain("readBuildInfo().environment")
+	expect(source).toMatch(/<html[^>]*data-env=\{/)
+})
+
 test("BaseLayout uses the Fairy Cookie icon as the one favicon", async () => {
 	const source = await readFile("src/layouts/BaseLayout.astro", "utf8")
 	expect(source).toContain('<link rel="icon" href="/assets/cookies/fairy_cookie.png">')

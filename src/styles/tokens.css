@@ -1,0 +1,75 @@
+/* Design tokens. Dark is the default; light follows the system preference or an
+   explicit data-theme="light". Values come from the approved prototype. */
+:root {
+	color-scheme: dark;
+	--bg: #111116;
+	--surface: #1a1a21;
+	--hover: #22222b;
+	--text: #f2f2f5;
+	--muted: #8e8ea0;
+	--line: #2a2a35;
+	--accent: #ff3d7f;
+	--on-accent: #111;
+	--code: #ffd23f;
+	--danger: #e5484d;
+	--success: #30a46c;
+	--env: transparent;
+	--radius: 8px;
+	--radius-lg: 10px;
+	--mono: ui-monospace, sfmono-regular, menlo, monospace;
+	--tap: 2.75rem;
+}
+
+@media (prefers-color-scheme: light) {
+	:root:not([data-theme="dark"]) {
+		color-scheme: light;
+		--bg: #f7f7f5;
+		--surface: #fff;
+		--hover: #efefec;
+		--text: #15151c;
+		--muted: #62626f;
+		--line: #e2e2dc;
+		--accent: #d81b60;
+		--on-accent: #fff;
+		--code: #9a5b00;
+	}
+}
+
+:root[data-theme="light"] {
+	color-scheme: light;
+	--bg: #f7f7f5;
+	--surface: #fff;
+	--hover: #efefec;
+	--text: #15151c;
+	--muted: #62626f;
+	--line: #e2e2dc;
+	--accent: #d81b60;
+	--on-accent: #fff;
+	--code: #9a5b00;
+}
+
+:root[data-env="development"] {
+	--env: #3b82f6;
+}
+
+:root[data-env="local"] {
+	--env: #a855f7;
+}
+
+:root[data-env="preview"] {
+	--env: #f5a524;
+}
+
+body {
+	background: var(--bg);
+	color: var(--text);
+	font-family: system-ui, "Noto Sans Thai", "Thonburi", sans-serif;
+	font-size: 15px;
+	line-height: 1.45;
+}
+
+code,
+kbd,
+samp {
+	font-family: var(--mono);
+}
