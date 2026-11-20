@@ -86,6 +86,7 @@ export const en = {
 		intro: "Small tools for what the game doesn't write down. Everything stays in your browser.",
 	},
 	frame: { menu: "Menu", nav: "Site", home: "Home", settings: "Settings", close: "Close", resize: "Resize panel" },
+	home: { saved: { title: "Latest saved codes", seeAll: "See all" } },
 	tools,
 	settings: {
 		title: "Settings",

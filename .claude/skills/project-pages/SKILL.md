@@ -18,7 +18,7 @@ A page holds the copy and data; layouts (`project-layouts` skill) arrange it, an
 | `src/pages/settings/index.astro` | `/settings/` | Settings — part of the site, not a tool |
 
 Every page renders in `AppLayout` (the frame: top bar, sidebar, environment line and the
-page gutter). Home shows the title, a one-line intro and a `ToolCard` per registered tool;
+page gutter). Home shows the title, a one-line intro, the `HomeSaved` island (the latest three saved codes, hidden when there are none, `client:only="svelte"`) and a `ToolCard` per registered tool;
 Settings renders the `SettingsApp` island (Appearance and About); the combi page renders its
 heading and the `CombiApp` island (the saved list, the editor, Share), in `AppLayout`'s `wide`
 wrapper. The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
@@ -107,6 +107,7 @@ Home (`src/pages/index.astro`):
 ---
 import Text from "#components/atoms/Text.astro"
 import ToolCard from "#components/molecules/ToolCard.astro"
+import HomeSaved from "#components/organisms/HomeSaved.svelte"
 import AppLayout from "#layouts/AppLayout.astro"
 import { TOOLS } from "#lib/tools"
 ---
@@ -114,6 +115,7 @@ import { TOOLS } from "#lib/tools"
 <AppLayout title={(m) => m.site.name} current="home">
 	<h1><Text pick={(m) => m.site.name} /></h1>
 	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
+	<HomeSaved client:only="svelte" />
 	<div class="tools">
 		{TOOLS.map((tool) => <ToolCard {...tool} />)}
 	</div>
