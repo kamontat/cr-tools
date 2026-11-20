@@ -4,7 +4,11 @@ import type { Snippet } from "svelte"
 import HelpToggle from "#components/atoms/HelpToggle.svelte"
 
 interface Props {
-	/** Prefix of the label's and the help's ids: `<id>-label`, `<id>-help`. */
+	/**
+	 * Prefix of the label's and the help's ids: `<id>-label`, `<id>-help`. Unique
+	 * on the page: an editor mounted twice (docked and in a panel) passes its own
+	 * prefix, such as `dock-goal`.
+	 */
 	id: string
 	label: string
 	help: string
@@ -26,9 +30,7 @@ let open = $state(false)
 		<span class="label" id="{id}-label">{label}</span>
 		<HelpToggle label={helpLabel} controls="{id}-help" expanded={open} ontoggle={() => (open = !open)} />
 	</div>
-	{#if open}
-		<p class="help" id="{id}-help">{help}</p>
-	{/if}
+	<p class="help" id="{id}-help" hidden={!open}>{help}</p>
 	{#if note}
 		<p class="note">{note}</p>
 	{/if}

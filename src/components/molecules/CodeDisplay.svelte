@@ -42,7 +42,9 @@ const loadout = $derived<Run[]>(
 {#snippet runs(list: Run[])}
 	{#each list as run, at (at)}
 		{#if run.group !== null && canJump(run.group)}
-			<button type="button" title={run.hint} onclick={() => onjump(run.group as string)}>{run.text}</button>
+			<button type="button" aria-label={run.hint} title={run.hint} onclick={() => onjump(run.group as string)}>
+				{run.text}
+			</button>
 		{:else if run.group !== null}
 			<span title={run.hint}>{run.text}</span>
 		{:else}

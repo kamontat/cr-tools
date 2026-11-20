@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/svelte"
+import { fireEvent, render, screen, within } from "@testing-library/svelte"
 import { afterEach, expect, test, vi } from "vitest"
 
 import CodeDisplay from "#components/molecules/CodeDisplay.svelte"
@@ -57,12 +57,12 @@ test("the 10 game characters show large, and the summary and full code small", (
 	expect(full.textContent?.replace(/\s/g, "")).toBe(CODE)
 })
 
-test("a jumpable group is a button titled with its hint that calls onjump with its group", async () => {
+test("a jumpable group is a button named and titled by its hint that calls onjump with its group", async () => {
 	const { container, onjump } = setup()
-	const big = container.querySelector(".code-big") as Element
+	const big = container.querySelector(".code-big") as HTMLElement
 	const episode = hintOf("episode")
-	const button = [...big.querySelectorAll("button")].find((b) => b.getAttribute("title") === episode.hint)
-	if (button === undefined) throw new Error("no episode button")
+	const button = within(big).getByRole("button", { name: episode.hint })
+	expect(button.getAttribute("title")).toBe(episode.hint)
 	expect(button.textContent?.trim()).toBe(episode.char)
 	await fireEvent.click(button)
 	expect(onjump).toHaveBeenCalledWith("episode")
@@ -86,10 +86,8 @@ test("an inert group is a span", () => {
 
 test("the loadout groups in the full code jump too", async () => {
 	const { container, onjump } = setup()
-	const full = container.querySelector(".code-full") as Element
-	const pet = hintOf("pet")
-	const button = [...full.querySelectorAll("button")].find((b) => b.getAttribute("title") === pet.hint)
-	if (button === undefined) throw new Error("no pet button")
+	const full = container.querySelector(".code-full") as HTMLElement
+	const button = within(full).getByRole("button", { name: hintOf("pet").hint })
 	await fireEvent.click(button)
 	expect(onjump).toHaveBeenCalledWith("pet")
 })

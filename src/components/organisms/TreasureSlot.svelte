@@ -1,12 +1,13 @@
 <script lang="ts">
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
+import EntryPicker from "#components/molecules/EntryPicker.svelte"
 import { levelRange, MAX_LEVEL } from "#lib/combi/loadout"
 
 type Option = { id: string; name: string; src: string | null }
 type Pick = Option & { levels: number[] }
 
 interface Props {
-	/** The slot's number, 1 to 3; names the picker's id. */
+	/** The slot's number, 1 to 3. */
 	index: number
 	label: string
 	/** The slot's alternatives; each holds at least one level. */
@@ -19,6 +20,8 @@ interface Props {
 		remove: string
 		/** The add picker's search box. */
 		search: string
+		/** The add picker's line when the search hides everything. */
+		noMatch?: string
 		allLevels: string
 		level: (n: number) => string
 	}
@@ -26,21 +29,17 @@ interface Props {
 
 let { index, label, picks, options, onchange, labels }: Props = $props()
 
+/** Unique per mount, so the docked editor and the panel editor never share an id. */
+const uid = $props.id()
+
 const LEVELS = levelRange(0, MAX_LEVEL)
 
 let adding = $state(false)
-let query = $state("")
 
 /** Where a shift-click measures from, per pick: the last level pressed without shift. */
 const anchors = new Map<string, number>()
 
 const picked = $derived(new Set(picks.map((pick) => pick.id)))
-
-const shown = $derived.by(() => {
-	const words = query.trim().toLowerCase()
-	if (words === "") return null
-	return new Set(options.filter((option) => option.name.toLowerCase().includes(words)).map((option) => option.id))
-})
 
 /** Option order first; a carried pick the options lack keeps its place after them. */
 function ordered(list: Pick[]): Pick[] {
@@ -59,7 +58,7 @@ function setLevels(id: string, levels: number[]) {
 /** A click toggles one level, never the last; shift holds the range from the anchor. */
 function pressLevel(pick: Pick, level: number, event: MouseEvent) {
 	if (event.shiftKey) {
-		const from = anchors.get(pick.id) ?? pick.levels[0] ?? 0
+		const from = anchors.get(pick.id) ?? Math.min(...pick.levels)
 		setLevels(pick.id, levelRange(Math.min(from, level), Math.max(from, level)))
 		return
 	}
@@ -79,15 +78,18 @@ function remove(id: string) {
 	onchange(picks.filter((pick) => pick.id !== id))
 }
 
-function toggle(option: Option) {
-	if (picked.has(option.id)) return remove(option.id)
+/** The add picker toggles: a picked option leaves, another joins at +0. */
+function toggle(id: string) {
+	if (picked.has(id)) return remove(id)
+	const option = options.find((candidate) => candidate.id === id)
+	if (option === undefined) return
 	onchange(ordered([...picks, { ...option, levels: [0] }]))
 }
 </script>
 
 <!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and legend layout -->
-<div class="slot" role="group" aria-labelledby="treasure-slot-{index}-label">
-	<span class="label" id="treasure-slot-{index}-label">{label}</span>
+<div class="slot" role="group" aria-labelledby="{uid}-label" data-slot={index}>
+	<span class="label" id="{uid}-label">{label}</span>
 	{#each picks as pick (pick.id)}
 		<!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and layout -->
 		<div class="pick" role="group" aria-label={pick.name}>
@@ -130,28 +132,20 @@ function toggle(option: Option) {
 		type="button"
 		class="add"
 		aria-expanded={adding}
-		aria-controls="treasure-slot-{index}-picker"
+		aria-controls="{uid}-picker"
 		onclick={() => (adding = !adding)}>
 		{labels.add}
 	</button>
 	{#if adding}
-		<!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and layout -->
-		<div class="picker" id="treasure-slot-{index}-picker" role="group" aria-label={labels.add}>
-			<input type="search" aria-label={labels.search} placeholder={labels.search} bind:value={query}>
-			<div class="grid">
-				{#each options as option (option.id)}
-					<button
-						type="button"
-						class="cell"
-						aria-label={option.name}
-						aria-pressed={picked.has(option.id)}
-						hidden={shown !== null && !shown.has(option.id)}
-						onclick={() => toggle(option)}>
-						<EntryIcon src={option.src} name={option.name} size={40} />
-						<span class="cell-name" aria-hidden="true">{option.name}</span>
-					</button>
-				{/each}
-			</div>
+		<div class="picker" id="{uid}-picker">
+			<EntryPicker
+				label={labels.add}
+				searchLabel={labels.search}
+				noMatchLabel={labels.noMatch}
+				{options}
+				value={null}
+				pressed={(id) => picked.has(id)}
+				onpick={toggle} />
 		</div>
 	{/if}
 </div>
@@ -258,61 +252,5 @@ button {
 	.remove {
 		width: var(--tap);
 	}
-}
-
-.picker {
-	gap: 8px;
-}
-
-input {
-	min-height: 36px;
-	padding: 6px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-}
-
-.grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-	gap: 8px;
-}
-
-.cell {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 4px;
-	min-width: 0;
-	min-height: 76px;
-	padding: 6px 4px;
-	border-radius: var(--radius-lg);
-	font-size: 0.75rem;
-}
-
-/* The reset's [hidden] loses to the display above; a filtered-out cell must still go. */
-.cell[hidden] {
-	display: none;
-}
-
-.cell:hover {
-	background: var(--hover);
-}
-
-.cell[aria-pressed="true"] {
-	border-color: var(--accent);
-	color: var(--text);
-	box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.cell-name {
-	max-width: 100%;
-	overflow: hidden;
-	text-align: center;
-	text-overflow: ellipsis;
-	white-space: nowrap;
 }
 </style>

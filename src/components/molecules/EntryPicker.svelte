@@ -14,9 +14,15 @@ interface Props {
 	/** The clear button's text; shown only with `onclear`. */
 	noneLabel?: string
 	onclear?: () => void
+	/** Which options read as picked; one option, `value`, by default. A multi-pick caller says its own. */
+	pressed?: (id: string) => boolean
+	/** The line shown when the search hides every option. */
+	noMatchLabel?: string
 }
 
-let { label, searchLabel, options, value, onpick, noneLabel, onclear }: Props = $props()
+let { label, searchLabel, options, value, onpick, noneLabel, onclear, pressed, noMatchLabel }: Props = $props()
+
+const isPressed = $derived(pressed ?? ((id: string) => id === value))
 
 let query = $state("")
 
@@ -43,7 +49,7 @@ const shown = $derived.by(() => {
 				type="button"
 				class="cell"
 				aria-label={option.name}
-				aria-pressed={value === option.id}
+				aria-pressed={isPressed(option.id)}
 				hidden={shown !== null && !shown.has(option.id)}
 				onclick={() => onpick(option.id)}>
 				<EntryIcon src={option.src} name={option.name} size={40} />
@@ -51,6 +57,9 @@ const shown = $derived.by(() => {
 			</button>
 		{/each}
 	</div>
+	{#if noMatchLabel && shown !== null && shown.size === 0}
+		<p class="empty">{noMatchLabel}</p>
+	{/if}
 </div>
 
 <style>
@@ -78,6 +87,12 @@ input {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
 	gap: 8px;
+}
+
+.empty {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.8125rem;
 }
 
 .cell {

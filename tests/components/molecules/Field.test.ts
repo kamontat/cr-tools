@@ -17,21 +17,21 @@ test("the label names the group and the children render inside it", () => {
 	expect(group.contains(screen.getByLabelText("Inside"))).toBe(true)
 })
 
-test("the help is hidden, then shows on toggle with the right id", async () => {
+test("the help is in the page but hidden, then shows on toggle; aria-controls names it", async () => {
 	const { container } = render(Field, { props })
-	expect(screen.queryByText("What the run aims for.")).toBeNull()
+	const help = container.querySelector("#goal-help") as HTMLElement
+	expect(help.textContent).toBe("What the run aims for.")
+	expect(help.hidden).toBe(true)
 	const toggle = screen.getByRole("button", { name: "About goal" })
 	expect(toggle.getAttribute("aria-expanded")).toBe("false")
 	expect(toggle.getAttribute("aria-controls")).toBe("goal-help")
 
 	await fireEvent.click(toggle)
-	const help = screen.getByText("What the run aims for.")
-	expect(help.id).toBe("goal-help")
+	expect(help.hidden).toBe(false)
 	expect(toggle.getAttribute("aria-expanded")).toBe("true")
-	expect(container.querySelector("#goal-help")).toBe(help)
 
 	await fireEvent.click(toggle)
-	expect(screen.queryByText("What the run aims for.")).toBeNull()
+	expect(help.hidden).toBe(true)
 })
 
 test("a note shows as its own line, and none without one", async () => {

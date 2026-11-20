@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/svelte"
 import { afterEach, expect, type Mock, test, vi } from "vitest"
 
-import TreasureSlot from "#components/molecules/TreasureSlot.svelte"
+import TreasureSlot from "#components/organisms/TreasureSlot.svelte"
 
 type Pick = { id: string; name: string; src: string | null; levels: number[] }
 
@@ -140,4 +140,23 @@ test("a carried pick the options lack stays, after the listed ones", async () =>
 	const picker = within(screen.getByRole("group", { name: "Add treasure" }))
 	await fireEvent.click(picker.getByRole("button", { name: "Lucky Dice" }))
 	expect(last(onchange)).toEqual([pick("002", [0]), retired])
+})
+
+test("shift-click before any press ranges from the lowest level, whatever the order", async () => {
+	const { onchange } = setup([pick("002", [6, 3])])
+	await fireEvent.click(strip("Lucky Dice").getByRole("button", { name: "Level +1" }), { shiftKey: true })
+	expect(last(onchange)).toEqual([pick("002", [1, 2, 3])])
+})
+
+test("two slots with the same index never share a DOM id", async () => {
+	const first = setup([])
+	const second = setup([])
+	await fireEvent.click(within(first.container).getByRole("button", { name: "Add treasure" }))
+	await fireEvent.click(within(second.container).getByRole("button", { name: "Add treasure" }))
+	const ids = [...document.querySelectorAll("[id]")].map((el) => el.id)
+	expect(ids.length).toBeGreaterThan(0)
+	expect(new Set(ids).size).toBe(ids.length)
+	for (const add of screen.getAllByRole("button", { name: "Add treasure" })) {
+		expect(document.getElementById(add.getAttribute("aria-controls") ?? "")).not.toBeNull()
+	}
 })

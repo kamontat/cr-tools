@@ -58,3 +58,20 @@ test("without onclear there is no none button", () => {
 	render(EntryPicker, { props: { ...base, onpick: vi.fn(), noneLabel: "None" } })
 	expect(screen.queryByRole("button", { name: "None" })).toBeNull()
 })
+
+test("pressed overrides which options read as picked", () => {
+	render(EntryPicker, { props: { ...base, value: "01", onpick: vi.fn(), pressed: (id: string) => id !== "01" } })
+	expect(screen.getByRole("button", { name: "Brave" }).getAttribute("aria-pressed")).toBe("false")
+	expect(screen.getByRole("button", { name: "Strawberry" }).getAttribute("aria-pressed")).toBe("true")
+	expect(screen.getByRole("button", { name: "Pure Vanilla" }).getAttribute("aria-pressed")).toBe("true")
+})
+
+test("a search that hides everything says so", async () => {
+	render(EntryPicker, { props: { ...base, onpick: vi.fn(), noMatchLabel: "Nothing matches" } })
+	expect(screen.queryByText("Nothing matches")).toBeNull()
+	const search = screen.getByRole("searchbox", { name: "Search cookies" })
+	await fireEvent.input(search, { target: { value: "zzz" } })
+	expect(screen.getByText("Nothing matches")).toBeTruthy()
+	await fireEvent.input(search, { target: { value: "brave" } })
+	expect(screen.queryByText("Nothing matches")).toBeNull()
+})
