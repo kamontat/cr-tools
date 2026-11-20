@@ -97,11 +97,7 @@ export function aboutRows(info: BuildInfo): AboutRow[] {
 	const { environment } = info
 	const rows: AboutRow[] = []
 
-	const label = LABELS[environment]
-	rows.push({
-		key: "environment",
-		text: environment === "preview" && info.pr !== null ? `${label} pr-${info.pr}` : label,
-	})
+	rows.push({ key: "environment", text: LABELS[environment] })
 
 	if (environment !== "development") {
 		rows.push({ key: "built", text: info.builtAt === null ? "Unknown" : info.builtAt.toISOString() })
@@ -114,7 +110,7 @@ export function aboutRows(info: BuildInfo): AboutRow[] {
 	rows.push({
 		key: "source",
 		text: source.length > 0 ? source.join(" · ") : "kamontat/cr-tools",
-		href: REPO_URL,
+		href: environment === "preview" && info.pr !== null ? `${REPO_URL}/pull/${info.pr}` : REPO_URL,
 	})
 
 	if ((environment === "preview" || environment === "production") && info.shortCommit !== null) {

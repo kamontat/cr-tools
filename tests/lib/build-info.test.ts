@@ -99,8 +99,14 @@ describe("aboutRows", () => {
 	test("a preview names its pull request and branch", () => {
 		const rows = aboutRows(readBuildInfo({ dev: false, deploy: "preview", ...all }))
 
-		expect(row(rows, "environment")?.text).toBe("Preview pr-31")
-		expect(row(rows, "source")).toMatchObject({ text: "feat/x · #31", href: REPO_URL })
+		expect(row(rows, "environment")?.text).toBe("Preview")
+		expect(row(rows, "source")).toMatchObject({ text: "feat/x · #31", href: `${REPO_URL}/pull/31` })
+	})
+
+	test("a preview without its pull request links the repository", () => {
+		const rows = aboutRows(readBuildInfo({ dev: false, deploy: "preview" }))
+
+		expect(row(rows, "source")?.href).toBe(REPO_URL)
 	})
 
 	test("production links the changelog and the commit", () => {
