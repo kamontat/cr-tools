@@ -3,6 +3,7 @@ import { onDestroy } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
 import LoadoutIcons from "#components/molecules/LoadoutIcons.svelte"
+import { copyText } from "#lib/clipboard"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { rowLoadout } from "#lib/combi/list"
 import { descriptionTitle, readSaved } from "#lib/combi/saved"
@@ -31,13 +32,8 @@ onDestroy(() => clearTimeout(timer))
 
 const copy = async (code: string) => {
 	const text = combiSectionOf(code)
-	try {
-		if (typeof navigator.clipboard?.writeText !== "function") throw new Error("no clipboard")
-		await navigator.clipboard.writeText(text)
-		say(m.combi.notices.copied(text), "info")
-	} catch {
-		say(m.combi.notices.copyBlocked(text), "error")
-	}
+	if (await copyText(text)) say(m.combi.notices.copied(text), "info")
+	else say(m.combi.notices.copyBlocked(text), "error")
 }
 </script>
 

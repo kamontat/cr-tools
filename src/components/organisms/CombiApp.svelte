@@ -9,6 +9,7 @@ import Toast from "#components/atoms/Toast.svelte"
 import CombiEditor from "#components/organisms/CombiEditor.svelte"
 import CombiList from "#components/organisms/CombiList.svelte"
 import ShareDialog from "#components/organisms/ShareDialog.svelte"
+import { copyText } from "#lib/clipboard"
 import { codeOf, draftFrom, draftFromCode, isDirty, newDraft } from "#lib/combi/draft"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { CodeError, issueText } from "#lib/combi/issues"
@@ -329,11 +330,8 @@ const saveAs = (current: Draft) => {
 	else say(m.combi.notices.refusedSave, "error")
 }
 
-const onsave = () => {
-	if (draft !== null) saveAs({ ...draft, from: null })
-}
-
-const onsaveasnew = () => {
+/** Save and Save as new both add the build as a new entry; the entry it was opened from stays. */
+const saveNew = () => {
 	if (draft !== null) saveAs({ ...draft, from: null })
 }
 
@@ -394,13 +392,8 @@ const ontypecode = (code: string) => {
 /** Copies the 10 characters the game takes, whatever loadout the code carries. */
 const copy = async (code: string) => {
 	const game = combiSectionOf(code)
-	try {
-		if (typeof navigator.clipboard?.writeText !== "function") throw new Error("no clipboard")
-		await navigator.clipboard.writeText(game)
-		say(m.combi.notices.copied(game))
-	} catch {
-		say(m.combi.notices.copyBlocked(game), "error")
-	}
+	if (await copyText(game)) say(m.combi.notices.copied(game))
+	else say(m.combi.notices.copyBlocked(game), "error")
 }
 
 const shareDraft = () => {
@@ -439,9 +432,9 @@ const shareEntry = (entry: SavedCode) => {
 			onchange={(next) => (draft = next)}
 			oncopy={() => draft !== null && copy(codeOf(draft))}
 			onshare={shareDraft}
-			{onsave}
+			onsave={saveNew}
 			{onupdate}
-			{onsaveasnew}
+			onsaveasnew={saveNew}
 			{ondelete}
 			{onreset}
 			{ontypecode} />

@@ -5,6 +5,7 @@ import { onDestroy } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
 import Panel from "#components/molecules/Panel.svelte"
+import { copyText } from "#lib/clipboard"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { descriptionTitle } from "#lib/combi/saved"
 import { shareHashFor } from "#lib/combi/state"
@@ -49,11 +50,8 @@ const select = (element: HTMLElement | undefined) => {
 }
 
 const copy = async (text: string, element: HTMLElement | undefined) => {
-	try {
-		if (typeof navigator.clipboard?.writeText !== "function") throw new Error("no clipboard")
-		await navigator.clipboard.writeText(text)
-		say(m.combi.share.copied, "info")
-	} catch {
+	if (await copyText(text)) say(m.combi.share.copied, "info")
+	else {
 		select(element)
 		say(m.combi.share.copyFailed, "error")
 	}
