@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { type AboutRow, aboutRows, CHANGELOG_URL, REPO_URL, readBuildInfo } from "#lib/build-info"
+import { type AboutRow, aboutRows, CHANGELOG_URL, formatBuilt, REPO_URL, readBuildInfo } from "#lib/build-info"
 
 const SHA = "e2c43291f4b0a7c6d5e8f9a0b1c2d3e4f5a6b7c8"
 const AT = "2026-09-24T14:02:11Z"
@@ -135,5 +135,15 @@ describe("aboutRows", () => {
 		for (const r of aboutRows(readBuildInfo({ dev: false, deploy: "preview" }))) {
 			expect(r.text).not.toMatch(/undefined|null|Invalid/)
 		}
+	})
+})
+
+describe("formatBuilt", () => {
+	test("names the time zone as an offset", () => {
+		expect(formatBuilt(new Date(AT), "en-US", "Asia/Bangkok")).toBe("Sep 24, 2026, 9:02 PM GMT+7")
+	})
+
+	test("UTC reads as GMT, with or without +0 by engine", () => {
+		expect(formatBuilt(new Date(AT), "en-US", "UTC")).toMatch(/^Sep 24, 2026, 2:02 PM GMT(\+0)?$/)
 	})
 })

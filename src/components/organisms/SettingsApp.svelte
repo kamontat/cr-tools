@@ -1,7 +1,7 @@
 <script lang="ts">
 import Segmented from "#components/atoms/Segmented.svelte"
 import Panel from "#components/molecules/Panel.svelte"
-import { type AboutRow, aboutRows, type BuildEnv, readBuildInfo } from "#lib/build-info"
+import { type AboutRow, aboutRows, type BuildEnv, formatBuilt, readBuildInfo } from "#lib/build-info"
 import { applyTheme, readTheme, type Theme, writeTheme } from "#lib/theme"
 
 interface Props {
@@ -46,10 +46,7 @@ const pick = (value: string) => {
 	applyTheme(theme, document.documentElement)
 }
 
-const shown = (row: AboutRow) =>
-	row.key === "built" && info.builtAt !== null
-		? info.builtAt.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })
-		: row.text
+const shown = (row: AboutRow) => (row.key === "built" && info.builtAt !== null ? formatBuilt(info.builtAt) : row.text)
 </script>
 
 <div class="settings">

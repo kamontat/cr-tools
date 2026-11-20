@@ -89,6 +89,23 @@ const LABELS: Record<Environment, string> = {
 }
 
 /**
+ * The build time in the viewer's locale and time zone, with the zone as an
+ * offset ("Nov 20, 2026, 10:25 AM GMT+7") so a shared screenshot says which.
+ * `locale` and `timeZone` default to the viewer's.
+ */
+export function formatBuilt(at: Date, locale?: string, timeZone?: string): string {
+	return at.toLocaleString(locale, {
+		year: "numeric",
+		month: "short",
+		day: "numeric",
+		hour: "numeric",
+		minute: "2-digit",
+		timeZoneName: "shortOffset",
+		...(timeZone && { timeZone }),
+	})
+}
+
+/**
  * The rows the About panel shows. `built` carries the raw ISO instant; the
  * page formats it in the viewer's time zone. An unknown build time reads
  * "Unknown", and a missing commit drops its row.
