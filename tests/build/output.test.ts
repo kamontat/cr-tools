@@ -28,6 +28,9 @@ test("Home has the heading and one card per tool", () => {
 	const html = readFileSync(`${root}/dist/index.html`, "utf8")
 	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
 	expect(doc.querySelector("h1")?.textContent).toBe("Cookie Run tools")
+	expect(doc.querySelector("main h1 + p.intro")?.textContent).toBe(
+		"Small tools for what the game doesn't write down. Everything stays in your browser.",
+	)
 	const hrefs = [...doc.querySelectorAll("main a.tool-card")].map((a) => a.getAttribute("href"))
 	expect(hrefs).toEqual(TOOLS.map(({ slug }) => `/${slug}/`))
 })

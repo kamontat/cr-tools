@@ -6,6 +6,7 @@ import { TOOLS } from "#lib/tools"
 
 <AppLayout title="Cookie Run tools" current="home">
 	<h1>Cookie Run tools</h1>
+	<p class="intro">Small tools for what the game doesn't write down. Everything stays in your browser.</p>
 	<div class="tools">
 		{TOOLS.map((tool) => <ToolCard {...tool} />)}
 	</div>
@@ -13,8 +14,13 @@ import { TOOLS } from "#lib/tools"
 
 <style>
 h1 {
-	margin: 0 0 20px;
+	margin: 0 0 6px;
 	font-size: 1.5rem;
+}
+
+.intro {
+	margin: 0 0 20px;
+	color: var(--muted);
 }
 
 .tools {
