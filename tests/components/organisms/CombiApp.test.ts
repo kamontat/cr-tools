@@ -220,3 +220,80 @@ test("at 1440px the editor docks beside the list; at 1000px it pops up", async (
 	expect(editor()).not.toBeNull()
 	expect(document.querySelector('[data-layout="docked"]')).toBeNull()
 })
+
+const noteBox = () => screen.getByRole("textbox", { name: en.combi.editor.note }) as HTMLTextAreaElement
+
+const editNote = async (value: string) => {
+	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
+	await fireEvent.input(noteBox(), { target: { value } })
+}
+
+test("a bare-code link to a saved entry opens it without a notice", () => {
+	history.replaceState(null, "", `/combi-name/#${scoreCode}`)
+	render(CombiApp)
+	expect(editor()).not.toBeNull()
+	expect(screen.queryByRole("button", { name: en.combi.editor.save })).toBeNull()
+	expect(notice()).toBe("")
+})
+
+test("a link's note stays in the address bar until Save", async () => {
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	render(CombiApp)
+	await waitFor(() => expect(editor()).not.toBeNull())
+	expect(location.hash).toMatch(/[?&]note=/)
+	await fireEvent.click(button(en.combi.editor.save))
+	expect(location.hash).toBe(`#${linkCode}`)
+})
+
+test("an edit drops the link's note from the address bar", async () => {
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	render(CombiApp)
+	await editNote("Mine")
+	expect(location.hash).toBe(`#${linkCode}`)
+})
+
+test("the editor's own address-bar writes do not re-open or re-notice", async () => {
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	render(CombiApp)
+	dismissNotice()
+	window.dispatchEvent(new HashChangeEvent("hashchange"))
+	await editNote("Edited")
+	window.dispatchEvent(new HashChangeEvent("hashchange"))
+	await Promise.resolve()
+	expect(noteBox().value).toBe("Edited")
+	expect(notice()).toBe("")
+})
+
+const dismissNotice = () => {
+	const shown = document.querySelector<HTMLButtonElement>('[role="status"] button, [role="alert"] button')
+	shown?.click()
+}
+
+test("a paste over unsaved edits in the docked editor is refused, and the edits stay", async () => {
+	viewport(1440)
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await editNote("Edited")
+	;(document.activeElement as HTMLElement | null)?.blur()
+	paste(linkCode)
+	await waitFor(() => expect(notice()).toBe(en.combi.notices.pasteRefused))
+	expect(noteBox().value).toBe("Edited")
+	expect(location.hash).toBe(`#${scoreCode}`)
+})
+
+test("a paste over an unedited docked editor opens the pasted code", async () => {
+	viewport(1440)
+	render(CombiApp)
+	await fireEvent.click(button(en.combi.list.newCode))
+	paste(linkCode)
+	await waitFor(() => expect(location.hash).toBe(`#${linkCode}`))
+	expect(notice()).toBe(en.combi.notices.pasted)
+})
+
+test("a paste of a saved code says it opened that entry", async () => {
+	render(CombiApp)
+	paste(scoreCode)
+	await waitFor(() => expect(editor()).not.toBeNull())
+	expect(notice()).toBe(en.combi.notices.pastedSaved("Score farm"))
+	expect(screen.queryByRole("button", { name: en.combi.editor.save })).toBeNull()
+})
