@@ -4,6 +4,8 @@ import { expect, test } from "vitest"
 
 import { describeBuild, describeCombi, describeLoadout, describeRun } from "#lib/combi/describe"
 import { emptyLoadout, levelRange, type TreasurePick, treasurePick } from "#lib/combi/loadout"
+import { en } from "#lib/i18n/en"
+import { th } from "#lib/i18n/th"
 
 const t = (id: string, min = 0, max = min): TreasurePick => treasurePick(id, levelRange(min, max))
 
@@ -19,7 +21,7 @@ const base: Combi = {
 }
 
 test("describes every field, using None for empty selections", () => {
-	expect(describeCombi(base).rows).toEqual([
+	expect(describeCombi(base, en).rows).toEqual([
 		{ field: "Goal", value: "Score" },
 		{ field: "Mode", value: "Manual" },
 		{ field: "Episode", value: "Episode 3" },
@@ -31,11 +33,14 @@ test("describes every field, using None for empty selections", () => {
 })
 
 test("joins multiple boosts and cookie powers in slot order", () => {
-	const { rows } = describeCombi({
-		...base,
-		boosts: ["hpExtension", "fastStart"],
-		cookiePowers: ["fairy", "expParty"],
-	})
+	const { rows } = describeCombi(
+		{
+			...base,
+			boosts: ["hpExtension", "fastStart"],
+			cookiePowers: ["fairy", "expParty"],
+		},
+		en,
+	)
 
 	expect(rows[3]).toEqual({
 		field: "Boosts",
@@ -48,37 +53,40 @@ test("joins multiple boosts and cookie powers in slot order", () => {
 })
 
 test("the tower reads its floor, and a special episode says boosts are not used", () => {
-	const tower = describeCombi({ ...base, episode: "special2", floor: 7 }).rows
+	const tower = describeCombi({ ...base, episode: "special2", floor: 7 }, en).rows
 	expect(tower[3]).toEqual({ field: "Floor", value: "Floor 7" })
 	expect(tower[4]).toEqual({
 		field: "Boosts",
 		value: "Not used in this episode",
 	})
 
-	const anyFloor = describeCombi({ ...base, episode: "special2" }).rows
+	const anyFloor = describeCombi({ ...base, episode: "special2" }, en).rows
 	expect(anyFloor[3]).toEqual({ field: "Floor", value: "Any floor" })
 })
 
 test("no auto verdict for a run played by hand", () => {
-	expect(describeCombi(base).auto).toBeNull()
+	expect(describeCombi(base, en).auto).toBeNull()
 })
 
 test("a full auto combi gets a verdict with no reasons", () => {
-	expect(describeCombi({ ...base, goals: ["money"], mode: "auto" }).auto).toEqual({
+	expect(describeCombi({ ...base, goals: ["money"], mode: "auto" }, en).auto).toEqual({
 		semi: false,
 		reasons: [],
 	})
 })
 
 test("a semi-auto verdict names every reason it needs manual work", () => {
-	const { auto } = describeCombi({
-		...base,
-		goals: ["money"],
-		mode: "auto",
-		boosts: ["hpExtension", "fastStart"],
-		randomBoost: "revive",
-		action: "jumpAtStart",
-	})
+	const { auto } = describeCombi(
+		{
+			...base,
+			goals: ["money"],
+			mode: "auto",
+			boosts: ["hpExtension", "fastStart"],
+			randomBoost: "revive",
+			action: "jumpAtStart",
+		},
+		en,
+	)
 
 	expect(auto).toEqual({
 		semi: true,
@@ -87,7 +95,7 @@ test("a semi-auto verdict names every reason it needs manual work", () => {
 })
 
 test("an empty loadout reads as four None rows", () => {
-	expect(describeLoadout(emptyLoadout())).toEqual([
+	expect(describeLoadout(emptyLoadout(), en)).toEqual([
 		{ field: "Cookie", value: "None" },
 		{ field: "Relay", value: "None" },
 		{ field: "Pet", value: "None" },
@@ -98,12 +106,15 @@ test("an empty loadout reads as four None rows", () => {
 // None and Any are two different things to say: one is a slot the build never
 // mentions, the other a slot it says anything fits.
 test("an Any cookie, relay and pet read as Any, not as None", () => {
-	const rows = describeLoadout({
-		...emptyLoadout(),
-		cookie: "__",
-		relay: "__",
-		pet: "__",
-	})
+	const rows = describeLoadout(
+		{
+			...emptyLoadout(),
+			cookie: "__",
+			relay: "__",
+			pet: "__",
+		},
+		en,
+	)
 
 	expect(rows[0]).toEqual({ field: "Cookie", value: "Any cookie" })
 	expect(rows[1]).toEqual({ field: "Relay", value: "Any cookie" })
@@ -111,12 +122,15 @@ test("an Any cookie, relay and pet read as Any, not as None", () => {
 })
 
 test("a picked cookie, relay and pet read as their names", () => {
-	const rows = describeLoadout({
-		...emptyLoadout(),
-		cookie: "01",
-		relay: "02",
-		pet: "01",
-	})
+	const rows = describeLoadout(
+		{
+			...emptyLoadout(),
+			cookie: "01",
+			relay: "02",
+			pet: "01",
+		},
+		en,
+	)
 
 	// The relay is a second cookie, not its own list. Id "01" names
 	// GingerBright among cookies and Cheese Drop among pets, so this assertion
@@ -127,40 +141,52 @@ test("a picked cookie, relay and pet read as their names", () => {
 })
 
 test("alternatives read as or, and slots as a numbered list when order matters", () => {
-	const unordered = describeLoadout({
-		...emptyLoadout(),
-		treasures: [[t("001"), t("002")], [t("003")]],
-		ordered: false,
-	})
+	const unordered = describeLoadout(
+		{
+			...emptyLoadout(),
+			treasures: [[t("001"), t("002")], [t("003")]],
+			ordered: false,
+		},
+		en,
+	)
 	expect(unordered[3]?.field).toBe("Treasures")
 	expect(unordered[3]?.value).toContain(" or ")
 	expect(unordered[3]?.value).toContain("; ")
 
-	const ordered = describeLoadout({
-		...emptyLoadout(),
-		treasures: [[t("001")], [t("002")]],
-		ordered: true,
-	})
+	const ordered = describeLoadout(
+		{
+			...emptyLoadout(),
+			treasures: [[t("001")], [t("002")]],
+			ordered: true,
+		},
+		en,
+	)
 	expect(ordered[3]?.field).toBe("Treasures (exact order)")
 	expect(ordered[3]?.value.startsWith("1. ")).toBe(true)
 })
 
 // One slot has nothing to order, so the label must not claim otherwise.
 test("a single treasure slot never reads as exact order", () => {
-	const rows = describeLoadout({
-		...emptyLoadout(),
-		treasures: [[t("001")]],
-		ordered: true,
-	})
+	const rows = describeLoadout(
+		{
+			...emptyLoadout(),
+			treasures: [[t("001")]],
+			ordered: true,
+		},
+		en,
+	)
 
 	expect(rows[3]?.field).toBe("Treasures")
 })
 
 test("each treasure reads with its level, +0 included", () => {
-	const rows = describeLoadout({
-		...emptyLoadout(),
-		treasures: [[t("001"), t("002", 5, 9)], [t("003", 9)]],
-	})
+	const rows = describeLoadout(
+		{
+			...emptyLoadout(),
+			treasures: [[t("001"), t("002", 5, 9)], [t("003", 9)]],
+		},
+		en,
+	)
 
 	const value = rows[3]?.value ?? ""
 	const [first, second] = value.split("; ")
@@ -182,21 +208,24 @@ test("the build verdict names the relay as what forces the work", () => {
 		action: "none",
 	}
 
-	expect(describeBuild({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto })).toEqual({
+	expect(describeBuild({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto }, en)).toEqual({
 		semi: true,
 		reasons: ["Relay cookie"],
 	})
-	expect(describeBuild({ loadout: emptyLoadout(), combi: auto })).toEqual({
+	expect(describeBuild({ loadout: emptyLoadout(), combi: auto }, en)).toEqual({
 		semi: false,
 		reasons: [],
 	})
 })
 
 test("a treasure's runs read with commas, so 'or' only separates treasures", () => {
-	const rows = describeLoadout({
-		...emptyLoadout(),
-		treasures: [[treasurePick("001", [0, 1, 2, 5, 6, 7, 8, 9]), t("002", 3)]],
-	})
+	const rows = describeLoadout(
+		{
+			...emptyLoadout(),
+			treasures: [[treasurePick("001", [0, 1, 2, 5, 6, 7, 8, 9]), t("002", 3)]],
+		},
+		en,
+	)
 
 	expect(rows[3]?.value).toMatch(/ \+0-2, \+5-9 or .+ \+3$/)
 })
@@ -210,7 +239,7 @@ test("a relay on an episode with no relay slot is no reason", () => {
 		episode: "special1",
 	}
 
-	expect(describeBuild({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto })).toEqual({
+	expect(describeBuild({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto }, en)).toEqual({
 		semi: false,
 		reasons: [],
 	})
@@ -219,63 +248,94 @@ test("a relay on an episode with no relay slot is no reason", () => {
 // Auto versus semi-auto means nothing for a manual run, relay or not.
 test("a manual run has no verdict even with a relay", () => {
 	expect(
-		describeBuild({
-			loadout: { ...emptyLoadout(), relay: "0P" },
-			combi: {
-				goals: ["score"],
-				mode: "manual",
-				episode: "any",
-				floor: null,
-				boosts: [],
-				randomBoost: null,
-				cookiePowers: [],
-				action: "none",
+		describeBuild(
+			{
+				loadout: { ...emptyLoadout(), relay: "0P" },
+				combi: {
+					goals: ["score"],
+					mode: "manual",
+					episode: "any",
+					floor: null,
+					boosts: [],
+					randomBoost: null,
+					cookiePowers: [],
+					action: "none",
+				},
 			},
-		}),
+			en,
+		),
 	).toBe(null)
 })
 
 test("a run reads as its mode, goal and episode, the tower adding its floor", () => {
 	const auto: Combi = { ...base, mode: "auto", goals: ["money"] }
-	expect(describeRun({ loadout: emptyLoadout(), combi: auto })).toEqual(["Auto", "Money", "EP. 3"])
-	expect(describeRun({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto })).toEqual([
+	expect(describeRun({ loadout: emptyLoadout(), combi: auto }, en)).toEqual(["Auto", "Money", "EP. 3"])
+	expect(describeRun({ loadout: { ...emptyLoadout(), relay: "0P" }, combi: auto }, en)).toEqual([
 		"Semi-auto",
 		"Money",
 		"EP. 3",
 	])
 	expect(
-		describeRun({
-			loadout: emptyLoadout(),
-			combi: { ...auto, goals: [], episode: "special2", floor: 40 },
-		}),
+		describeRun(
+			{
+				loadout: emptyLoadout(),
+				combi: { ...auto, goals: [], episode: "special2", floor: 40 },
+			},
+			en,
+		),
 	).toEqual(["Auto", "Any goal", "S.EP. 2", "Floor 40"])
 	expect(
-		describeRun({
-			loadout: emptyLoadout(),
-			combi: { ...base, episode: "any" },
-		}),
+		describeRun(
+			{
+				loadout: emptyLoadout(),
+				combi: { ...base, episode: "any" },
+			},
+			en,
+		),
 	).toEqual(["Manual", "Score", "Any episode"])
 	expect(
-		describeRun({
-			loadout: emptyLoadout(),
-			combi: { ...base, episode: "specialExp" },
-		})[2],
+		describeRun(
+			{
+				loadout: emptyLoadout(),
+				combi: { ...base, episode: "specialExp" },
+			},
+			en,
+		)[2],
 	).toBe("S.EP. Exp")
 	expect(
-		describeRun({
-			loadout: emptyLoadout(),
-			combi: { ...auto, goals: ["exp", "money"] },
-		})[1],
+		describeRun(
+			{
+				loadout: emptyLoadout(),
+				combi: { ...auto, goals: ["exp", "money"] },
+			},
+			en,
+		)[1],
 	).toBe("Money + Exp")
 })
 
 test("a run aiming for several goals names them all, in table order", () => {
-	expect(describeCombi({ ...base, goals: ["box", "score"] }).rows[0]).toEqual({
+	expect(describeCombi({ ...base, goals: ["box", "score"] }, en).rows[0]).toEqual({
 		field: "Goal",
 		value: "Score + Box",
 	})
-	expect(describeCombi({ ...base, mode: "auto", goals: [] }).rows[0]).toEqual({
+	expect(describeCombi({ ...base, mode: "auto", goals: [] }, en).rows[0]).toEqual({
 		field: "Goal",
 		value: "Any goal",
 	})
+})
+
+test("describes in Thai, keeping item names English", () => {
+	const fields = th.combi.describe.fields
+	const { rows } = describeCombi(
+		{ ...base, mode: "auto", goals: ["money"], episode: "episode3", boosts: ["fastStart"] },
+		th,
+	)
+
+	expect(rows.slice(0, 4)).toEqual([
+		{ field: fields.goal, value: th.combi.goals.money },
+		{ field: fields.mode, value: th.combi.modes.auto },
+		{ field: fields.episode, value: "Episode 3" },
+		{ field: fields.boosts, value: "Fast Start" },
+	])
+	expect(fields.goal).not.toBe(en.combi.describe.fields.goal)
 })

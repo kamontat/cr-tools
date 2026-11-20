@@ -9,15 +9,9 @@ import {
 	ALL_MODES,
 	ALL_RANDOM_BOOSTS,
 } from "#lib/combi/codec"
-import {
-	ACTION_LABELS,
-	BOOST_LABELS,
-	COOKIE_POWER_LABELS,
-	EPISODE_LABELS,
-	GOAL_LABELS,
-	MODE_LABELS,
-	RANDOM_BOOST_LABELS,
-} from "#lib/combi/labels"
+import { BOOST_LABELS, COOKIE_POWER_LABELS, EPISODE_LABELS, RANDOM_BOOST_LABELS } from "#lib/combi/labels"
+import { en } from "#lib/i18n/en"
+import { th } from "#lib/i18n/th"
 
 type LabelTable = {
 	field: string
@@ -26,8 +20,10 @@ type LabelTable = {
 }
 
 const TABLES: LabelTable[] = [
-	{ field: "goal", labels: GOAL_LABELS, values: ALL_GOALS },
-	{ field: "mode", labels: MODE_LABELS, values: ALL_MODES },
+	{ field: "goal (en)", labels: en.combi.goals, values: ALL_GOALS },
+	{ field: "goal (th)", labels: th.combi.goals, values: ALL_GOALS },
+	{ field: "mode (en)", labels: en.combi.modes, values: ALL_MODES },
+	{ field: "mode (th)", labels: th.combi.modes, values: ALL_MODES },
 	{ field: "episode", labels: EPISODE_LABELS, values: ALL_EPISODES },
 	{ field: "boost", labels: BOOST_LABELS, values: ALL_BOOSTS },
 	{
@@ -40,7 +36,8 @@ const TABLES: LabelTable[] = [
 		labels: COOKIE_POWER_LABELS,
 		values: ALL_COOKIE_POWERS,
 	},
-	{ field: "action", labels: ACTION_LABELS, values: ALL_ACTIONS },
+	{ field: "action (en)", labels: en.combi.actions, values: ALL_ACTIONS },
+	{ field: "action (th)", labels: th.combi.actions, values: ALL_ACTIONS },
 ]
 
 test("every value of every field has a label, with no leftover keys", () => {
@@ -53,10 +50,10 @@ test("every value of every field has a label, with no leftover keys", () => {
 })
 
 test("labels read the way the game words them", () => {
-	expect(MODE_LABELS.semiauto).toBe("Semi-auto")
+	expect(en.combi.modes.semiauto).toBe("Semi-auto")
 	expect(EPISODE_LABELS.specialExp).toBe("Special Exp Episode")
 	expect(RANDOM_BOOST_LABELS.revive).toBe("Revive once with 80 HP")
 	expect(COOKIE_POWER_LABELS.seaFairy).toBe("Sea Fairy Cookie")
-	expect(ACTION_LABELS.jumpAtStart).toBe("Jump at start")
+	expect(en.combi.actions.jumpAtStart).toBe("Jump at start")
 	expect(BOOST_LABELS.powerJellyBoost).toBe("Power Jelly Boost")
 })

@@ -37,10 +37,17 @@ set of valid values, and everything else derives from them:
   what an episode (or a manual run's action) has no room for; `encode` always writes through
   it, `decode` applies it and warns about what it dropped. The relay and treasures are the
   loadout's, so `fitLoadout` in `full-code.ts` drops those, with `loadoutWarnings` beside it.
-- `labels.ts` maps every value to a display name. `tests/lib/combi/labels.test.ts` asserts
-  key-for-key parity with the `ALL_*` arrays, so a new value cannot ship unlabeled. No error
-  or warning the codec raises quotes a display name, so every name lives here, boosts
-  included.
+- `labels.ts` maps every item to its name — boosts, random boosts, cookie powers and
+  episodes, which stay English in both languages. Goals, modes and actions are interface
+  words, so they live in the language catalogues instead (`combi.goals`, `combi.modes`,
+  `combi.actions` in `src/lib/i18n/en.ts` and `th.ts`).
+  `tests/lib/combi/labels.test.ts` asserts key-for-key parity of all of them with the
+  `ALL_*` arrays, so a new value cannot ship unlabeled. No error or warning the codec
+  raises quotes a display name.
+- `describe.ts` and `hints.ts` take the catalogue (`Messages`) as their last argument and
+  read every interface word from `combi.describe` and `combi.hints`; item names come from
+  `labels.ts` and `catalog.ts` whatever the language. `saved.ts` passes `en`, so the saved
+  list's run facets stay English.
 - `describe.ts` turns a `Combi` into display rows plus an auto/semi-auto verdict
   (`describeCombi`, `describeBuild`), a `Loadout` into its own rows (`describeLoadout`), and
   a full code into its run chips (`describeRun`). It is the only place that decides how a

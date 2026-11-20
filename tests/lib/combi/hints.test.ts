@@ -1,6 +1,10 @@
 import { expect, test } from "vitest"
 
-import { hintsFor } from "#lib/combi/hints"
+import { hintsFor as hintsIn } from "#lib/combi/hints"
+import { en } from "#lib/i18n/en"
+import { th } from "#lib/i18n/th"
+
+const hintsFor = (code: string) => hintsIn(code, en)
 
 function hints(code: string): string[] {
 	return hintsFor(code).map(({ hint }) => hint)
@@ -150,4 +154,10 @@ test("every run carries a short name: its slot and field, no value", () => {
 test("a code that cannot be decoded gets no hints at all", () => {
 	expect(hintsFor("0Z0000000")).toEqual([])
 	expect(hintsFor("1S0")).toEqual([])
+})
+
+test("hints read in Thai", () => {
+	const described = hintsIn("MS0A000000", th)
+	expect(described[0]?.name).toBe(th.combi.hints.slot1Mode)
+	expect(described[0]?.name).not.toBe(en.combi.hints.slot1Mode)
 })

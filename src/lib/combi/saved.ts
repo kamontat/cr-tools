@@ -14,7 +14,8 @@
 
 import type { Episode } from "./codec"
 
-import { describeRun, GOALS_JOIN } from "./describe"
+import { en } from "#lib/i18n/en"
+import { describeRun } from "./describe"
 import { decodeFull, encodeFull } from "./full-code"
 import { codeInHash, noteInHash, statsInHash } from "./state"
 import {
@@ -275,10 +276,14 @@ export function sortSaved(entries: readonly SavedCode[], sort: SavedSort): Saved
 	})
 }
 
-/** What a run reads as on its row, or null for a code that no longer reads. */
+/**
+ * What a run reads as on its row, or null for a code that no longer reads.
+ * Worded in English whatever the page's language: the facets filter on these
+ * words, and they give way to goal, mode and episode ids in the combi page.
+ */
 function runChipsOf(code: string): string[] | null {
 	try {
-		return describeRun(decodeFull(code).full)
+		return describeRun(decodeFull(code).full, en)
 	} catch {
 		return null
 	}
@@ -308,7 +313,7 @@ function facetsOf(chips: string[] | null): Record<RunFacet, string> | null {
  * one of each of them, so a goal filter matches it on any and offers each.
  */
 function facetParts(run: Record<RunFacet, string>, facet: RunFacet): string[] {
-	return facet === "goal" ? run.goal.split(GOALS_JOIN) : [run[facet]]
+	return facet === "goal" ? run.goal.split(en.combi.describe.goalsJoin) : [run[facet]]
 }
 
 /** What the drawer is narrowed to. An empty field narrows nothing. */
