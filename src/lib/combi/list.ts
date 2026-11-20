@@ -88,6 +88,11 @@ export function filterList(entries: readonly SavedCode[], query: string, goal: G
 	})
 }
 
+/** The goals a code aims for, or null when the code does not decode. */
+export function rowGoals(code: string): Goal[] | null {
+	return decoded(code)?.combi.goals ?? null
+}
+
 export type RowIcon = { src: string | null; name: string; round?: true; more?: number }
 export type RowLoadout = { cookie: RowIcon | null; pet: RowIcon | null; treasures: RowIcon[] }
 

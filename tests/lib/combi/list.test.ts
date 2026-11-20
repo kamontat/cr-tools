@@ -10,6 +10,7 @@ import {
 	filterList,
 	LIST_SORT_KEY,
 	readListSort,
+	rowGoals,
 	rowLoadout,
 	sortList,
 	writeListSort,
@@ -143,4 +144,9 @@ test("list sort is remembered; anything else reads newest", () => {
 	expect(readListSort(storage("bogus"))).toBe("newest")
 	expect(readListSort(null)).toBe("newest")
 	expect(LIST_SORT_KEY).toBe("combi-name:list-sort")
+})
+
+test("row goals: the goals a code aims for, or null when it does not read", () => {
+	expect(rowGoals(full({}, { goals: ["money", "box"] }))).toEqual(["money", "box"])
+	expect(rowGoals("not a code")).toBeNull()
 })
