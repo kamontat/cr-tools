@@ -36,12 +36,17 @@ const { title, current } = Astro.props
 	</div>
 	<script>
 	import { initFrame } from "#lib/frame"
-	import { currentLang, localizeAttrs } from "#lib/lang"
+	import { currentLang, localizeAttrs, syncFromStorage, syncOnRestore } from "#lib/lang"
 	import { localStore } from "#lib/storage"
 
+	const store = localStore()
 	// The head's boot set <html lang>; bring the frame's labels and tooltips in line with it.
 	localizeAttrs(document, currentLang(document))
-	initFrame(document, localStore())
+	// Correct a boot that did not run, and a page the back-forward cache restores
+	// after the visitor chose another language or theme elsewhere.
+	syncFromStorage(document, store)
+	syncOnRestore(window, document, store)
+	initFrame(document, store)
 	</script>
 </BaseLayout>
 

@@ -1,4 +1,5 @@
 import { localStore, readKey, writeKey } from "#lib/storage"
+import { applyTheme, readTheme } from "#lib/theme"
 
 export type Lang = "th" | "en"
 
@@ -62,4 +63,24 @@ export function onLangChange(doc: Document, listener: (lang: Lang) => void): () 
 	}
 	doc.addEventListener("langchange", handler)
 	return () => doc.removeEventListener("langchange", handler)
+}
+
+/**
+ * Brings the page in line with what storage holds now: the theme, and the
+ * language when it differs. Corrects a boot that did not run, and a page the
+ * back-forward cache froze before the visitor chose another language.
+ */
+export function syncFromStorage(doc: Document, store: Storage | null = localStore()): void {
+	applyTheme(readTheme(store), doc.documentElement)
+	const lang = readLang(store)
+	if (lang !== currentLang(doc)) applyLang(lang, doc)
+}
+
+/** Re-syncs whenever the back-forward cache restores the page, since the head boot does not run again. Returns the unsubscribe. */
+export function syncOnRestore(win: Window, doc: Document, store: Storage | null = localStore()): () => void {
+	const handler = (event: Event) => {
+		if ((event as PageTransitionEvent).persisted) syncFromStorage(doc, store)
+	}
+	win.addEventListener("pageshow", handler)
+	return () => win.removeEventListener("pageshow", handler)
 }

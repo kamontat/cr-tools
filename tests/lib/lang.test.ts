@@ -1,7 +1,16 @@
 import { Window as HappyWindow } from "happy-dom"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
-import { applyLang, currentLang, LANG_KEY, onLangChange, readLang, writeLang } from "#lib/lang"
+import {
+	applyLang,
+	currentLang,
+	LANG_KEY,
+	onLangChange,
+	readLang,
+	syncFromStorage,
+	syncOnRestore,
+	writeLang,
+} from "#lib/lang"
 
 const throwing = {
 	getItem() {
@@ -108,4 +117,73 @@ test("currentLang reads <html lang>, and anything else as Thai", () => {
 	expect(currentLang(doc)).toBe("th")
 	doc.documentElement.lang = "de"
 	expect(currentLang(doc)).toBe("th")
+})
+
+const englishPage = () => {
+	const root = doc.documentElement
+	root.lang = "th"
+	root.setAttribute("data-title-th", "หน้าแรก")
+	root.setAttribute("data-title-en", "Home")
+	doc.title = "หน้าแรก"
+	doc.body.innerHTML = `<button data-l10n aria-label="เมนู" data-aria-label-th="เมนู" data-aria-label-en="Menu"></button>`
+	return doc.querySelector("button") as HTMLButtonElement
+}
+
+const pageshow = (persisted: boolean) => {
+	const event = new happy.Event("pageshow")
+	Object.defineProperty(event, "persisted", { value: persisted })
+	;(happy as unknown as Window).dispatchEvent(event as unknown as Event)
+}
+
+test("syncFromStorage brings a Thai page to the stored English, with its title and attributes", () => {
+	const button = englishPage()
+	const store = memory()
+	store.setItem(LANG_KEY, "en")
+	store.setItem("theme", "light")
+	const listener = vi.fn()
+	onLangChange(doc, listener)
+
+	syncFromStorage(doc, store)
+	expect(doc.documentElement.lang).toBe("en")
+	expect(doc.title).toBe("Home")
+	expect(button.getAttribute("aria-label")).toBe("Menu")
+	expect(doc.documentElement.getAttribute("data-theme")).toBe("light")
+	expect(listener).toHaveBeenCalledWith("en")
+})
+
+test("syncFromStorage leaves a page already in the stored language alone, and clears a theme the store no longer holds", () => {
+	englishPage()
+	doc.documentElement.setAttribute("data-theme", "dark")
+	const listener = vi.fn()
+	onLangChange(doc, listener)
+	syncFromStorage(doc, memory())
+	expect(doc.documentElement.lang).toBe("th")
+	expect(listener).not.toHaveBeenCalled()
+	expect(doc.documentElement.hasAttribute("data-theme")).toBe(false)
+})
+
+test("syncFromStorage survives storage that throws", () => {
+	englishPage()
+	expect(() => syncFromStorage(doc, throwing)).not.toThrow()
+	expect(doc.documentElement.lang).toBe("th")
+})
+
+test("a page restored from the back-forward cache picks up the language chosen since", () => {
+	const button = englishPage()
+	const store = memory()
+	const off = syncOnRestore(happy as unknown as Window, doc, store)
+	store.setItem(LANG_KEY, "en")
+
+	pageshow(false)
+	expect(doc.documentElement.lang).toBe("th")
+
+	pageshow(true)
+	expect(doc.documentElement.lang).toBe("en")
+	expect(doc.title).toBe("Home")
+	expect(button.getAttribute("aria-label")).toBe("Menu")
+
+	off()
+	store.setItem(LANG_KEY, "th")
+	pageshow(true)
+	expect(doc.documentElement.lang).toBe("en")
 })

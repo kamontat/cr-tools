@@ -33,6 +33,15 @@ test("AppLayout localizes the frame's attributes before it wires the frame", asy
 	expect(source.indexOf("initFrame(document")).toBeGreaterThan(localize)
 })
 
+test("AppLayout re-syncs language and theme from storage on load and on a back-forward restore", async () => {
+	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
+	const script = source.match(/<script>([\s\S]*?)<\/script>/)?.[1] ?? ""
+	expect(script).toMatch(/import \{[^}]*\bsyncFromStorage\b[^}]*\bsyncOnRestore\b[^}]*\} from "#lib\/lang"/)
+	expect(script).toContain("syncFromStorage(document, store)")
+	expect(script).toContain("syncOnRestore(window, document, store)")
+	expect(script.indexOf("syncFromStorage(document")).toBeLessThan(script.indexOf("initFrame(document"))
+})
+
 test("AppLayout takes its title as a Pick, shown in both languages", async () => {
 	const container = await AstroContainer.create()
 	const html = await container.renderToString(AppLayout, {
