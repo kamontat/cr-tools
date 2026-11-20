@@ -2,7 +2,7 @@
 import type { Snippet } from "svelte"
 
 import { RAIL_MIN_WIDTH } from "#lib/frame"
-import { holdFocus } from "#lib/modal"
+import { holdFocus, isModalOpen, lockScroll } from "#lib/modal"
 import { clampWidth, defaultWidth, MIN_WIDTH, maxRatio, readWidth, STEP, writeWidth } from "#lib/panel-width"
 import { localStore } from "#lib/storage"
 
@@ -18,9 +18,15 @@ interface Props {
 	closeLabel: string
 	/** The resize handle's name, in the page's language. */
 	resizeLabel: string
+	/**
+	 * Renders in place as a section beside the page instead of a pop-up: no
+	 * scrim, no focus trap, no scroll lock. The caller decides when (the
+	 * editor on wide screens); Escape inside still closes it.
+	 */
+	docked?: boolean
 }
 
-let { id, title, open, onclose, children, footer, closeLabel, resizeLabel }: Props = $props()
+let { id, title, open, onclose, children, footer, closeLabel, resizeLabel, docked = false }: Props = $props()
 
 const store = localStore()
 
@@ -37,12 +43,52 @@ const resize = (next: number) => {
 	chosen = clampWidth(next, viewport, id)
 }
 
+/** The docked section, whose right edge a drag measures from. */
+let section = $state<HTMLElement | null>(null)
+
 /**
- * Holds focus while open and closes on Escape — only when this is the
- * topmost pop-up, and not when a control inside already handled the key.
- * `onclose` is read when Escape comes, so the attachment never re-runs.
+ * Moves the pop-up to the end of `<body>`, so one opened from inside another
+ * panel (Share over the editor) stacks above it and is not clipped by it.
+ * Then it holds focus and closes on Escape — only when it is the topmost
+ * pop-up, and not when a control inside already handled the key — and keeps
+ * the page behind from scrolling. `onclose` is read when Escape comes, so the
+ * attachment never re-runs. Svelte removes the node wherever it sits; the
+ * release removes it too.
  */
-const modal = (node: HTMLElement) => holdFocus(node, () => onclose())
+const popup = (layer: HTMLElement) => {
+	const doc = layer.ownerDocument
+	doc.body.append(layer)
+	const dialog = layer.querySelector<HTMLElement>('[role="dialog"]')
+	const release = dialog === null ? () => {} : holdFocus(dialog, () => onclose())
+	const unlock = lockScroll(doc)
+	return () => {
+		release()
+		unlock()
+		layer.remove()
+	}
+}
+
+/**
+ * The docked panel closes on Escape from inside it, unless a control already
+ * handled the key or a pop-up is open over the page. Marking the event
+ * handled keeps the frame from also closing the sidebar drawer.
+ */
+const dock = (node: HTMLElement) => {
+	section = node
+	const onkeydown = (event: KeyboardEvent) => {
+		if (event.key !== "Escape" || event.defaultPrevented || isModalOpen(node.ownerDocument)) return
+		event.preventDefault()
+		onclose()
+	}
+	node.addEventListener("keydown", onkeydown)
+	return () => {
+		node.removeEventListener("keydown", onkeydown)
+		section = null
+	}
+}
+
+/** The panel's right edge: the window's for a pop-up, the section's when docked. */
+const rightEdge = () => (docked ? section?.getBoundingClientRect().right || viewport : viewport)
 
 const onpointerdown = (event: PointerEvent) => {
 	if (event.button !== 0) return
@@ -56,8 +102,8 @@ const onpointerdown = (event: PointerEvent) => {
 }
 
 const onpointermove = (event: PointerEvent) => {
-	// The panel's right edge is the window's, so its width is the distance to it.
-	if (dragging) resize(viewport - event.clientX)
+	// The handle is the left edge, so the width is the distance to the right one.
+	if (dragging) resize(rightEdge() - event.clientX)
 }
 
 /** Ends a drag wherever the button comes up, or when the handle loses the pointer. */
@@ -88,52 +134,71 @@ const ondblclick = () => {
 	onpointercancel={onpointerup}
 	onblur={onpointerup} />
 
-{#if open}
-	<div class="panel-layer" class:sheet={phone} class:resizing={dragging}>
-		<!-- A pointer-only way out; Escape and the close button are the keyboard's. -->
-		<div class="panel-scrim" aria-hidden="true" onmousedown={(event) => event.preventDefault()} onclick={onclose}></div>
+{#snippet inside(sheet: boolean)}
+	{#if sheet}
+		<div class="panel-grab" aria-hidden="true"></div>
+	{/if}
+	<header class="panel-head">
+		<h2 id={titleId}>{title}</h2>
+		<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
+	</header>
+	<div class="panel-body">{@render children()}</div>
+	{#if footer}
+		<footer class="panel-foot">{@render footer()}</footer>
+	{/if}
+	{#if !sheet}
+		<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
+		<!-- biome-ignore lint/a11y/useSemanticElements: a focusable splitter is a widget; <hr> cannot take focus or keys -->
 		<div
-			class="panel"
-			role="dialog"
-			aria-modal="true"
+			class="panel-resize"
+			role="separator"
+			aria-orientation="vertical"
+			aria-label={resizeLabel}
+			aria-valuemin={MIN_WIDTH}
+			aria-valuemax={Math.round(viewport * maxRatio(id))}
+			aria-valuenow={width}
+			tabindex="0"
+			{onpointerdown}
+			{onpointermove}
+			{onpointerup}
+			onpointercancel={onpointerup}
+			onlostpointercapture={onpointerup}
+			onkeydown={onseparatorkeydown}
+			{ondblclick}></div>
+	{/if}
+{/snippet}
+
+{#if open}
+	{#if docked}
+		<section
+			class="panel docked"
+			class:resizing={dragging}
 			aria-labelledby={titleId}
-			tabindex="-1"
-			data-layout={phone ? "sheet" : "side"}
-			style:--panel-width={phone ? undefined : `${width}px`}
-			{@attach modal}>
-			{#if phone}
-				<div class="panel-grab" aria-hidden="true"></div>
-			{/if}
-			<header class="panel-head">
-				<h2 id={titleId}>{title}</h2>
-				<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
-			</header>
-			<div class="panel-body">{@render children()}</div>
-			{#if footer}
-				<footer class="panel-foot">{@render footer()}</footer>
-			{/if}
-			{#if !phone}
-				<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-				<!-- biome-ignore lint/a11y/useSemanticElements: a focusable splitter is a widget; <hr> cannot take focus or keys -->
-				<div
-					class="panel-resize"
-					role="separator"
-					aria-orientation="vertical"
-					aria-label={resizeLabel}
-					aria-valuemin={MIN_WIDTH}
-					aria-valuemax={Math.round(viewport * maxRatio(id))}
-					aria-valuenow={width}
-					tabindex="0"
-					{onpointerdown}
-					{onpointermove}
-					{onpointerup}
-					onpointercancel={onpointerup}
-					onlostpointercapture={onpointerup}
-					onkeydown={onseparatorkeydown}
-					{ondblclick}></div>
-			{/if}
+			data-layout="docked"
+			style:--panel-width={`${width}px`}
+			{@attach dock}>
+			{@render inside(false)}
+		</section>
+	{:else}
+		<div class="panel-layer" class:sheet={phone} class:resizing={dragging} {@attach popup}>
+			<!-- A pointer-only way out; Escape and the close button are the keyboard's. -->
+			<div
+				class="panel-scrim"
+				aria-hidden="true"
+				onmousedown={(event) => event.preventDefault()}
+				onclick={onclose}></div>
+			<div
+				class="panel"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby={titleId}
+				tabindex="-1"
+				data-layout={phone ? "sheet" : "side"}
+				style:--panel-width={phone ? undefined : `${width}px`}>
+				{@render inside(phone)}
+			</div>
 		</div>
-	</div>
+	{/if}
 {/if}
 
 <style>
@@ -247,6 +312,19 @@ const ondblclick = () => {
 .panel-resize:focus-visible::after,
 .resizing .panel-resize::after {
 	background: var(--accent);
+}
+
+/* Docked: a column beside the page, not over it. */
+.docked {
+	flex: none;
+	width: min(var(--panel-width, 640px), 100%);
+	box-shadow: none;
+	animation: none;
+}
+
+.docked.resizing {
+	cursor: ew-resize;
+	user-select: none;
 }
 
 /* Phones: a sheet up from the bottom, with a grab handle and no resize. */

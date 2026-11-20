@@ -1,6 +1,6 @@
 import type { Window as HappyWindow } from "happy-dom"
 
-import { fireEvent, render, screen } from "@testing-library/svelte"
+import { cleanup, fireEvent, render, screen } from "@testing-library/svelte"
 import { createRawSnippet } from "svelte"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
@@ -23,12 +23,14 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+	cleanup()
+	document.documentElement.style.overflow = ""
 	if (original) Object.defineProperty(window, "localStorage", original)
 	vi.restoreAllMocks()
 	document.body.innerHTML = ""
 })
 
-const open = (props: Partial<{ id: string; onclose: () => void; withFooter: boolean }> = {}) => {
+const open = (props: Partial<{ id: string; onclose: () => void; withFooter: boolean; docked: boolean }> = {}) => {
 	const onclose = props.onclose ?? vi.fn()
 	const result = render(Panel, {
 		props: {
@@ -39,6 +41,7 @@ const open = (props: Partial<{ id: string; onclose: () => void; withFooter: bool
 			children,
 			...labels,
 			...(props.withFooter ? { footer } : {}),
+			...(props.docked ? { docked: true } : {}),
 		},
 	})
 	return { ...result, onclose }
@@ -120,8 +123,8 @@ test("with a panel open over another, Tab in the top one never lands in the lowe
 })
 
 test("clicking the scrim or the close button calls onclose", async () => {
-	const { onclose, container } = open()
-	const scrim = container.querySelector(".panel-scrim") as HTMLElement
+	const { onclose } = open()
+	const scrim = document.querySelector(".panel-scrim") as HTMLElement
 	await fireEvent.click(scrim)
 	expect(onclose).toHaveBeenCalledTimes(1)
 	await fireEvent.click(screen.getByRole("button", { name: "Shut" }))
@@ -174,9 +177,9 @@ test("dragging the separator sizes the panel from the right edge and remembers i
 })
 
 test("a drag ends when the button comes up off the handle, or the handle loses the pointer", async () => {
-	const { container } = open()
+	open()
 	const separator = screen.getByRole("separator")
-	const layer = () => container.querySelector(".panel-layer") as HTMLElement
+	const layer = () => document.querySelector(".panel-layer") as HTMLElement
 
 	await fireEvent.pointerDown(separator, { clientX: 740, button: 0, pointerId: 1 })
 	expect(layer().classList.contains("resizing")).toBe(true)
@@ -230,16 +233,87 @@ test("a storage whose calls throw still opens at the default width and resizes",
 
 test("on a phone it is a bottom sheet with a grab handle and no separator", () => {
 	viewport(390)
-	const { container } = open()
+	open()
 	const dialog = screen.getByRole("dialog")
 	expect(dialog.getAttribute("data-layout")).toBe("sheet")
-	expect(container.querySelector(".panel-grab")).not.toBeNull()
+	expect(document.querySelector(".panel-grab")).not.toBeNull()
 	expect(screen.queryByRole("separator")).toBeNull()
 	expect(panelWidth()).toBe("")
 })
 
 test("on a larger screen it is a side panel without a grab handle", () => {
-	const { container } = open()
+	open()
 	expect(screen.getByRole("dialog").getAttribute("data-layout")).toBe("side")
-	expect(container.querySelector(".panel-grab")).toBeNull()
+	expect(document.querySelector(".panel-grab")).toBeNull()
+})
+
+test("a closed-to-open panel is a child of body, not of its parent", async () => {
+	const { container, rerender } = render(Panel, {
+		props: { id: "about", title: "About", open: false, onclose: vi.fn(), children, ...labels },
+	})
+	await rerender({ open: true })
+	const layer = document.querySelector(".panel-layer") as HTMLElement
+	expect(layer.parentElement).toBe(document.body)
+	expect(container.contains(layer)).toBe(false)
+	expect(layer.contains(screen.getByRole("dialog"))).toBe(true)
+	await rerender({ open: false })
+	expect(document.querySelector(".panel-layer")).toBeNull()
+	expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("unmounting an open panel takes it out of body", () => {
+	const { unmount } = open()
+	expect(document.querySelector(".panel-layer")).not.toBeNull()
+	unmount()
+	expect(document.querySelector(".panel-layer")).toBeNull()
+})
+
+test("the page does not scroll while a panel is open, and does again after", async () => {
+	document.documentElement.style.overflow = "clip"
+	const { rerender } = open()
+	expect(document.documentElement.style.overflow).toBe("hidden")
+	await rerender({ open: false })
+	expect(document.documentElement.style.overflow).toBe("clip")
+})
+
+test("two open panels unlock only when both close", async () => {
+	const { editor, share } = stack()
+	expect(document.documentElement.style.overflow).toBe("hidden")
+	await editor.rerender({ open: false })
+	expect(document.documentElement.style.overflow).toBe("hidden")
+	await share.rerender({ open: false })
+	expect(document.documentElement.style.overflow).toBe("")
+})
+
+test("docked: a section, no dialog role, no scrim, and Tab leaves it", async () => {
+	const { container } = open({ id: "editor", docked: true })
+	expect(screen.queryByRole("dialog")).toBeNull()
+	const region = screen.getByRole("region", { name: "About" })
+	expect(region.tagName).toBe("SECTION")
+	expect(container.contains(region)).toBe(true)
+	expect(document.querySelector(".panel-scrim")).toBeNull()
+	expect(document.documentElement.style.overflow).toBe("")
+	const separator = screen.getByRole("separator", { name: "Widen" })
+	separator.focus()
+	expect(await fireEvent.keyDown(separator, { key: "Tab" })).toBe(true)
+	const after = document.createElement("button")
+	document.body.append(after)
+	after.focus()
+	expect(document.activeElement).toBe(after)
+})
+
+test("docked: Escape inside closes", async () => {
+	const { onclose } = open({ id: "editor", docked: true })
+	await fireEvent.keyDown(screen.getByRole("button", { name: "Inside" }), { key: "Escape" })
+	expect(onclose).toHaveBeenCalledTimes(1)
+	await fireEvent.keyDown(document.body, { key: "Escape" })
+	expect(onclose).toHaveBeenCalledTimes(1)
+})
+
+test("docked: the separator still resizes and remembers the width", async () => {
+	open({ id: "editor", docked: true })
+	const separator = screen.getByRole("separator")
+	await fireEvent.keyDown(separator, { key: "ArrowLeft" })
+	expect(separator.getAttribute("aria-valuenow")).toBe("656")
+	expect(window.localStorage.getItem("frame:panel-width:editor")).toBe("656")
 })
