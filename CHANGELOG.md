@@ -2,6 +2,31 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-20: The new frame, Home and Settings
+
+### Features
+
+- Every page sits in one frame: a top bar with ☰ and the page title, and a left sidebar
+  linking Home, each tool and Settings. On wide screens (1100px and up) the sidebar is open
+  beside the page and remembers being closed; from 700 to 1099px it is an icon rail that
+  opens over the page; on phones it is a drawer that slides in with a dimmed backdrop.
+- Previews mark themselves: an amber line under the top bar and a `pr-<number>` badge.
+- A pop-up panel for details and editors: it opens from the right on larger screens, where
+  its left edge drags (or arrow-keys) to resize and the width is remembered per panel, and
+  slides up from the bottom on phones. Escape, the close button or the backdrop close it.
+- Settings has a theme switch (System, Dark, Light), applied before the page paints, and an
+  About row that opens the build details: environment, build time with its time zone, the
+  source (a preview links its pull request) and the commit.
+- Home shows the site's title, a one-line intro and a card for each tool.
+
+### Decisions
+
+- Dark is the default look; light follows the system or the Settings choice.
+- Labels are sentence case with no letter spacing, so Thai text keeps its marks in place; a
+  test refuses spaced capitals in any stylesheet.
+- While the window is being resized the sidebar does not animate, so it never slides across
+  the page as the width crosses a breakpoint.
+
 ## 2026-11-20: Redesign groundwork on the Astro template
 
 ### BREAKING CHANGES
