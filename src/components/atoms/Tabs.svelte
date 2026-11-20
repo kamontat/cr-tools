@@ -60,11 +60,11 @@ button {
 	align-items: center;
 	gap: 6px;
 	min-height: 32px;
-	padding: 6px 12px;
-	border: 0;
+	padding: 6px 14px;
+	border: 1px solid var(--line);
 	border-radius: 999px;
-	background: none;
-	color: var(--muted);
+	background: var(--surface);
+	color: var(--text);
 	font: inherit;
 	font-weight: 500;
 	white-space: nowrap;
@@ -77,9 +77,19 @@ button {
 	}
 }
 
+button:hover:not(:disabled) {
+	border-color: var(--accent);
+}
+
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 button[aria-selected="true"] {
-	background: var(--text);
-	color: var(--bg);
+	border-color: var(--accent);
+	background: var(--accent);
+	color: var(--on-accent);
 }
 
 button:disabled {

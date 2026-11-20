@@ -165,6 +165,8 @@ const act = (event: MouseEvent, run: (entry: SavedCode) => void, entry: SavedCod
 
 <style>
 .list {
+	display: flex;
+	flex-direction: column;
 	gap: 14px;
 	min-width: 0;
 	/* The list sits beside the docked editor, so it reads its own width, not the window's. */
@@ -210,6 +212,21 @@ select {
 
 .btn {
 	font-weight: 600;
+	cursor: pointer;
+}
+
+/* The browser's own arrow ignores the padding and sits on the border; draw it inside instead. */
+select {
+	appearance: none;
+	padding-inline-end: 34px;
+	background-image:
+		linear-gradient(45deg, transparent 50%, currentColor 50%),
+		linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position:
+		right 17px center,
+		right 12px center;
+	background-size: 5px 5px;
+	background-repeat: no-repeat;
 	cursor: pointer;
 }
 

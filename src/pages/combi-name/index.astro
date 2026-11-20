@@ -12,3 +12,10 @@ const title: Pick = (m) => m.tools["combi-name"].title
 	<h1><Text pick={title} /></h1>
 	<CombiApp client:only="svelte" />
 </AppLayout>
+
+<style>
+h1 {
+	margin: 0 0 16px;
+	font-size: 1.5rem;
+}
+</style>
