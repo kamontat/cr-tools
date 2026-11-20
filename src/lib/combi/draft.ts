@@ -3,11 +3,17 @@
  * and the run stats beside it, and which saved entry it came from. The editor
  * drives it through the setters below and draws whatever they return.
  *
- * Every setter returns a new draft, normalized: what the episode or the mode
- * has no room for is dropped then and there (`normalize`, `fitLoadout`), so a
- * draft never holds a combination its code could not say. That is the old
+ * A draft holds two builds. `picks` is what someone chose, kept whole: a pick
+ * the episode or the mode has no room for — a relay on Special Episode 1, an
+ * action on a manual run, the floor off the tower — stays there, so switching
+ * back brings it back, the way the old page's disabled controls kept their
+ * values. `full` is the build as its code can say it (`normalize`,
+ * `fitLoadout`), recomputed from `picks` by every setter, and it is the only
+ * one the code, the verdict, the badges and `isDirty` read. That is the old
  * page's form rules without the form — its chips, grids and cards, read by
  * `readForm` and `readLoadout`, written by `writeForm`.
+ *
+ * Every setter returns a new draft.
  */
 
 import type { Issue } from "./issues"
@@ -46,6 +52,9 @@ import {
 } from "./stats"
 
 export type Draft = {
+	/** What was chosen, including what the episode or mode cannot use, for held values in disabled controls. */
+	picks: FullCode
+	/** The build as its code says it, derived from `picks`. */
 	full: FullCode
 	note: string
 	stats: StatsDraft
@@ -56,7 +65,7 @@ export type Draft = {
 /** Why an auto run needs a hand, as ids the page words from the catalogue. */
 export type ReasonId = "fastStart" | "randomBoost" | "action" | "relay"
 
-export type AutoVerdict = {
+export type BuildVerdict = {
 	semi: boolean
 	/** Empty when the build plays itself all the way. */
 	reasons: ReasonId[]
@@ -86,25 +95,30 @@ function fitGoals(goals: readonly Goal[], mode: Mode): Goal[] {
 	return options[0] === undefined ? [] : [options[0]]
 }
 
-/** The draft as its code can say it, and nothing it cannot. */
-function settle(draft: Draft): Draft {
-	const mode = pickable(draft.full.combi.mode)
-	const combi = normalize({ ...draft.full.combi, mode, goals: fitGoals(draft.full.combi.goals, mode) })
-	return { ...draft, full: { combi, loadout: fitLoadout(draft.full.loadout, combi) } }
+/** The picks as their code can say them, and nothing it cannot. */
+function settle(picks: FullCode): FullCode {
+	const mode = pickable(picks.combi.mode)
+	const combi = normalize({ ...picks.combi, mode, goals: fitGoals(picks.combi.goals, mode) })
+	return { combi, loadout: fitLoadout(picks.loadout, combi) }
+}
+
+/** A draft over these picks, its `full` derived from them. */
+function over(draft: Omit<Draft, "full">): Draft {
+	return { ...draft, full: settle(draft.picks) }
 }
 
 function withCombi(draft: Draft, change: Partial<Combi>): Draft {
-	return settle({ ...draft, full: { ...draft.full, combi: { ...draft.full.combi, ...change } } })
+	return over({ ...draft, picks: { ...draft.picks, combi: { ...draft.picks.combi, ...change } } })
 }
 
 function withLoadout(draft: Draft, change: Partial<Loadout>): Draft {
-	return settle({ ...draft, full: { ...draft.full, loadout: { ...draft.full.loadout, ...change } } })
+	return over({ ...draft, picks: { ...draft.picks, loadout: { ...draft.picks.loadout, ...change } } })
 }
 
 /** The page's opening build: a manual run aiming for Score, any episode, nothing carried. */
 export function newDraft(): Draft {
-	return {
-		full: {
+	return over({
+		picks: {
 			combi: {
 				goals: [SOLO_GOAL],
 				mode: "manual",
@@ -120,13 +134,16 @@ export function newDraft(): Draft {
 		note: "",
 		stats: {},
 		from: null,
-	}
+	})
 }
 
 /** A draft of any code, with the note and stats a link brought. Throws `CodeError` when the code does not read. */
 export function draftFromCode(code: string, note = "", stats: RunStats = {}): { draft: Draft; warnings: Issue[] } {
 	const { full, warnings } = decodeFull(code)
-	return { draft: settle({ full, note, stats: { ...stats }, from: null }), warnings }
+	// A semi-auto code lands on auto: semi-auto is what the build makes of an
+	// auto run, not a mode anyone picks.
+	const picks = { ...full, combi: { ...full.combi, mode: pickable(full.combi.mode) } }
+	return { draft: over({ picks, note, stats: { ...stats }, from: null }), warnings }
 }
 
 /** A draft of a saved entry, to edit it. Throws `CodeError` when its code no longer reads. */
@@ -152,7 +169,7 @@ export function goalOptions(draft: Draft): readonly Goal[] {
  * Whether an auto run needs a hand, and why; null for a manual run, which is
  * played by hand anyway. `describeBuild` without the wording.
  */
-export function verdictOf(draft: Draft): AutoVerdict | null {
+export function verdictOf(draft: Draft): BuildVerdict | null {
 	const { combi } = draft.full
 	if (combi.mode === "manual") return null
 	const reasons: ReasonId[] = []
@@ -197,11 +214,13 @@ export function setMode(draft: Draft, mode: Mode): Draft {
 }
 
 /**
- * The goal set as picked. Score stands alone: a set that newly holds it is
- * Score alone, and a set that adds another goal beside it drops it. At least
- * one goal stays, and only those the mode offers are kept.
+ * The goal set as the row now holds it, against the goals the row showed.
+ * Score stands alone: a set that newly holds it is Score alone, and a set that
+ * adds another goal beside it drops it. Only the goals the mode offers are
+ * taken, and at least one stays, so a set with none of them changes nothing.
  */
-export function setGoals(draft: Draft, goals: readonly Goal[]): Draft {
+export function setGoals(draft: Draft, picked: readonly Goal[]): Draft {
+	const goals = goalOptions(draft).filter((goal) => picked.includes(goal))
 	if (goals.length === 0) return draft
 	const before = draft.full.combi.goals
 	const solo = goals.includes(SOLO_GOAL)
@@ -224,7 +243,7 @@ export function setFloor(draft: Draft, floor: number | null): Draft {
 
 /** The starting action, which only an auto run has. */
 export function setAction(draft: Draft, action: Action): Draft {
-	if (draft.full.combi.mode === "manual") return draft
+	if (draft.picks.combi.mode === "manual") return draft
 	return withCombi(draft, { action })
 }
 
@@ -239,7 +258,7 @@ export function setRole(draft: Draft, role: "cookie" | "relay" | "pet", id: stri
  */
 export function setTreasureSlot(draft: Draft, index: number, picks: readonly TreasurePick[]): Draft {
 	if (!Number.isInteger(index) || index < 0 || index >= MAX_TREASURE_SLOTS) return draft
-	const slots = Array.from({ length: MAX_TREASURE_SLOTS }, (_, at) => draft.full.loadout.treasures[at] ?? [])
+	const slots = Array.from({ length: MAX_TREASURE_SLOTS }, (_, at) => draft.picks.loadout.treasures[at] ?? [])
 	slots[index] = picks.map((pick) => ({ id: pick.id, levels: [...pick.levels] }))
 	return withLoadout(draft, { treasures: slots.filter((slot) => slot.length > 0) })
 }
@@ -254,7 +273,7 @@ function toggled<T>(values: readonly T[], value: T): T[] {
 
 export function toggleBoost(draft: Draft, boost: Boost): Draft {
 	if (!ALL_BOOSTS.includes(boost)) return draft
-	return withCombi(draft, { boosts: toggled(draft.full.combi.boosts, boost) })
+	return withCombi(draft, { boosts: toggled(draft.picks.combi.boosts, boost) })
 }
 
 export function setRandomBoost(draft: Draft, randomBoost: RandomBoost | null): Draft {
@@ -263,7 +282,7 @@ export function setRandomBoost(draft: Draft, randomBoost: RandomBoost | null): D
 
 export function toggleCookiePower(draft: Draft, power: CookiePower): Draft {
 	if (!ALL_COOKIE_POWERS.includes(power)) return draft
-	return withCombi(draft, { cookiePowers: toggled(draft.full.combi.cookiePowers, power) })
+	return withCombi(draft, { cookiePowers: toggled(draft.picks.combi.cookiePowers, power) })
 }
 
 export function setNote(draft: Draft, note: string): Draft {

@@ -54,9 +54,68 @@ test("choosing Special Episode 1 drops the relay and boosts", () => {
 	expect(draft.full.combi.boosts).toEqual([])
 	expect(draft.full.combi.randomBoost).toBeNull()
 	expect(draft.full.combi.cookiePowers).toEqual([])
-	// Held nowhere: the setters cannot pick what the episode refuses.
+	// A pick made while the episode refuses it never reaches the build.
 	expect(setRole(draft, "relay", "01").full.loadout.relay).toBeNull()
 	expect(toggleBoost(draft, "hpExtension").full.combi.boosts).toEqual([])
+})
+
+test("switching to Special Episode 1 and back restores relay, boosts and treasures with levels", () => {
+	let draft = setMode(newDraft(), "auto")
+	draft = setRole(draft, "relay", "01")
+	draft = toggleBoost(draft, "hpExtension")
+	draft = setRandomBoost(draft, "doubleCoins")
+	draft = toggleCookiePower(draft, "fairy")
+	draft = setTreasureSlot(draft, 0, [treasurePick("001", [2, 3])])
+	draft = setTreasureSlot(draft, 1, [treasurePick("002", [9])])
+	const before = codeOf(draft)
+
+	const special = setEpisode(draft, "special1")
+	expect(special.picks.loadout.relay).toBe("01")
+	expect(special.picks.combi.boosts).toEqual(["hpExtension"])
+
+	// Special EXP takes no treasures either; they come back with their levels.
+	const back = setEpisode(setEpisode(special, "specialExp"), "any")
+	expect(back.full.loadout.relay).toBe("01")
+	expect(back.full.combi.boosts).toEqual(["hpExtension"])
+	expect(back.full.combi.randomBoost).toBe("doubleCoins")
+	expect(back.full.combi.cookiePowers).toEqual(["fairy"])
+	expect(back.full.loadout.treasures).toEqual([[treasurePick("001", [2, 3])], [treasurePick("002", [9])]])
+	expect(codeOf(back)).toBe(before)
+})
+
+test("manual then auto restores the action", () => {
+	const auto = setAction(setMode(newDraft(), "auto"), "jumpAtStart")
+	const manual = setMode(auto, "manual")
+
+	expect(manual.full.combi.action).toBe("none")
+	expect(manual.picks.combi.action).toBe("jumpAtStart")
+	expect(setMode(manual, "auto").full.combi.action).toBe("jumpAtStart")
+})
+
+test("a goal the mode refuses returns with the mode", () => {
+	const auto = setMode(newDraft(), "auto")
+	expect(auto.full.combi.goals).toEqual(["money"])
+	expect(setMode(auto, "manual").full.combi.goals).toEqual(["score"])
+})
+
+test("leaving the tower and back restores the floor", () => {
+	const tower = setFloor(setEpisode(newDraft(), "special2"), 42)
+	const away = setEpisode(tower, "episode3")
+
+	expect(away.full.combi.floor).toBeNull()
+	expect(setEpisode(away, "special2").full.combi.floor).toBe(42)
+})
+
+test("codeOf never encodes a refused pick", () => {
+	let draft = setMode(newDraft(), "auto")
+	draft = toggleBoost(draft, "fastStart")
+	draft = setRole(draft, "relay", "01")
+	draft = setEpisode(draft, "special1")
+
+	expect(draft.picks.combi.boosts).toEqual(["fastStart"])
+	expect(codeOf(draft)).toBe(codeOf(setEpisode(setMode(newDraft(), "auto"), "special1")))
+	expect(verdictOf(draft)).toEqual({ semi: false, reasons: [] })
+	expect(tabBadges(draft).boosts).toBe("")
 })
 
 test("score is exclusive and auto offers no score", () => {
