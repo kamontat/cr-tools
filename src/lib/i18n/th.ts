@@ -1,4 +1,65 @@
+import type { LoadoutNoun, SlotField } from "#lib/combi/issues"
+import type { StatField } from "#lib/combi/stats"
 import type { Messages } from "#lib/i18n/messages"
+
+const slotFields: Record<SlotField, string> = {
+	mode: "โหมด",
+	goal: "เป้าหมาย",
+	episode: "ตอน",
+	boosts: "บูสต์",
+	randomBoost: "บูสต์สุ่ม",
+	cookiePower: "พลังคุกกี้+",
+}
+const nouns: Record<LoadoutNoun, string> = { cookie: "คุกกี้", pet: "สัตว์เลี้ยง", treasure: "สมบัติ" }
+const statTakes: Record<StatField, string> = {
+	score: "คะแนนต้องเป็นจำนวนเต็มบวก หรือช่วง เช่น 1200000-1500000",
+	money: "เหรียญต้องเป็นจำนวนเต็มบวก หรือช่วง เช่น 12000-15000",
+	exp: "Exp ต้องเป็นจำนวนเต็มบวก หรือช่วง เช่น 300-450",
+	boxes: "กล่องต้องเป็น 0 ถึง 5 หรือช่วง เช่น 2-4",
+	time: "เวลาต้องเป็นจำนวนวินาที เป็นจำนวนเต็มบวก",
+}
+const group = (tag: string) => `กลุ่ม "${tag}" ของการจัดทีม`
+const issues: Messages["combi"]["issues"] = {
+	codeLength: (length: number, got: number, code: string) =>
+		`โค้ดต้องยาว ${length} ตัวอักษรพอดี แต่ "${code}" ยาว ${got} ตัวอักษร`,
+	unknownChar: (slots: string, field: SlotField, chars: string) =>
+		`ช่อง ${slots} (${slotFields[field]}): ไม่รู้จักตัวอักษร "${chars}"`,
+	goalSet: (goals: string) => `เป้าหมายต้องเป็นคะแนนอย่างเดียว หรือเหรียญ Exp และกล่อง 1-3 อย่าง แต่ได้ [${goals}]`,
+	floorRange: (max: number, floor: number) => `ชั้นต้องอยู่ระหว่าง 1-${max} แต่ได้ ${floor}`,
+	floorDigits: (text: string) => `ช่อง 5-7 (ชั้น): "${text}" ไม่ใช่ตัวเลข 3 หลัก`,
+	floorAbove: (text: string, max: number) => `ช่อง 5-7 (ชั้น): ${text} เกิน ${max}`,
+	floorReserved: (rest: string, expected: string) => `ช่อง 8-10 (สงวนไว้ในตอนนี้): ได้ "${rest}" แต่ต้องเป็น "${expected}"`,
+	episodeNoBoosts: "ตอนนี้ไม่ใช้บูสต์ บูสต์สุ่ม หรือพลังคุกกี้+ จึงไม่นำมาใช้",
+	autoScore: "ช่อง 2-3 เป็นคะแนน แต่การวิ่งแบบออโต้เล็งเหรียญ Exp หรือกล่อง คะแนนต้องเล่นเอง",
+	autoButSemi: "ช่อง 1 เป็นออโต้ แต่มี Fast Start หรือบูสต์สุ่ม จึงถือเป็นกึ่งออโต้",
+	semiButAuto: "ช่อง 1 เป็นกึ่งออโต้ แต่ไม่มี Fast Start หรือบูสต์สุ่ม",
+	separators: (separator: string, count: number) => `โค้ดมี "${separator}" ได้ไม่เกินหนึ่งตัว แต่มี ${count} ตัว`,
+	episodeNoRelay: "ตอนนี้ไม่ใช้คุกกี้รีเลย์ จึงไม่นำมาใช้",
+	episodeNoTreasures: "ตอนนี้ไม่ใช้สมบัติ จึงไม่นำมาใช้",
+	relayButAuto: "ช่อง 1 เป็นออโต้ แต่การจัดทีมมีคุกกี้รีเลย์ จึงถือเป็นกึ่งออโต้",
+	loadoutEmpty: "ส่วนการจัดทีมว่างเปล่า",
+	loadoutVersion: (version: string) => `ไม่รองรับการจัดทีมเวอร์ชัน "${version}"`,
+	loadoutUnknownGroup: (tag: string) => `ไม่รู้จักกลุ่ม "${tag}" ของการจัดทีม`,
+	loadoutGroupTwice: (tag: string) => `${group(tag)} ซ้ำสองครั้ง`,
+	loadoutGroupOrder: (tag: string) => `${group(tag)} อยู่ผิดลำดับ ต้องเรียง C R P T`,
+	loadoutLevelDigits: (tag: string, text: string, level: string) =>
+		`${group(tag)}: "${text}" มีเลเวล "${level}" แต่ใส่ได้ไม่เกินสองหลัก`,
+	loadoutLevelBackwards: (tag: string, id: string, min: number, max: number) =>
+		`${group(tag)}: เลเวลของ "${id}" เรียงกลับด้าน ${min}-${max}`,
+	loadoutNoLevel: (tag: string, id: string) => `${group(tag)}: "${id}" ไม่มีเลเวลที่รับได้`,
+	loadoutLevelOutside: (tag: string, id: string, level: number, max: number) =>
+		`${group(tag)}: เลเวล ${level} ของ "${id}" อยู่นอกช่วง 0-${max}`,
+	loadoutIdShape: (tag: string, id: string, width: number) => `${group(tag)}: "${id}" ไม่ใช่ [0-9A-Z] ${width} ตัวอักษร`,
+	loadoutUnknownId: (tag: string, noun: LoadoutNoun, id: string) => `${group(tag)}: ไม่มี${nouns[noun]}รหัส "${id}"`,
+	loadoutTooManySlots: (tag: string, count: number, max: number) =>
+		`${group(tag)}: มีช่องสมบัติ ${count} ช่อง ใส่ได้ไม่เกิน ${max} ช่อง`,
+	loadoutSlotEmpty: (tag: string, slot: number) => `${group(tag)}: ช่องสมบัติ ${slot} ว่างอยู่`,
+	loadoutSlotTwice: (tag: string, slot: number, id: string) => `${group(tag)}: ช่องสมบัติ ${slot} มี "${id}" ซ้ำ`,
+	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: ไม่มีตัวบอกลำดับ`,
+	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: ตัวบอกลำดับ "${flag}" ไม่ใช่ "U" หรือ "O"`,
+	statFormat: (field: StatField) => statTakes[field],
+	unreadableLine: "บรรทัดนี้ไม่มีโค้ด",
+}
 
 export const th: Messages = {
 	site: {
@@ -34,6 +95,7 @@ export const th: Messages = {
 		goals: { score: "คะแนน", money: "เหรียญ", exp: "Exp", box: "กล่อง" },
 		modes: { manual: "เล่นเอง", auto: "ออโต้", semiauto: "กึ่งออโต้" },
 		actions: { none: "ไม่มีแอ็กชัน", jumpAtStart: "กระโดดตอนเริ่ม" },
+		issues,
 		describe: {
 			none: "ไม่มี",
 			anyGoal: "เป้าหมายใดก็ได้",

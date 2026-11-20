@@ -1,4 +1,6 @@
 import type { Action, Goal, Mode } from "#lib/combi/codec"
+import type { LoadoutNoun, SlotField } from "#lib/combi/issues"
+import type { StatField } from "#lib/combi/stats"
 import type { ToolSlug, ToolText } from "#lib/tools"
 
 // Annotated, not cast: a registered tool missing here (or an unregistered one) fails `astro check`.
@@ -15,6 +17,68 @@ const tools: Record<ToolSlug, ToolText> = {
 const goals: Record<Goal, string> = { score: "Score", money: "Money", exp: "Exp", box: "Box" }
 const modes: Record<Mode, string> = { manual: "Manual", auto: "Auto", semiauto: "Semi-auto" }
 const actions: Record<Action, string> = { none: "No action", jumpAtStart: "Jump at start" }
+
+// What the codec says about a code. The wording is the codec's own from before
+// the catalogue, kept word for word; `issueText` in `#lib/combi/issues` picks one.
+const slotFields: Record<SlotField, string> = {
+	mode: "mode",
+	goal: "goal",
+	episode: "episode",
+	boosts: "boosts",
+	randomBoost: "random boost",
+	cookiePower: "cookie power+",
+}
+const statTakes: Record<StatField, string> = {
+	score: "Score takes a positive whole number, or a range like 1200000-1500000.",
+	money: "Money takes a positive whole number, or a range like 12000-15000.",
+	exp: "Exp takes a positive whole number, or a range like 300-450.",
+	boxes: "Boxes takes 0 to 5, or a range like 2-4.",
+	time: "Time takes seconds, as a positive whole number.",
+}
+const group = (tag: string) => `loadout group "${tag}"`
+const issues = {
+	codeLength: (length: number, got: number, code: string) =>
+		`code must be exactly ${length} characters, got ${got}: "${code}"`,
+	unknownChar: (slots: string, field: SlotField, chars: string) =>
+		`${slots.includes("-") ? "slots" : "slot"} ${slots} (${slotFields[field]}): unknown ${chars.length === 1 ? "char" : "chars"} "${chars}"`,
+	goalSet: (goals: string) => `goals must be Score alone or 1-3 of Money, Exp and Box, got [${goals}]`,
+	floorRange: (max: number, floor: number) => `floor must be 1-${max}, got ${floor}`,
+	floorDigits: (text: string) => `slots 5-7 (floor): "${text}" is not 3 digits`,
+	floorAbove: (text: string, max: number) => `slots 5-7 (floor): ${text} is above ${max}`,
+	floorReserved: (rest: string, expected: string) =>
+		`slots 8-10 (reserved on this episode): "${rest}", expected "${expected}"`,
+	episodeNoBoosts: "this episode takes no boosts, random boost, or cookie power+ — ignoring them",
+	autoScore: "slots 2-3 say Score but an auto run aims for Money, Exp, or Box — Score is played by hand",
+	autoButSemi: "slot 1 says Auto but Fast Start or a random boost is present — treating as Semi-auto",
+	semiButAuto: "slot 1 says Semi-auto but there is no Fast Start or random boost",
+	separators: (separator: string, count: number) => `a code holds at most one "${separator}", got ${count}`,
+	episodeNoRelay: "this episode takes no relay cookie — ignoring it",
+	episodeNoTreasures: "this episode takes no treasures — ignoring them",
+	relayButAuto: "slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto",
+	loadoutEmpty: "loadout section is empty",
+	loadoutVersion: (version: string) => `unsupported loadout version "${version}"`,
+	loadoutUnknownGroup: (tag: string) => `unknown loadout group "${tag}"`,
+	loadoutGroupTwice: (tag: string) => `${group(tag)} appears twice`,
+	loadoutGroupOrder: (tag: string) => `${group(tag)} is out of order, expected C R P T`,
+	loadoutLevelDigits: (tag: string, text: string, level: string) =>
+		`${group(tag)}: "${text}" has level "${level}", expected at most two digits`,
+	loadoutLevelBackwards: (tag: string, id: string, min: number, max: number) =>
+		`${group(tag)}: "${id}" level runs backwards, ${min}-${max}`,
+	loadoutNoLevel: (tag: string, id: string) => `${group(tag)}: "${id}" accepts no level`,
+	loadoutLevelOutside: (tag: string, id: string, level: number, max: number) =>
+		`${group(tag)}: "${id}" level ${level} is outside 0-${max}`,
+	loadoutIdShape: (tag: string, id: string, width: number) =>
+		`${group(tag)}: "${id}" is not ${width} characters of [0-9A-Z]`,
+	loadoutUnknownId: (tag: string, noun: LoadoutNoun, id: string) => `${group(tag)}: no ${noun} has id "${id}"`,
+	loadoutTooManySlots: (tag: string, count: number, max: number) =>
+		`${group(tag)}: ${count} treasure slots, at most ${max} fit`,
+	loadoutSlotEmpty: (tag: string, slot: number) => `${group(tag)}: slot ${slot} is empty`,
+	loadoutSlotTwice: (tag: string, slot: number, id: string) => `${group(tag)}: slot ${slot} lists "${id}" twice`,
+	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: missing the order flag`,
+	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: order flag "${flag}" is neither "U" nor "O"`,
+	statFormat: (field: StatField) => statTakes[field],
+	unreadableLine: "this line names no code",
+}
 
 export const en = {
 	site: {
@@ -44,6 +108,7 @@ export const en = {
 		goals,
 		modes,
 		actions,
+		issues,
 		describe: {
 			none: "None",
 			anyGoal: "Any goal",

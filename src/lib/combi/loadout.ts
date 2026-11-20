@@ -19,6 +19,7 @@
  */
 
 import { type CatalogSection, hasId, ID_WIDTH, isAnyId } from "./catalog"
+import { CodeError, type Issue, issue, type LoadoutNoun } from "./issues"
 
 /** One acceptable treasure, and the upgrade levels it is accepted at. */
 export type TreasurePick = {
@@ -94,7 +95,7 @@ export function isEmptyLoadout(loadout: Loadout): boolean {
 type SingleGroup = {
 	tag: "C" | "R" | "P"
 	section: CatalogSection
-	noun: string
+	noun: LoadoutNoun
 	field: "cookie" | "relay" | "pet"
 	width: number
 }
@@ -131,8 +132,8 @@ export const SLOT_SEPARATOR = "."
 /** Between two acceptable treasures within one slot. */
 const ALTERNATIVE_SEPARATOR = "_"
 
-function fail(tag: string, detail: string): never {
-	throw new Error(`loadout group "${tag}": ${detail}`)
+function fail(found: Issue): never {
+	throw new CodeError(found)
 }
 
 /**
@@ -153,11 +154,11 @@ function readCopy(text: string): TreasurePick {
 	const id = text.slice(0, TREASURE_WIDTH)
 	const level = text.slice(TREASURE_WIDTH)
 	if (!/^[0-9]{0,2}$/.test(level)) {
-		fail("T", `"${text}" has level "${level}", expected at most two digits`)
+		fail(issue("loadoutLevelDigits", { tag: "T", text, level }))
 	}
 	const min = level.length === 0 ? 0 : Number(level[0])
 	const max = level.length === 2 ? Number(level[1]) : min
-	if (min > max) fail("T", `"${id}" level runs backwards, ${min}-${max}`)
+	if (min > max) fail(issue("loadoutLevelBackwards", { tag: "T", id, min, max }))
 	return treasurePick(id, levelRange(min, max))
 }
 
@@ -181,33 +182,33 @@ function readSlot(text: string): TreasurePick[] {
 }
 
 function checkLevels({ id, levels }: TreasurePick): void {
-	if (levels.length === 0) fail("T", `"${id}" accepts no level`)
+	if (levels.length === 0) fail(issue("loadoutNoLevel", { tag: "T", id }))
 	for (const level of levels) {
 		if (!Number.isInteger(level) || level < 0 || level > MAX_LEVEL) {
-			fail("T", `"${id}" level ${level} is outside 0-${MAX_LEVEL}`)
+			fail(issue("loadoutLevelOutside", { tag: "T", id, level, max: MAX_LEVEL }))
 		}
 	}
 }
 
-function checkId(tag: string, section: CatalogSection, noun: string, width: number, id: string): void {
+function checkId(tag: string, section: CatalogSection, noun: LoadoutNoun, width: number, id: string): void {
 	if (!new RegExp(`^[0-9A-Z]{${width}}$`).test(id)) {
-		fail(tag, `"${id}" is not ${width} characters of [0-9A-Z]`)
+		fail(issue("loadoutIdShape", { tag, id, width }))
 	}
-	if (!hasId(section, id)) fail(tag, `no ${noun} has id "${id}"`)
+	if (!hasId(section, id)) fail(issue("loadoutUnknownId", { tag, noun, id }))
 }
 
 function checkTreasures(slots: TreasurePick[][]): void {
 	if (slots.length > MAX_TREASURE_SLOTS) {
-		fail("T", `${slots.length} treasure slots, at most ${MAX_TREASURE_SLOTS} fit`)
+		fail(issue("loadoutTooManySlots", { tag: "T", count: slots.length, max: MAX_TREASURE_SLOTS }))
 	}
 	slots.forEach((slot, position) => {
-		if (slot.length === 0) fail("T", `slot ${position + 1} is empty`)
+		if (slot.length === 0) fail(issue("loadoutSlotEmpty", { tag: "T", slot: position + 1 }))
 		const seen = new Set<string>()
 		for (const pick of slot) {
 			checkId("T", "treasures", "treasure", TREASURE_WIDTH, pick.id)
 			checkLevels(pick)
 			if (seen.has(pick.id)) {
-				fail("T", `slot ${position + 1} lists "${pick.id}" twice`)
+				fail(issue("loadoutSlotTwice", { tag: "T", slot: position + 1, id: pick.id }))
 			}
 			seen.add(pick.id)
 		}
@@ -253,11 +254,11 @@ export function encodeLoadout(loadout: Loadout): string {
 }
 
 export function decodeLoadout(section: string): Loadout {
-	if (section.length === 0) throw new Error("loadout section is empty")
+	if (section.length === 0) fail(issue("loadoutEmpty"))
 
 	const version = section.slice(0, 1)
 	if (version !== LOADOUT_VERSION) {
-		throw new Error(`unsupported loadout version "${version}"`)
+		fail(issue("loadoutVersion", { version }))
 	}
 
 	const loadout = emptyLoadout()
@@ -268,10 +269,10 @@ export function decodeLoadout(section: string): Loadout {
 	while (rest.length > 0) {
 		const tag = rest.slice(0, 1)
 		const position = TAG_ORDER.indexOf(tag)
-		if (position === -1) throw new Error(`unknown loadout group "${tag}"`)
-		if (seen.has(tag)) throw new Error(`loadout group "${tag}" appears twice`)
+		if (position === -1) fail(issue("loadoutUnknownGroup", { tag }))
+		if (seen.has(tag)) fail(issue("loadoutGroupTwice", { tag }))
 		if (position < furthest) {
-			throw new Error(`loadout group "${tag}" is out of order, expected C R P T`)
+			fail(issue("loadoutGroupOrder", { tag }))
 		}
 		seen.add(tag)
 		furthest = position
@@ -290,9 +291,9 @@ export function decodeLoadout(section: string): Loadout {
 
 		// T is last in the order, so the whole remainder belongs to it.
 		const flag = rest.slice(0, 1)
-		if (flag.length === 0) fail("T", "missing the order flag")
+		if (flag.length === 0) fail(issue("loadoutNoOrderFlag", { tag: "T" }))
 		if (flag !== "U" && flag !== "O") {
-			fail("T", `order flag "${flag}" is neither "U" nor "O"`)
+			fail(issue("loadoutOrderFlag", { tag: "T", flag }))
 		}
 		loadout.ordered = flag === "O"
 		loadout.treasures = rest.slice(1).split(SLOT_SEPARATOR).map(readSlot)

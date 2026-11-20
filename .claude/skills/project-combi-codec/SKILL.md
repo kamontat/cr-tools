@@ -154,6 +154,13 @@ hand-typed codes can contradict themselves. `isSemiAuto` is always the authority
 normalizes slot 1 to match it. Keep that division — a page must be able to show a contradictory
 code rather than refusing it.
 
+Neither kind is a sentence. A warning is an `Issue` (`{ id, values }`, from `issues.ts`), and
+an error is a `CodeError` carrying one; `parseStat` refuses with an `Issue` and `parseSaved`
+reports a skipped line's `reason` as one. `issueText(issue, m)` words it from
+`combi.issues` in the catalogue, so a page shows it in Thai or English. A `CodeError`'s
+`message` is the English text, so a log reads as it always did. A new message is a new id in
+`IssueValues` and `ISSUE_IDS`, a case in `issueText`, and its text in `en.ts` and `th.ts`.
+
 ## The exhaustive test
 
 `tests/lib/combi/exhaustive.test.ts` round-trips all 10,621,776 combinations a code can carry

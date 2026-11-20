@@ -27,6 +27,7 @@ import {
 	updateSaved,
 } from "#lib/combi/saved"
 import { shareHashFor } from "#lib/combi/state"
+import { englishOf } from "./issue-expect"
 
 function storage(initial: string | null = null): Storage {
 	let held = initial
@@ -233,6 +234,8 @@ test("reading text takes bare codes, canonicalises them, and skips what does not
 		{ code: "1-MS0A000000", description: "no space" },
 	])
 	expect(skipped.map((line) => line.line)).toEqual([2])
+	expect(skipped.map((line) => line.reason.id)).toEqual(["unknownChar"])
+	expect(englishOf(skipped.map((line) => line.reason))).toEqual(['slot 1 (mode): unknown char "N"'])
 })
 
 test("reading text takes a shared link, and the note the link carries", () => {
@@ -374,9 +377,10 @@ test("a stat line that does not read is skipped and reported, and the entry stay
 		{
 			line: 2,
 			text: "boxes: 9",
-			reason: "Boxes takes 0 to 5, or a range like 2-4.",
+			reason: { id: "statFormat", values: { field: "boxes" } },
 		},
 	])
+	expect(englishOf(skipped.map((line) => line.reason))).toEqual(["Boxes takes 0 to 5, or a range like 2-4."])
 })
 
 test("a shared link's stats come in with it, and typed stat lines win over them", () => {

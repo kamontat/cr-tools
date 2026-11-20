@@ -12,6 +12,7 @@ import {
 	isSemiAuto,
 	normalize,
 } from "#lib/combi/codec"
+import { englishOf, expectThrows, idsOf } from "./issue-expect"
 
 const fullAuto: Combi = {
 	goals: ["money"],
@@ -111,9 +112,9 @@ test("every cookie power at once is AAA", () => {
 })
 
 test("a group's old all-on characters no longer read", () => {
-	expect(() => decode("MS0A000400")).toThrow('slot 8 (cookie power+): unknown char "4"')
-	expect(() => decode("MS0A000010")).toThrow('slot 9 (cookie power+): unknown char "1"')
-	expect(() => decode("MS0A000001")).toThrow('slot 10 (cookie power+): unknown char "1"')
+	expectThrows(() => decode("MS0A000400"), "unknownChar", 'slot 8 (cookie power+): unknown char "4"')
+	expectThrows(() => decode("MS0A000010"), "unknownChar", 'slot 9 (cookie power+): unknown char "1"')
+	expectThrows(() => decode("MS0A000001"), "unknownChar", 'slot 10 (cookie power+): unknown char "1"')
 })
 
 test("every set of cookie powers has its own code and reads back as itself", () => {
@@ -130,7 +131,7 @@ test("every set of cookie powers has its own code and reads back as itself", () 
 })
 
 test("rejects a power letter in another group's slot", () => {
-	expect(() => decode("MS0A000K00")).toThrow('slot 8 (cookie power+): unknown char "K"')
+	expectThrows(() => decode("MS0A000K00"), "unknownChar", 'slot 8 (cookie power+): unknown char "K"')
 })
 
 test("Double XP alone leaves a run on full auto", () => {
@@ -138,25 +139,25 @@ test("Double XP alone leaves a run on full auto", () => {
 })
 
 test("rejects an unknown boost set character", () => {
-	expect(() => decode("MS0AZ00000")).toThrow('slot 5 (boosts): unknown char "Z"')
+	expectThrows(() => decode("MS0AZ00000"), "unknownChar", 'slot 5 (boosts): unknown char "Z"')
 })
 
 test("rejects a code that is not exactly 10 characters", () => {
-	expect(() => decode("MS0A00000")).toThrow('code must be exactly 10 characters, got 9: "MS0A00000"')
+	expectThrows(() => decode("MS0A00000"), "codeLength", 'code must be exactly 10 characters, got 9: "MS0A00000"')
 })
 
 // The layout before this one is ten characters too, but none of its codes
 // read: its mode slot was 0, A or H, and 0 is no mode now.
 test("rejects a code in the previous layout", () => {
-	expect(() => decode("10S0000000")).toThrow('slot 1 (mode): unknown char "1"')
-	expect(() => decode("0S00000000")).toThrow('slot 1 (mode): unknown char "0"')
+	expectThrows(() => decode("10S0000000"), "unknownChar", 'slot 1 (mode): unknown char "1"')
+	expectThrows(() => decode("0S00000000"), "unknownChar", 'slot 1 (mode): unknown char "0"')
 })
 
 test("rejects unknown characters in a slot", () => {
-	expect(() => decode("MZ0A000000")).toThrow('slots 2-3 (goal): unknown chars "Z0"')
-	expect(() => decode("ZS0A000000")).toThrow('slot 1 (mode): unknown char "Z"')
-	expect(() => decode("MS0Z000000")).toThrow('slot 4 (episode): unknown char "Z"')
-	expect(() => decode("MS0A0ZZ000")).toThrow('slots 6-7 (random boost): unknown chars "ZZ"')
+	expectThrows(() => decode("MZ0A000000"), "unknownChar", 'slots 2-3 (goal): unknown chars "Z0"')
+	expectThrows(() => decode("ZS0A000000"), "unknownChar", 'slot 1 (mode): unknown char "Z"')
+	expectThrows(() => decode("MS0Z000000"), "unknownChar", 'slot 4 (episode): unknown char "Z"')
+	expectThrows(() => decode("MS0A0ZZ000"), "unknownChar", 'slots 6-7 (random boost): unknown chars "ZZ"')
 })
 
 test("Any episode is A", () => {
@@ -203,9 +204,13 @@ test("a tower with no floor picked is any floor, 000", () => {
 })
 
 test("rejects a tower floor that is not one", () => {
-	expect(() => decode("AM0T101000")).toThrow("slots 5-7 (floor): 101 is above 100")
-	expect(() => decode("AM0TH00000")).toThrow('slots 5-7 (floor): "H00" is not 3 digits')
-	expect(() => decode("AM0T001X00")).toThrow("slots 8-10")
+	expectThrows(() => decode("AM0T101000"), "floorAbove", "slots 5-7 (floor): 101 is above 100")
+	expectThrows(() => decode("AM0TH00000"), "floorDigits", 'slots 5-7 (floor): "H00" is not 3 digits')
+	expectThrows(
+		() => decode("AM0T001X00"),
+		"floorReserved",
+		'slots 8-10 (reserved on this episode): "X00", expected "000"',
+	)
 })
 
 test("a floor means nothing outside the tower and is dropped", () => {
@@ -233,7 +238,8 @@ test("decode drops what a special episode has no room for, with a warning", () =
 
 	expect(combi.boosts).toEqual([])
 	expect(combi.randomBoost).toBeNull()
-	expect(warnings).toEqual(["this episode takes no boosts, random boost, or cookie power+ — ignoring them"])
+	expect(idsOf(warnings)).toEqual(["episodeNoBoosts"])
+	expect(englishOf(warnings)).toEqual(["this episode takes no boosts, random boost, or cookie power+ — ignoring them"])
 })
 
 // A run played by hand has no starting action: M never jumps, and encoding a
@@ -269,7 +275,8 @@ test("an auto run aiming for Score decodes, with a warning", () => {
 	const { combi, warnings } = decode("AS0AH00000")
 
 	expect(combi.goals).toEqual(["score"])
-	expect(warnings).toEqual([
+	expect(idsOf(warnings)).toEqual(["autoScore"])
+	expect(englishOf(warnings)).toEqual([
 		"slots 2-3 say Score but an auto run aims for Money, Exp, or Box — Score is played by hand",
 	])
 })
@@ -291,10 +298,16 @@ test("a pair is its two letters and all three of Money, Exp and Box is AA", () =
 
 // Score is played for on its own, and a run always aims for something.
 test("a set of goals no code can say is refused", () => {
-	expect(() => encode({ ...manual, goals: ["score", "money"] })).toThrow(
-		"goals must be Score alone or 1-3 of Money, Exp and Box",
+	expectThrows(
+		() => encode({ ...manual, goals: ["score", "money"] }),
+		"goalSet",
+		"goals must be Score alone or 1-3 of Money, Exp and Box, got [score, money]",
 	)
-	expect(() => encode({ ...manual, goals: [] })).toThrow("goals must be Score alone or 1-3 of Money, Exp and Box")
+	expectThrows(
+		() => encode({ ...manual, goals: [] }),
+		"goalSet",
+		"goals must be Score alone or 1-3 of Money, Exp and Box, got []",
+	)
 })
 
 test("every goal set has its own characters and reads back as itself", () => {
@@ -355,14 +368,18 @@ test("decode warns when the mode slot says Auto but manual work is present", () 
 	const { combi, warnings } = decode("AM031RV000")
 
 	expect(combi.mode).toBe("auto")
-	expect(warnings).toEqual(["slot 1 says Auto but Fast Start or a random boost is present — treating as Semi-auto"])
+	expect(idsOf(warnings)).toEqual(["autoButSemi"])
+	expect(englishOf(warnings)).toEqual([
+		"slot 1 says Auto but Fast Start or a random boost is present — treating as Semi-auto",
+	])
 })
 
 test("decode warns when the mode slot says Semi-auto but nothing is manual", () => {
 	const { combi, warnings } = decode("SM03H00000")
 
 	expect(combi.mode).toBe("semiauto")
-	expect(warnings).toEqual(["slot 1 says Semi-auto but there is no Fast Start or random boost"])
+	expect(idsOf(warnings)).toEqual(["semiButAuto"])
+	expect(englishOf(warnings)).toEqual(["slot 1 says Semi-auto but there is no Fast Start or random boost"])
 })
 
 test("decode stays quiet when the mode slot agrees with the flag slots", () => {
