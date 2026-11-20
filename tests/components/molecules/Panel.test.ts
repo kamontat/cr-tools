@@ -64,6 +64,52 @@ test("Escape calls onclose once", async () => {
 	expect(onclose).toHaveBeenCalledTimes(1)
 })
 
+test("Escape while closed, or already consumed inside, does not call onclose", async () => {
+	const onclose = vi.fn()
+	const { rerender } = render(Panel, { props: { id: "about", title: "About", open: false, onclose, children } })
+	await fireEvent.keyDown(document.body, { key: "Escape" })
+	expect(onclose).not.toHaveBeenCalled()
+	await rerender({ open: true })
+	const inside = screen.getByRole("button", { name: "Inside" })
+	inside.addEventListener("keydown", (event) => event.preventDefault())
+	await fireEvent.keyDown(inside, { key: "Escape" })
+	expect(onclose).not.toHaveBeenCalled()
+})
+
+const stack = () => {
+	const closeEditor = vi.fn()
+	const closeShare = vi.fn()
+	const editor = render(Panel, { props: { id: "editor", title: "Editor", open: true, onclose: closeEditor, children } })
+	const share = render(Panel, { props: { id: "share", title: "Share", open: true, onclose: closeShare, children } })
+	return { editor, share, closeEditor, closeShare }
+}
+
+test("with a panel open over another, Escape closes only the top one, and a second Escape the other", async () => {
+	const { share, closeEditor, closeShare } = stack()
+	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
+	expect(closeShare).toHaveBeenCalledTimes(1)
+	expect(closeEditor).not.toHaveBeenCalled()
+	await share.rerender({ open: false })
+	expect(screen.getByRole("dialog", { name: "Editor" }).contains(document.activeElement)).toBe(true)
+	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
+	expect(closeEditor).toHaveBeenCalledTimes(1)
+	expect(closeShare).toHaveBeenCalledTimes(1)
+})
+
+test("with a panel open over another, Tab in the top one never lands in the lower one", async () => {
+	stack()
+	const top = screen.getByRole("dialog", { name: "Share" })
+	const lower = screen.getByRole("dialog", { name: "Editor" })
+	const separator = top.querySelector('[role="separator"]') as HTMLElement
+	separator.focus()
+	await fireEvent.keyDown(separator, { key: "Tab" })
+	expect(top.contains(document.activeElement)).toBe(true)
+	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey: true })
+	expect(top.contains(document.activeElement)).toBe(true)
+	;(lower.querySelector("button") as HTMLElement).focus()
+	expect(top.contains(document.activeElement)).toBe(true)
+})
+
 test("clicking the scrim or the close button calls onclose", async () => {
 	const { onclose, container } = open()
 	const scrim = container.querySelector(".panel-scrim") as HTMLElement

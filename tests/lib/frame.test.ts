@@ -1,7 +1,8 @@
 import { Window as HappyWindow } from "happy-dom"
-import { afterEach, beforeEach, expect, test } from "vitest"
+import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
 import { initFrame, SIDEBAR_KEY, sidebarMode } from "#lib/frame"
+import { holdFocus } from "#lib/modal"
 
 const throwing = {
 	getItem() {
@@ -208,6 +209,37 @@ test("storage that throws still toggles", () => {
 	toggle().click()
 	expect(doc.body.getAttribute("data-sidebar")).toBe("closed")
 	toggle().click()
+	expect(doc.body.getAttribute("data-sidebar")).toBe("open")
+})
+
+test("on a phone, Escape with a pop-up open over the drawer closes only the pop-up", () => {
+	width(390)
+	initFrame(doc, memory())
+	toggle().click()
+	expect(doc.body.getAttribute("data-sidebar")).toBe("open")
+
+	const dialog = doc.createElement("div") as HTMLElement
+	dialog.tabIndex = -1
+	doc.body.append(dialog)
+	const onescape = vi.fn()
+	const release = holdFocus(dialog, onescape)
+
+	pressEscape()
+	expect(onescape).toHaveBeenCalledTimes(1)
+	expect(doc.body.getAttribute("data-sidebar")).toBe("open")
+
+	release()
+	pressEscape()
+	expect(doc.body.getAttribute("data-sidebar")).toBe("closed")
+})
+
+test("an Escape something else already handled leaves the drawer open", () => {
+	width(390)
+	initFrame(doc, memory())
+	toggle().click()
+	const event = new happy.KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+	event.preventDefault()
+	doc.dispatchEvent(event as unknown as Event)
 	expect(doc.body.getAttribute("data-sidebar")).toBe("open")
 })
 

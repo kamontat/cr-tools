@@ -35,11 +35,12 @@ const resize = (next: number) => {
 	chosen = clampWidth(next, viewport, id)
 }
 
-const onwindowkeydown = (event: KeyboardEvent) => {
-	if (!open || event.key !== "Escape") return
-	event.preventDefault()
-	onclose()
-}
+/**
+ * Holds focus while open and closes on Escape — only when this is the
+ * topmost pop-up, and not when a control inside already handled the key.
+ * `onclose` is read when Escape comes, so the attachment never re-runs.
+ */
+const modal = (node: HTMLElement) => holdFocus(node, () => onclose())
 
 const onpointerdown = (event: PointerEvent) => {
 	if (event.button !== 0) return
@@ -78,7 +79,7 @@ const ondblclick = () => {
 }
 </script>
 
-<svelte:window onkeydown={onwindowkeydown} onresize={() => (viewport = window.innerWidth)} />
+<svelte:window onresize={() => (viewport = window.innerWidth)} />
 
 {#if open}
 	<div class="panel-layer" class:sheet={phone} class:resizing={dragging}>
@@ -92,7 +93,7 @@ const ondblclick = () => {
 			tabindex="-1"
 			data-layout={phone ? "sheet" : "side"}
 			style:--panel-width={phone ? undefined : `${width}px`}
-			{@attach holdFocus}>
+			{@attach modal}>
 			{#if phone}
 				<div class="panel-grab" aria-hidden="true"></div>
 			{/if}

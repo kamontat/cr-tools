@@ -1,6 +1,6 @@
-import { afterEach, expect, test } from "vitest"
+import { afterEach, expect, test, vi } from "vitest"
 
-import { focusables, holdFocus } from "#lib/modal"
+import { focusables, holdFocus, isModalOpen } from "#lib/modal"
 
 afterEach(() => {
 	document.body.innerHTML = ""
@@ -82,6 +82,76 @@ test("focus that lands behind the dialog is pulled back in", () => {
 	release()
 	after.focus()
 	expect(document.activeElement).toBe(after)
+})
+
+const pressEscape = (target: Element | null = document.activeElement) => {
+	const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+	;(target ?? document.body).dispatchEvent(event)
+	return event
+}
+
+function stacked() {
+	const { dialog: lower } = setUp()
+	const upper = document.createElement("div")
+	upper.tabIndex = -1
+	upper.innerHTML = `<button id="up-first">Up first</button><button id="up-last">Up last</button>`
+	document.body.append(upper)
+	return { lower, upper }
+}
+
+test("Escape calls the open modal's onescape once and marks the event handled", () => {
+	const { dialog } = setUp()
+	const onescape = vi.fn()
+	const release = holdFocus(dialog, onescape)
+	expect(isModalOpen(document)).toBe(true)
+	expect(pressEscape().defaultPrevented).toBe(true)
+	expect(onescape).toHaveBeenCalledTimes(1)
+	release()
+	expect(isModalOpen(document)).toBe(false)
+})
+
+test("an Escape a control inside already consumed does not close the modal", () => {
+	const { dialog } = setUp()
+	const onescape = vi.fn()
+	const release = holdFocus(dialog, onescape)
+	const field = dialog.querySelector("#field") as HTMLElement
+	field.addEventListener("keydown", (event) => event.preventDefault())
+	field.focus()
+	pressEscape()
+	expect(onescape).not.toHaveBeenCalled()
+	release()
+})
+
+test("with two modals stacked, Escape reaches only the topmost", () => {
+	const { lower, upper } = stacked()
+	const closeLower = vi.fn()
+	const closeUpper = vi.fn()
+	const releaseLower = holdFocus(lower, closeLower)
+	const releaseUpper = holdFocus(upper, closeUpper)
+	pressEscape()
+	expect(closeUpper).toHaveBeenCalledTimes(1)
+	expect(closeLower).not.toHaveBeenCalled()
+	releaseUpper()
+	pressEscape()
+	expect(closeLower).toHaveBeenCalledTimes(1)
+	expect(closeUpper).toHaveBeenCalledTimes(1)
+	releaseLower()
+})
+
+test("with two modals stacked, Tab wraps inside the topmost and never lands in the lower one", () => {
+	const { lower, upper } = stacked()
+	const releaseLower = holdFocus(lower)
+	const releaseUpper = holdFocus(upper)
+	;(upper.querySelector("#up-last") as HTMLElement).focus()
+	tab()
+	expect(document.activeElement?.id).toBe("up-first")
+	tab(true)
+	expect(document.activeElement?.id).toBe("up-last")
+	;(lower.querySelector("#first") as HTMLElement).focus()
+	expect(upper.contains(document.activeElement)).toBe(true)
+	releaseUpper()
+	expect(lower.contains(document.activeElement)).toBe(true)
+	releaseLower()
 })
 
 test("after release, Tab is no longer held", () => {

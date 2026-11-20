@@ -6,6 +6,7 @@
 
 import type { ToolSlug } from "#lib/tools"
 
+import { isModalOpen } from "#lib/modal"
 import { readKey, writeKey } from "#lib/storage"
 
 /** Which sidebar link is the current page. */
@@ -76,6 +77,8 @@ export function initFrame(doc: Document, store: Storage | null): void {
 
 	doc.addEventListener("keydown", (event) => {
 		if (event.key !== "Escape" || mode === "full" || !isOpen()) return
+		// A pop-up over the drawer takes Escape first, and closes alone.
+		if (event.defaultPrevented || isModalOpen(doc)) return
 		set(false, false)
 		toggle.focus()
 	})
