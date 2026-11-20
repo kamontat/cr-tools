@@ -16,8 +16,8 @@ let { label, controls, expanded, ontoggle }: Props = $props()
 button {
 	display: inline-grid;
 	place-items: center;
-	width: 22px;
-	height: 22px;
+	width: 24px;
+	height: 24px;
 	padding: 0;
 	border: 1px solid var(--line);
 	border-radius: 50%;

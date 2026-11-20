@@ -30,3 +30,15 @@ test("clicking the message dismisses it", async () => {
 	await fireEvent.click(screen.getByText("Saved"))
 	expect(ondismiss).toHaveBeenCalled()
 })
+
+test("an error message lands in the alert region and the status region stays empty", () => {
+	render(Toast, { props: { message: "Bad", tone: "error", ondismiss: vi.fn() } })
+	expect(screen.getByRole("alert").textContent).toContain("Bad")
+	expect(screen.getByRole("status").textContent?.trim()).toBe("")
+})
+
+test("an info message lands in the status region and the alert region stays empty", () => {
+	render(Toast, { props: { message: "Hi", tone: "info", ondismiss: vi.fn() } })
+	expect(screen.getByRole("status").textContent).toContain("Hi")
+	expect(screen.getByRole("alert").textContent?.trim()).toBe("")
+})

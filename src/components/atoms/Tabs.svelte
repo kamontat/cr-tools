@@ -8,6 +8,9 @@ interface Props {
 
 let { label, tabs, value, onchange }: Props = $props()
 
+/** The one tab stop: the selected tab, or the first enabled tab when the value matches none. */
+const stop = $derived(tabs.find((t) => t.value === value && !t.disabled)?.value ?? tabs.find((t) => !t.disabled)?.value)
+
 let buttons: Record<string, HTMLButtonElement | undefined> = {}
 
 function onkeydown(event: KeyboardEvent, from: number) {
@@ -32,7 +35,7 @@ function onkeydown(event: KeyboardEvent, from: number) {
 			role="tab"
 			bind:this={buttons[tab.value]}
 			aria-selected={tab.value === value}
-			tabindex={tab.value === value ? 0 : -1}
+			tabindex={tab.value === stop ? 0 : -1}
 			disabled={tab.disabled}
 			onclick={() => onchange(tab.value)}
 			onkeydown={(event) => onkeydown(event, index)}>
