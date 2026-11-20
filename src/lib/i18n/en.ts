@@ -86,5 +86,68 @@ export const en = {
 			treasureSlot: (n: number) => `Treasure slot ${n}`,
 			separator: "Separates the loadout from the combi name",
 		},
+		list: {
+			newCode: "New code",
+			search: "Search",
+			allGoals: "All goals",
+			sort: { newest: "Newest", oldest: "Oldest", money: "Highest average money", code: "Code A–Z" },
+			copy: "Copy",
+			share: "Share",
+			copied: "Copied",
+			empty: "No saved codes yet. Press New code to make one.",
+			noMatch: "No saved code matches.",
+			rounds: (n: number) => `${n} ${n === 1 ? "round" : "rounds"}`,
+			average: "Average",
+			columns: {
+				code: "Code",
+				loadout: "Loadout",
+				note: "Note",
+				goal: "Goal",
+				money: "Average money",
+				rounds: "Rounds",
+				saved: "Saved",
+			},
+		},
+		editor: {
+			newTitle: "New code",
+			editTitle: "Edit code",
+			tabs: { main: "Main", cookies: "Cookies", treasures: "Treasures", boosts: "Boosts", runLog: "Run log" },
+			save: "Save",
+			update: "Update",
+			more: "More",
+			typeCode: "Type a code",
+			reset: "Reset",
+			help: "Help",
+			note: "Note",
+		},
+		share: {
+			title: "Share code",
+			link: "Link",
+			fullCode: "Full code",
+			shareToApp: "Share to app",
+			copy: "Copy",
+		},
+		help: {
+			mode: "Slot 1. Whether you play the run yourself (Manual), it plays itself (Auto), or a mix of both (Semi-auto). An auto run turns semi-auto with Fast Start, a random boost, a jump at the start or a relay cookie.",
+			goal: "Slots 2-3. What the run aims for: Score, Money, Exp or Box, or any mix of Money, Exp and Box. Score stands alone, and an auto run does not aim for it.",
+			episode:
+				"Slot 4. The episode the run is for, or Any. Special episodes take only what they use, so the slots they leave out read 0.",
+			floor: "Slots 5-7, in Tower of Frozen Waves only. The tower floor, 1 to 100, or any floor.",
+			action:
+				"What you do as the run starts. A jump at the start shares slot 1 with the mode and makes the run semi-auto.",
+			cookie:
+				"The cookie you run with. The game keeps it itself, so the code carries it in the loadout in front of the 10 characters.",
+			relay:
+				"The cookie you swap in partway through, carried in the loadout. A relay is swapped by hand, so an auto run with one turns semi-auto.",
+			pet: "The pet that runs with your cookie, carried in the loadout in front of the 10 characters.",
+			treasures:
+				"Up to three treasure slots, carried in the loadout. A slot can accept several treasures, and you choose whether their order matters.",
+			boosts:
+				"Slot 5. The boosts bought before the run - HP Extension, Power Jelly Boost, Fast Start and Double XP - as one character for the whole set.",
+			randomBoost: "Slots 6-7. The random boost the run wants, or none.",
+			cookiePower: "Slots 8-10. The cookie power+ selections, one slot per group, or none of a group.",
+			rounds:
+				"The money each round earned, so the list can show the average. It travels in the share link, not in the code.",
+		},
 	},
 }
