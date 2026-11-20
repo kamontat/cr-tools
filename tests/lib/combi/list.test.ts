@@ -150,3 +150,8 @@ test("row goals: the goals a code aims for, or null when it does not read", () =
 	expect(rowGoals(full({}, { goals: ["money", "box"] }))).toEqual(["money", "box"])
 	expect(rowGoals("not a code")).toBeNull()
 })
+
+test("a code is decoded once, however often the list asks", () => {
+	const code = full({}, { goals: ["money", "box"] })
+	expect(rowGoals(code)).toBe(rowGoals(code))
+})

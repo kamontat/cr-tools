@@ -98,3 +98,20 @@ test("no clipboard API shows the error toast too", async () => {
 	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyFull(code) }))
 	expect(await screen.findByText(en.combi.share.copyFailed)).toBeTruthy()
 })
+
+test("a notice from one share does not carry over to the next, or to a reopened one", async () => {
+	setNavigator("clipboard", { writeText: vi.fn(() => Promise.resolve()) })
+	const onclose = vi.fn()
+	const { rerender } = render(ShareDialog, { props: { entry, onclose } })
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyFull(code) }))
+	expect(await screen.findByText(en.combi.share.copied)).toBeTruthy()
+
+	await rerender({ entry: { code: "1-AM0A000000", note: "", stats: {} } })
+	expect(screen.queryByText(en.combi.share.copied)).toBeNull()
+
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyLink }))
+	expect(await screen.findByText(en.combi.share.copied)).toBeTruthy()
+	await rerender({ entry: null })
+	await rerender({ entry })
+	expect(screen.queryByText(en.combi.share.copied)).toBeNull()
+})

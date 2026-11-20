@@ -41,6 +41,13 @@ const say = (message: string, tone: "info" | "error") => {
 
 onDestroy(() => clearTimeout(timer))
 
+// A notice belongs to the entry it was about: another entry, or closing, drops it.
+$effect.pre(() => {
+	void entry
+	clearTimeout(timer)
+	toast = null
+})
+
 /** Selects a value's text, so it can be copied by hand when the clipboard says no. */
 const select = (element: HTMLElement | undefined) => {
 	if (element === undefined) return

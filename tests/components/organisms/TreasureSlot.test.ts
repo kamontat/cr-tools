@@ -111,10 +111,10 @@ test("the add picker adds at +0 in option order, and a picked one is pressed", a
 	const { onchange } = setup([pick("003", [2])])
 	const add = screen.getByRole("button", { name: "Add treasure" })
 	expect(add.getAttribute("aria-expanded")).toBe("false")
-	expect(screen.queryByRole("group", { name: "Add treasure" })).toBeNull()
+	expect(screen.queryByRole("group", { name: "Search treasures" })).toBeNull()
 	await fireEvent.click(add)
 	expect(add.getAttribute("aria-expanded")).toBe("true")
-	const picker = within(screen.getByRole("group", { name: "Add treasure" }))
+	const picker = within(screen.getByRole("group", { name: "Search treasures" }))
 	expect(picker.getByRole("button", { name: "Squishy Jelly Watch" }).getAttribute("aria-pressed")).toBe("true")
 	await fireEvent.click(picker.getByRole("button", { name: "Bear Jelly Parfait" }))
 	expect(last(onchange)).toEqual([pick("001", [0]), pick("003", [2])])
@@ -123,7 +123,7 @@ test("the add picker adds at +0 in option order, and a picked one is pressed", a
 test("the add picker removes a picked one, and its search narrows", async () => {
 	const { onchange } = setup([pick("001", [0]), pick("003", [2])])
 	await fireEvent.click(screen.getByRole("button", { name: "Add treasure" }))
-	const picker = within(screen.getByRole("group", { name: "Add treasure" }))
+	const picker = within(screen.getByRole("group", { name: "Search treasures" }))
 	const search = picker.getByRole("searchbox", { name: "Search treasures" })
 	await fireEvent.input(search, { target: { value: "dice" } })
 	expect(picker.queryByRole("button", { name: "Bear Jelly Parfait" })).toBeNull()
@@ -137,7 +137,7 @@ test("a carried pick the options lack stays, after the listed ones", async () =>
 	const retired = { id: "0ZZ", name: "Old Relic", src: null, levels: [0] }
 	const { onchange } = setup([retired])
 	await fireEvent.click(screen.getByRole("button", { name: "Add treasure" }))
-	const picker = within(screen.getByRole("group", { name: "Add treasure" }))
+	const picker = within(screen.getByRole("group", { name: "Search treasures" }))
 	await fireEvent.click(picker.getByRole("button", { name: "Lucky Dice" }))
 	expect(last(onchange)).toEqual([pick("002", [0]), retired])
 })
@@ -159,4 +159,11 @@ test("two slots with the same index never share a DOM id", async () => {
 	for (const add of screen.getAllByRole("button", { name: "Add treasure" })) {
 		expect(document.getElementById(add.getAttribute("aria-controls") ?? "")).not.toBeNull()
 	}
+})
+
+test("the add picker is not named like the button that opens it", async () => {
+	setup([])
+	await fireEvent.click(screen.getByRole("button", { name: "Add treasure" }))
+	expect(screen.queryByRole("group", { name: "Add treasure" })).toBeNull()
+	expect(screen.getByRole("group", { name: "Search treasures" })).toBeTruthy()
 })

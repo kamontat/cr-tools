@@ -3,7 +3,7 @@ import type { Draft } from "#lib/combi/draft"
 import type { Issue } from "#lib/combi/issues"
 import type { RunStats } from "#lib/combi/stats"
 
-import { onDestroy, onMount } from "svelte"
+import { onDestroy, onMount, tick } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
 import CombiEditor from "#components/organisms/CombiEditor.svelte"
@@ -121,7 +121,7 @@ const why = (error: unknown) => (error instanceof CodeError ? issueText(error.is
 /** A code read with changes says so, with each change and anything else worth a word after them. */
 const sayChanges = (warnings: readonly Issue[], after?: string) => {
 	const lines = [...warnings.map((warning) => issueText(warning, m)), ...(after === undefined ? [] : [after])]
-	say(`${m.combi.notices.readWithChanges}: ${lines.join(". ")}`, "warn")
+	say(`${m.combi.notices.readWithChanges}: ${m.combi.notices.changes(lines)}`, "warn")
 }
 
 /** Opens a draft, saying what changed in reading it, or `sentence` when nothing did. */
@@ -299,8 +299,23 @@ const onpaste = (event: ClipboardEvent) => {
 
 // --- Editor actions ----------------------------------------------------------
 
+let listBox = $state<HTMLElement | null>(null)
+
+/**
+ * Focus inside an editor that goes away would fall to `<body>`: it goes to the
+ * list's New code instead. A pop-up already handed focus back to whatever
+ * opened it, which keeps it when that is still on the page.
+ */
+const focusList = async () => {
+	await tick()
+	const active = document.activeElement
+	if (active === null || active === document.body || !active.isConnected)
+		listBox?.querySelector<HTMLElement>("button.new")?.focus()
+}
+
 const close = () => {
 	draft = null
+	void focusList()
 }
 
 /** The note and stats as an entry keeps them. */
@@ -365,6 +380,7 @@ const ondelete = () => {
 	const result = removeSaved(store, code)
 	entries = result.entries
 	draft = null
+	void focusList()
 	if (result.stored && persistent !== null) say(m.combi.notices.deleted(combiSectionOf(code)))
 	else say(m.combi.notices.refusedDelete, "error")
 }
@@ -413,7 +429,7 @@ const shareEntry = (entry: SavedCode) => {
 	class:docked={dockedOpen}
 	bind:this={combiBox}
 	style:--dock-top={dockedOpen ? `${dockTop}px` : undefined}>
-	<div class="list">
+	<div class="list" bind:this={listBox}>
 		<CombiList
 			{entries}
 			current={draft?.from ?? null}

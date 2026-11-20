@@ -162,7 +162,6 @@ export const en = {
 			shareCode: (code: string) => `Share ${code}`,
 			copy: "Copy",
 			share: "Share",
-			copied: "Copied",
 			empty: "No saved codes yet. Press “New code” to make one.",
 			noMatch: "No saved code matches.",
 			rounds: (n: number) => `${n} ${n === 1 ? "round" : "rounds"}`,
@@ -245,6 +244,8 @@ export const en = {
 		},
 		notices: {
 			readWithChanges: "Read with changes",
+			/** The changes a code was read with, as one run of sentences. */
+			changes: (lines: readonly string[]) => lines.join(". "),
 			noLongerReads: (code: string, why: string) => `${code} no longer reads: ${why}`,
 			linkUnreadable: (code: string, why: string) => `The link's code ${code} does not read: ${why}`,
 			linkNote: "This link came with a note. Save keeps it.",

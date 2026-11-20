@@ -149,7 +149,6 @@ export const th: Messages = {
 			shareCode: (code: string) => `แชร์ ${code}`,
 			copy: "คัดลอก",
 			share: "แชร์",
-			copied: "คัดลอกแล้ว",
 			empty: "ยังไม่มีโค้ดที่บันทึกไว้ กด “โค้ดใหม่” เพื่อสร้าง",
 			noMatch: "ไม่มีโค้ดที่ตรงกับที่ค้นหา",
 			rounds: (n: number) => `${n} รอบ`,
@@ -232,6 +231,7 @@ export const th: Messages = {
 		},
 		notices: {
 			readWithChanges: "อ่านได้แต่มีการปรับ",
+			changes: (lines: readonly string[]) => lines.join(" "),
 			noLongerReads: (code: string, why: string) => `${code} อ่านไม่ได้แล้ว: ${why}`,
 			linkUnreadable: (code: string, why: string) => `โค้ด ${code} ในลิงก์อ่านไม่ได้: ${why}`,
 			linkNote: "ลิงก์นี้มีโน้ตมาด้วย กดบันทึกเพื่อเก็บไว้",

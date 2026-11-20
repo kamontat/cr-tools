@@ -377,3 +377,20 @@ test("with no edits, another row opens straight away", async () => {
 	expect(location.hash).toBe(`#${moneyCode}`)
 	expect(notice()).toBe("")
 })
+
+test("closing the docked editor puts focus on New code, not nowhere", async () => {
+	viewport(1440)
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	button(en.frame.close).focus()
+	await fireEvent.click(button(en.frame.close))
+	await waitFor(() => expect(document.activeElement).toBe(button(en.combi.list.newCode)))
+})
+
+test("Delete puts focus on New code, not nowhere", async () => {
+	render(CombiApp)
+	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await fireEvent.click(button(en.combi.editor.more))
+	await fireEvent.click(screen.getByRole("menuitem", { name: en.combi.editor.delete }))
+	await waitFor(() => expect(document.activeElement).toBe(button(en.combi.list.newCode)))
+})

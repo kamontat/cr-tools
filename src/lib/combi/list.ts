@@ -61,12 +61,28 @@ export function sortList(entries: readonly SavedCode[], sort: ListSort): SavedCo
 
 export type GoalFilter = Goal | "all"
 
-function decoded(code: string): ReturnType<typeof decodeFull>["full"] | null {
+type Decoded = ReturnType<typeof decodeFull>["full"] | null
+
+/**
+ * Codes already decoded. A code always decodes the same way, and search, the
+ * goal filter, the goals column and the icons all ask on every keystroke, so
+ * each decodes once. Callers must not change what they get.
+ */
+const decodedCodes = new Map<string, Decoded>()
+const DECODED_LIMIT = 2000
+
+function decoded(code: string): Decoded {
+	const known = decodedCodes.get(code)
+	if (known !== undefined || decodedCodes.has(code)) return known ?? null
+	let full: Decoded
 	try {
-		return decodeFull(code).full
+		full = decodeFull(code).full
 	} catch {
-		return null
+		full = null
 	}
+	if (decodedCodes.size >= DECODED_LIMIT) decodedCodes.clear()
+	decodedCodes.set(code, full)
+	return full
 }
 
 export function filterList(entries: readonly SavedCode[], query: string, goal: GoalFilter): SavedCode[] {

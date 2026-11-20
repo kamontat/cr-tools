@@ -139,7 +139,7 @@ function toggle(id: string) {
 	{#if adding}
 		<div class="picker" id="{uid}-picker">
 			<EntryPicker
-				label={labels.add}
+				label={labels.search}
 				searchLabel={labels.search}
 				noMatchLabel={labels.noMatch}
 				{options}
