@@ -41,6 +41,7 @@ What changed in this project and why, newest first.
 - The asset scripts import each other through a new `#scripts/*` alias, because plain Node.js
   does not resolve extensionless relative imports and imports never carry `.ts`. A test keeps
   `src/` from importing it, so scraper code never reaches the site.
+
 ## 2026-11-20: Ube Ice Cookie and new treasures in the loadout picker
 
 ### Features
