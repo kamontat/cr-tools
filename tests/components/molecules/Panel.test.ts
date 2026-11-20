@@ -10,6 +10,7 @@ const children = createRawSnippet(() => ({
 	render: () => `<div><button type="button">Inside</button></div>`,
 }))
 const footer = createRawSnippet(() => ({ render: () => `<p>Footer note</p>` }))
+const actions = createRawSnippet(() => ({ render: () => `<button type="button">Act</button>` }))
 /** The caller names the controls in its language; there is no English default. */
 const labels = { closeLabel: "Shut", resizeLabel: "Widen" }
 
@@ -30,7 +31,9 @@ afterEach(() => {
 	document.body.innerHTML = ""
 })
 
-const open = (props: Partial<{ id: string; onclose: () => void; withFooter: boolean; docked: boolean }> = {}) => {
+const open = (
+	props: Partial<{ id: string; onclose: () => void; withFooter: boolean; withActions: boolean; docked: boolean }> = {},
+) => {
 	const onclose = props.onclose ?? vi.fn()
 	const result = render(Panel, {
 		props: {
@@ -41,6 +44,7 @@ const open = (props: Partial<{ id: string; onclose: () => void; withFooter: bool
 			children,
 			...labels,
 			...(props.withFooter ? { footer } : {}),
+			...(props.withActions ? { actions } : {}),
 			...(props.docked ? { docked: true } : {}),
 		},
 	})
@@ -316,4 +320,14 @@ test("docked: the separator still resizes and remembers the width", async () => 
 	await fireEvent.keyDown(separator, { key: "ArrowLeft" })
 	expect(separator.getAttribute("aria-valuenow")).toBe("656")
 	expect(window.localStorage.getItem("frame:panel-width:editor")).toBe("656")
+})
+
+test("actions sit in the header, before the close button", () => {
+	open({ withActions: true })
+	const header = document.querySelector(".panel-head") as HTMLElement
+	const buttons = [...header.querySelectorAll("button")].map(
+		(button) => button.getAttribute("aria-label") ?? button.textContent?.trim(),
+	)
+	expect(buttons).toEqual(["Act", "Shut"])
+	expect(document.querySelector(".panel-foot")).toBeNull()
 })

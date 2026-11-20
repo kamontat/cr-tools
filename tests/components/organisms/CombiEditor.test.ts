@@ -319,3 +319,13 @@ test("Thai is the default, and switching to English changes the labels", async (
 	expect(await screen.findByRole("button", { name: en.combi.editor.save })).toBeTruthy()
 	expect(tab(en.combi.editor.tabs.main)).toBeTruthy()
 })
+
+test("the actions sit in the panel header, top right, and the menu opens below them", async () => {
+	setup()
+	const header = document.querySelector(".panel-head") as HTMLElement
+	expect(within(header).getByRole("button", { name: en.combi.editor.copy })).toBeTruthy()
+	expect(within(header).getByRole("button", { name: en.combi.editor.share })).toBeTruthy()
+	expect(within(header).getByRole("button", { name: en.combi.editor.save })).toBeTruthy()
+	expect(within(header).getByRole("button", { name: en.combi.editor.more })).toBeTruthy()
+	expect(document.querySelector(".panel-foot")).toBeNull()
+})

@@ -14,6 +14,8 @@ interface Props {
 	onclose: () => void
 	children: Snippet
 	footer?: Snippet
+	/** Buttons in the header, top right, before the close button. */
+	actions?: Snippet
 	/** The close button's name, in the page's language. */
 	closeLabel: string
 	/** The resize handle's name, in the page's language. */
@@ -26,7 +28,7 @@ interface Props {
 	docked?: boolean
 }
 
-let { id, title, open, onclose, children, footer, closeLabel, resizeLabel, docked = false }: Props = $props()
+let { id, title, open, onclose, children, footer, actions, closeLabel, resizeLabel, docked = false }: Props = $props()
 
 const store = localStore()
 
@@ -140,6 +142,9 @@ const ondblclick = () => {
 	{/if}
 	<header class="panel-head">
 		<h2 id={titleId}>{title}</h2>
+		{#if actions}
+			<div row class="panel-actions">{@render actions()}</div>
+		{/if}
 		<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
 	</header>
 	<div class="panel-body">{@render children()}</div>
@@ -245,8 +250,18 @@ const ondblclick = () => {
 
 .panel-head h2 {
 	flex: 1;
+	min-width: 0;
 	margin: 0;
+	overflow: hidden;
 	font-size: 17px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.panel-actions {
+	flex: none;
+	align-items: center;
+	gap: 6px;
 }
 
 .panel-close {
@@ -328,6 +343,21 @@ const ondblclick = () => {
 }
 
 /* Phones: a sheet up from the bottom, with a grab handle and no resize. */
+/* On a phone the title keeps its line with ✕, and the actions take the row under it. */
+.sheet .panel-head {
+	flex-wrap: wrap;
+}
+
+.sheet .panel-close {
+	order: 2;
+}
+
+.sheet .panel-actions {
+	order: 3;
+	flex-basis: 100%;
+	justify-content: flex-end;
+}
+
 .sheet {
 	align-items: flex-end;
 }

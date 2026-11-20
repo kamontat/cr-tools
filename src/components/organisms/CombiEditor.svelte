@@ -358,7 +358,7 @@ function onclick(event: MouseEvent) {
 		{/each}
 	</div>
 
-	{#snippet footer()}
+	{#snippet actions()}
 		<div row class="foot" bind:this={foot}>
 			<button type="button" class="btn primary" onclick={oncopy}>{m.combi.editor.copy}</button>
 			<button type="button" class="btn" onclick={onshare}>{m.combi.editor.share}</button>
@@ -461,14 +461,13 @@ function onclick(event: MouseEvent) {
 }
 
 .foot {
-	flex: 1;
 	align-items: center;
 	gap: 8px;
 	min-width: 0;
 }
 
 .btn {
-	flex: 1;
+	flex: none;
 	min-height: 36px;
 	padding: 6px 12px;
 	border: 1px solid var(--line);
@@ -509,7 +508,7 @@ function onclick(event: MouseEvent) {
 .menu {
 	position: absolute;
 	right: 0;
-	bottom: calc(100% + 6px);
+	top: calc(100% + 6px);
 	z-index: 5;
 	min-width: 180px;
 	padding: 4px;
