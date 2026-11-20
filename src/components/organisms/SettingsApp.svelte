@@ -123,7 +123,7 @@ h2 {
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 14px;
+	padding: 10px 14px;
 	border-bottom: 1px solid var(--line);
 }
 

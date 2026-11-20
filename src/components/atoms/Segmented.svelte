@@ -23,14 +23,15 @@ let { label, options, value, onchange }: Props = $props()
 	display: inline-flex;
 	flex-flow: row wrap;
 	gap: 2px;
-	padding: 3px;
+	padding: 2px;
 	border-radius: 9px;
 	background: var(--hover);
 }
 
+/* Compact under a mouse; a finger gets the full tap height. */
 button {
-	min-height: var(--tap);
-	padding: 6px 14px;
+	min-height: 32px;
+	padding: 4px 12px;
 	border: 0;
 	border-radius: 7px;
 	background: none;
@@ -38,6 +39,12 @@ button {
 	font: inherit;
 	font-weight: 500;
 	cursor: pointer;
+}
+
+@media (pointer: coarse) {
+	button {
+		min-height: var(--tap);
+	}
 }
 
 button[aria-pressed="true"] {
