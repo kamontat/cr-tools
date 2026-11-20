@@ -6,8 +6,8 @@ import Chips from "#components/atoms/Chips.svelte"
 import Field from "#components/molecules/Field.svelte"
 import { boostArt, cookiePowerArt } from "#lib/combi/art"
 import { ALL_BOOSTS, ALL_COOKIE_POWERS, ALL_RANDOM_BOOSTS } from "#lib/combi/codec"
-import { type Draft, limitsFor, setRandomBoost, toggleBoost, toggleCookiePower } from "#lib/combi/draft"
-import { ASSET_BASE, episodeName } from "#lib/combi/editor"
+import { type Draft, setRandomBoost, toggleBoost, toggleCookiePower } from "#lib/combi/draft"
+import { ASSET_BASE } from "#lib/combi/editor"
 import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/combi/labels"
 
 interface Props {
@@ -20,8 +20,6 @@ interface Props {
 
 let { uid, draft, m, onchange }: Props = $props()
 
-const off = $derived(!limitsFor(draft).boosts)
-const note = $derived(off ? m.combi.editor.takesNone(episodeName(draft)) : undefined)
 const combi = $derived(draft.picks.combi)
 
 const boosts = ALL_BOOSTS.map((value) => ({
@@ -51,60 +49,42 @@ function changed<T extends string>(before: readonly T[], after: readonly string[
 	id="{uid}-boosts"
 	label={m.combi.describe.fields.boosts}
 	help={m.combi.help.boosts}
-	helpLabel={m.combi.editor.help}
-	{note}>
-	<fieldset disabled={off}>
-		<Chips
-			label={m.combi.describe.fields.boosts}
-			options={boosts}
-			value={combi.boosts}
-			multiple
-			onchange={(next) => {
-				const boost = changed<Boost>(combi.boosts, next)
-				if (boost) onchange(toggleBoost(draft, boost))
-			}} />
-	</fieldset>
+	helpLabel={m.combi.editor.help}>
+	<Chips
+		label={m.combi.describe.fields.boosts}
+		options={boosts}
+		value={combi.boosts}
+		multiple
+		onchange={(next) => {
+			const boost = changed<Boost>(combi.boosts, next)
+			if (boost) onchange(toggleBoost(draft, boost))
+		}} />
 </Field>
 
 <Field
 	id="{uid}-randomBoost"
 	label={m.combi.describe.fields.randomBoost}
 	help={m.combi.help.randomBoost}
-	helpLabel={m.combi.editor.help}
-	{note}>
-	<fieldset disabled={off}>
-		<Chips
-			label={m.combi.describe.fields.randomBoost}
-			options={randoms}
-			value={[combi.randomBoost ?? ""]}
-			onchange={([value]) => onchange(setRandomBoost(draft, value ? (value as RandomBoost) : null))} />
-	</fieldset>
+	helpLabel={m.combi.editor.help}>
+	<Chips
+		label={m.combi.describe.fields.randomBoost}
+		options={randoms}
+		value={[combi.randomBoost ?? ""]}
+		onchange={([value]) => onchange(setRandomBoost(draft, value ? (value as RandomBoost) : null))} />
 </Field>
 
 <Field
 	id="{uid}-powers"
 	label={m.combi.describe.fields.cookiePower}
 	help={m.combi.help.cookiePower}
-	helpLabel={m.combi.editor.help}
-	{note}>
-	<fieldset disabled={off}>
-		<Chips
-			label={m.combi.describe.fields.cookiePower}
-			options={powers}
-			value={combi.cookiePowers}
-			multiple
-			onchange={(next) => {
-				const power = changed<CookiePower>(combi.cookiePowers, next)
-				if (power) onchange(toggleCookiePower(draft, power))
-			}} />
-	</fieldset>
+	helpLabel={m.combi.editor.help}>
+	<Chips
+		label={m.combi.describe.fields.cookiePower}
+		options={powers}
+		value={combi.cookiePowers}
+		multiple
+		onchange={(next) => {
+			const power = changed<CookiePower>(combi.cookiePowers, next)
+			if (power) onchange(toggleCookiePower(draft, power))
+		}} />
 </Field>
-
-<style>
-fieldset {
-	min-width: 0;
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-</style>

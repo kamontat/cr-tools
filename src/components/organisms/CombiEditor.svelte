@@ -14,10 +14,10 @@ import EditorTreasuresTab from "#components/organisms/EditorTreasuresTab.svelte"
 import { CODE_LENGTH } from "#lib/combi/codec"
 import { describeRun } from "#lib/combi/describe"
 import { codeOf, type Draft, draftFromCode, isDirty, tabBadges, tabEnabled } from "#lib/combi/draft"
-import { canJump, jumpTab } from "#lib/combi/editor"
+import { canJump, jumpTab, ROLES, type Role } from "#lib/combi/editor"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { hintsFor } from "#lib/combi/hints"
-import { CodeError, issueText } from "#lib/combi/issues"
+import { CodeError, issue, issueText } from "#lib/combi/issues"
 import { rememberTab, storedTab, TAB_NAMES, type TabName } from "#lib/combi/state"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, onLangChange } from "#lib/lang"
@@ -102,9 +102,9 @@ const FIELDS: Readonly<Record<string, string>> = {
 	episode: "episode",
 	floor: "floor",
 	action: "action",
-	cookie: "lead",
-	relay: "relay",
-	pet: "pet",
+	cookie: "roles",
+	relay: "roles",
+	pet: "roles",
 	treasures: "order",
 	treasureOrder: "order",
 	boosts: "boosts",
@@ -115,11 +115,18 @@ const FIELDS: Readonly<Record<string, string>> = {
 let body = $state<HTMLElement | null>(null)
 let foot = $state<HTMLElement | null>(null)
 
-/** Selects the tab that owns a group of characters and focuses its control: the pressed one, else the first. */
+/** Which role's picker the Cookies tab shows. */
+let role = $state<Role>("cookie")
+
+/**
+ * Selects the tab that owns a group of characters — and on the Cookies tab
+ * the role — and focuses its control: the pressed one, else the first.
+ */
 async function jump(group: string) {
 	const owner = jumpTab(group)
 	if (owner === null || body === null) return
 	pickTab(owner)
+	if ((ROLES as readonly string[]).includes(group)) role = group as Role
 	await tick()
 	const slot = /^treasure(\d)$/.exec(group)
 	const field = Object.hasOwn(FIELDS, group) ? FIELDS[group] : undefined
@@ -152,15 +159,19 @@ function readTyped(text: string): Reading {
 		draftFromCode(text)
 		return { kind: "ok", text: "" }
 	} catch (error) {
-		return { kind: "error", text: error instanceof CodeError ? issueText(error.issue, m) : String(error) }
+		const unread = error instanceof CodeError ? error.issue : issue("unreadableLine")
+		return { kind: "error", text: issueText(unread, m) }
 	}
 }
 
 const reading = $derived(readTyped(typed))
+/** The last code this typing sent, so Enter after Done (or twice) applies it once. */
+let sent: string | null = null
 
 async function startTyping() {
 	menuOpen = false
 	typed = ""
+	sent = null
 	typing = true
 	await tick()
 	typeInput?.focus()
@@ -175,25 +186,57 @@ function typeInputChanged(event: Event & { currentTarget: HTMLInputElement }) {
 		if (at !== null) input.setSelectionRange(at, at)
 	}
 	typed = upper.trim()
-	if (readTyped(typed).kind === "ok") ontypecode(typed)
+}
+
+/** Closes the typing row and puts focus back on ⋯, which opened it. */
+async function stopTyping() {
+	typing = false
+	await tick()
+	moreButton?.focus()
+}
+
+/** Enter or Done: applies a code that reads, once; one that does not keeps the row open with its issue. */
+function commitTyped() {
+	if (reading.kind !== "ok") return
+	if (typed !== sent) {
+		sent = typed
+		ontypecode(typed)
+	}
+	void stopTyping()
 }
 
 function typeKeydown(event: KeyboardEvent) {
 	if (event.key === "Escape") {
 		event.preventDefault()
-		typing = false
+		void stopTyping()
 	} else if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
 		event.preventDefault()
-		if (reading.kind !== "ok") return
-		ontypecode(typed)
-		typing = false
+		commitTyped()
 	}
+}
+
+/** Focus leaving the row closes it; when it goes nowhere (the row is gone) it returns to ⋯. */
+function typingFocusout(event: FocusEvent) {
+	const next = event.relatedTarget as Node | null
+	if (next !== null && (event.currentTarget as HTMLElement).contains(next)) return
+	if (next === null) void stopTyping()
+	else typing = false
 }
 
 // The ⋯ menu.
 let menuOpen = $state(false)
 let menuWrap = $state<HTMLElement | null>(null)
 let menu = $state<HTMLElement | null>(null)
+let moreButton = $state<HTMLButtonElement | null>(null)
+
+/** Focus leaving the menu closes it; when it goes nowhere it returns to ⋯. */
+function menuFocusout(event: FocusEvent) {
+	const next = event.relatedTarget as Node | null
+	// Already closing (an item was chosen), or focus stays inside: nothing to do.
+	if (!menuOpen || (next !== null && menuWrap?.contains(next))) return
+	menuOpen = false
+	if (next === null) moreButton?.focus()
+}
 
 async function toggleMenu() {
 	menuOpen = !menuOpen
@@ -209,7 +252,7 @@ function menuKeydown(event: KeyboardEvent) {
 	if (event.key === "Escape") {
 		event.preventDefault()
 		menuOpen = false
-		menuWrap?.querySelector<HTMLElement>("[aria-haspopup]")?.focus()
+		moreButton?.focus()
 	} else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
 		event.preventDefault()
 		const step = event.key === "ArrowDown" ? 1 : -1
@@ -255,7 +298,7 @@ function onclick(event: MouseEvent) {
 		<div class="head">
 			<CodeDisplay {code} {summary} {hints} onjump={jump} canJump={(group) => canJump(draft, group)} />
 			{#if typing}
-				<div class="typing">
+				<div row class="typing" onfocusout={typingFocusout}>
 					<input
 						bind:this={typeInput}
 						type="text"
@@ -268,12 +311,12 @@ function onclick(event: MouseEvent) {
 						spellcheck="false"
 						value={typed}
 						oninput={typeInputChanged}
-						onkeydown={typeKeydown}
-						onblur={() => (typing = false)}>
-					<p class="type-status" class:error={reading.kind === "error"} id="{uid}-type-status" aria-live="polite">
-						{reading.text}
-					</p>
+						onkeydown={typeKeydown}>
+					<button type="button" class="btn done" onclick={commitTyped}>{m.combi.editor.done}</button>
 				</div>
+				<p class="type-status" class:error={reading.kind === "error"} id="{uid}-type-status" aria-live="polite">
+					{reading.text}
+				</p>
 			{/if}
 		</div>
 
@@ -287,7 +330,7 @@ function onclick(event: MouseEvent) {
 					{#if name === "main"}
 						<EditorMainTab {uid} {draft} {m} {onchange} />
 					{:else if name === "cookies"}
-						<EditorRolesTab {uid} {draft} {m} {onchange} />
+						<EditorRolesTab {uid} {draft} {m} {role} onrole={(next) => (role = next)} {onchange} />
 					{:else if name === "treasures"}
 						<EditorTreasuresTab {uid} {draft} {m} {onchange} />
 					{:else if name === "boosts"}
@@ -309,8 +352,9 @@ function onclick(event: MouseEvent) {
 			{:else if canUpdate}
 				<button type="button" class="btn" onclick={onupdate}>{m.combi.editor.update}</button>
 			{/if}
-			<div class="menu-wrap" bind:this={menuWrap}>
+			<div class="menu-wrap" bind:this={menuWrap} onfocusout={menuFocusout}>
 				<button
+					bind:this={moreButton}
 					type="button"
 					class="btn more"
 					aria-label={m.combi.editor.more}
@@ -358,10 +402,17 @@ function onclick(event: MouseEvent) {
 }
 
 .typing {
-	gap: 4px;
+	align-items: center;
+	gap: 8px;
+}
+
+.btn.done {
+	flex: none;
 }
 
 .type-code {
+	flex: 1;
+	min-width: 0;
 	min-height: 36px;
 	padding: 6px 10px;
 	border: 1px solid var(--line);

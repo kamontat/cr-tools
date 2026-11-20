@@ -26,7 +26,7 @@ test("the verdict is empty by hand, full auto alone, and names what needs a hand
 	expect(verdictText(auto, en)).toBe(en.combi.editor.verdictAuto)
 	const semi = setRole(setRandomBoost(auto, "doubleCoins"), "relay", "01")
 	expect(verdictText(semi, en)).toBe(
-		en.combi.editor.verdictSemi(`${RANDOM_BOOST_LABELS.doubleCoins}, ${en.combi.describe.relayCookie}`),
+		en.combi.editor.verdictSemi(`${RANDOM_BOOST_LABELS.doubleCoins}, ${en.combi.editor.relayReason}`),
 	)
 })
 

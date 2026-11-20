@@ -6,7 +6,8 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/sve
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
 import CombiEditor from "#components/organisms/CombiEditor.svelte"
-import { codeOf, newDraft, setEpisode, setMode, setNote } from "#lib/combi/draft"
+import { optionsFor } from "#lib/combi/catalog"
+import { codeOf, newDraft, setEpisode, setMode, setNote, setRole } from "#lib/combi/draft"
 import { EPISODE_LABELS } from "#lib/combi/labels"
 import { en } from "#lib/i18n/en"
 import { th } from "#lib/i18n/th"
@@ -105,17 +106,61 @@ test("the selected tab is remembered", async () => {
 	expect(window.localStorage.getItem("combi-name:tab")).toBe("boosts")
 })
 
+const roleChip = (field: string) => screen.getByRole("button", { name: new RegExp(`^${field}:`) })
+const pickerOf = (field: string) => screen.getAllByRole("group", { name: field }).at(-1) as HTMLElement
+
 test("choosing a relay on an auto run shows the semi-auto verdict", async () => {
 	setup(setMode(newDraft(), "auto"))
 	expect(screen.getByText(en.combi.editor.verdictAuto)).toBeTruthy()
 	await fireEvent.click(tab(en.combi.editor.tabs.cookies))
-	const [relay] = screen.getAllByRole("group", { name: en.combi.describe.fields.relay }) as [HTMLElement]
-	const options = within(relay).getAllByRole("button", { pressed: false })
-	// The first option after the search is Any; the one after it a real cookie.
+	await fireEvent.click(roleChip(en.combi.describe.fields.relay))
+	const options = within(pickerOf(en.combi.describe.fields.relay)).getAllByRole("button", { pressed: false })
 	await fireEvent.click(options.find((b) => b.getAttribute("aria-label") !== en.combi.editor.anyCookie) as HTMLElement)
 	await fireEvent.click(tab(en.combi.editor.tabs.main))
-	expect(screen.getByText(en.combi.editor.verdictSemi(en.combi.describe.relayCookie))).toBeTruthy()
+	expect(screen.getByText(en.combi.editor.verdictSemi(en.combi.editor.relayReason))).toBeTruthy()
 	expect(screen.getByRole("button", { name: en.combi.modes.semiauto })).toBeTruthy()
+})
+
+test("the Cookies tab shows one picker at a time, chosen by role", async () => {
+	setup()
+	await fireEvent.click(tab(en.combi.editor.tabs.cookies))
+	expect(screen.getAllByRole("searchbox")).toHaveLength(1)
+	expect(roleChip(en.combi.describe.fields.cookie).getAttribute("aria-pressed")).toBe("true")
+	await fireEvent.click(roleChip(en.combi.describe.fields.pet))
+	expect(screen.getAllByRole("searchbox")).toHaveLength(1)
+	expect(
+		within(pickerOf(en.combi.describe.fields.pet)).getByRole("button", { name: en.combi.editor.anyPet }),
+	).toBeTruthy()
+	expect(screen.queryByRole("button", { name: en.combi.editor.anyCookie })).toBeNull()
+})
+
+test("a role chip names its pick, and Clear sets the role to none", async () => {
+	const { current } = setup()
+	await fireEvent.click(tab(en.combi.editor.tabs.cookies))
+	expect(screen.queryByRole("button", { name: en.combi.editor.clear })).toBeNull()
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.anyCookie }))
+	expect(current().picks.loadout.cookie).not.toBeNull()
+	expect(roleChip(en.combi.describe.fields.cookie).textContent).toContain(en.combi.editor.anyCookie)
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.clear }))
+	expect(current().picks.loadout.cookie).toBeNull()
+	expect(roleChip(en.combi.describe.fields.cookie).textContent).toContain(en.combi.describe.none)
+})
+
+test("on an episode with no relay, the Relay chip is off and the note names the episode", async () => {
+	setup(setEpisode(newDraft(), "special1"))
+	await fireEvent.click(tab(en.combi.editor.tabs.cookies))
+	expect((roleChip(en.combi.describe.fields.relay) as HTMLButtonElement).disabled).toBe(true)
+	expect(screen.getByText(en.combi.editor.noRelay(EPISODE_LABELS.special1))).toBeTruthy()
+})
+
+test("jumping to the pet selects Pet on the Cookies tab", async () => {
+	const pet = optionsFor("pets")[0]?.[0] as string
+	setup(setRole(newDraft(), "pet", pet))
+	await fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${en.combi.describe.fields.pet}`) }))
+	expect(tab(en.combi.editor.tabs.cookies).getAttribute("aria-selected")).toBe("true")
+	expect(roleChip(en.combi.describe.fields.pet).getAttribute("aria-pressed")).toBe("true")
+	await vi.waitFor(() => expect(document.activeElement?.getAttribute("aria-pressed")).toBe("true"))
+	expect(pickerOf(en.combi.describe.fields.pet).contains(document.activeElement)).toBe(true)
 })
 
 test("Save shows for a new draft, and Update only when an entry is dirty", async () => {
@@ -156,18 +201,59 @@ test("the menu offers Save as new and Delete only while editing", async () => {
 	expect(ondelete).toHaveBeenCalled()
 })
 
-test("⋯ → Type a code with a valid code calls ontypecode", async () => {
-	const { ontypecode } = setup()
+const openTyping = async () => {
 	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.more }))
 	await fireEvent.click(screen.getByRole("menuitem", { name: en.combi.editor.typeCode }))
-	const input = screen.getByRole("textbox", { name: en.combi.editor.code }) as HTMLInputElement
+	return screen.getByRole("textbox", { name: en.combi.editor.code }) as HTMLInputElement
+}
+
+test("⋯ → Type a code shows feedback while typing and applies once on Enter", async () => {
+	const { ontypecode } = setup()
+	const input = await openTyping()
 	expect(screen.getByText(en.combi.editor.typeHint)).toBeTruthy()
 	await fireEvent.input(input, { target: { value: "10s" } })
 	expect(input.value).toBe("10S")
 	expect(screen.getByText(en.combi.editor.typeCount(3, 10))).toBeTruthy()
 	const code = codeOf(setEpisode(newDraft(), "episode3"))
 	await fireEvent.input(input, { target: { value: code.toLowerCase() } })
+	expect(ontypecode).not.toHaveBeenCalled()
+	await fireEvent.keyDown(input, { key: "Enter" })
+	expect(ontypecode).toHaveBeenCalledTimes(1)
 	expect(ontypecode).toHaveBeenCalledWith(code)
+	expect(screen.queryByRole("textbox", { name: en.combi.editor.code })).toBeNull()
+})
+
+test("Done applies a typed code; an unreadable one shows its issue and is not sent", async () => {
+	const { ontypecode } = setup()
+	const input = await openTyping()
+	await fireEvent.input(input, { target: { value: "1-ZZZZZZZZZZ" } })
+	expect(input.getAttribute("aria-invalid")).toBe("true")
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.done }))
+	expect(ontypecode).not.toHaveBeenCalled()
+	const code = codeOf(setEpisode(newDraft(), "episode3"))
+	await fireEvent.input(input, { target: { value: code } })
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.done }))
+	expect(ontypecode).toHaveBeenCalledTimes(1)
+})
+
+test("Escape cancels typing and returns focus to the menu button", async () => {
+	const { ontypecode } = setup()
+	const input = await openTyping()
+	await fireEvent.input(input, { target: { value: codeOf(newDraft()) } })
+	await fireEvent.keyDown(input, { key: "Escape" })
+	expect(ontypecode).not.toHaveBeenCalled()
+	expect(screen.queryByRole("textbox", { name: en.combi.editor.code })).toBeNull()
+	await vi.waitFor(() =>
+		expect(document.activeElement).toBe(screen.getByRole("button", { name: en.combi.editor.more })),
+	)
+})
+
+test("the menu closes when focus leaves it", async () => {
+	setup()
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.more }))
+	const item = screen.getByRole("menuitem", { name: en.combi.editor.reset })
+	await fireEvent.focusOut(item, { relatedTarget: screen.getByRole("button", { name: en.combi.editor.copy }) })
+	expect(screen.queryByRole("menu")).toBeNull()
 })
 
 test("an unreadable stat is marked invalid with its issue", async () => {

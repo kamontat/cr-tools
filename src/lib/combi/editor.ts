@@ -64,6 +64,23 @@ export function entryOptions(
 	return [...any, ...base, ...extra]
 }
 
+/** The three people a loadout names, in the order the editor offers them. */
+export type Role = "cookie" | "relay" | "pet"
+
+export const ROLES: readonly Role[] = ["cookie", "relay", "pet"]
+
+export function sectionOf(role: Role): CatalogSection {
+	return role === "pet" ? "pets" : "cookies"
+}
+
+/** What a role holds, in words: none, Any, or the entry's name. */
+export function roleName(role: Role, id: string | null, m: Messages): string {
+	if (id === null) return m.combi.describe.none
+	const section = sectionOf(role)
+	if (isAnyId(section, id)) return section === "pets" ? m.combi.editor.anyPet : m.combi.editor.anyCookie
+	return labelFor(section, id)
+}
+
 /** Every treasure id the draft's slots hold, for `entryOptions`. */
 export function carriedTreasures(draft: Draft): string[] {
 	return draft.picks.loadout.treasures.flatMap((slot: TreasurePick[]) => slot.map((pick) => pick.id))
@@ -74,7 +91,7 @@ function reasonText(reason: ReasonId, draft: Draft, m: Messages): string {
 	if (reason === "fastStart") return BOOST_LABELS.fastStart
 	if (reason === "randomBoost") return combi.randomBoost === null ? "" : RANDOM_BOOST_LABELS[combi.randomBoost]
 	if (reason === "action") return m.combi.actions[combi.action]
-	return m.combi.describe.relayCookie
+	return m.combi.editor.relayReason
 }
 
 /** The line under Mode: why an auto run needs a hand, or that it needs none; empty for a manual run. */
