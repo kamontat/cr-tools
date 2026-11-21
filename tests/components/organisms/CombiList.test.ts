@@ -244,7 +244,10 @@ test("an open row shows each treasure slot's first treasure with +N for the rest
 	expect(row.textContent).toContain(nameFor("cookies", "01"))
 	expect(row.textContent).not.toContain("+0-2")
 	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(1)
+	expect(rings?.classList.contains("stacked")).toBe(false)
 	await fireEvent.click(rings as HTMLElement)
+	// Open, with alternatives to show, each slot takes its own line.
+	expect(rings?.classList.contains("stacked")).toBe(true)
 	expect(within(row).getByRole("img", { name: nameFor("treasures", "002") })).toBeTruthy()
 	expect(row.querySelector(".more")).toBeNull()
 	expect(row.textContent).toMatch(new RegExp(`${nameFor("treasures", "002")}\\s+\\+0-2`))

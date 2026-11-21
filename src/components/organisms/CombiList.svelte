@@ -239,10 +239,11 @@ const pickSort = (value: string) => {
 										</button>
 									</div>
 								{/snippet}
-								{#snippet pics(label: string, content: import("svelte").Snippet)}
+								{#snippet pics(label: string, content: import("svelte").Snippet, stacked = false)}
 									<button
 										type="button"
 										class="pics"
+										class:stacked
 										aria-pressed={namesOn(entry.code, label)}
 										title={m.combi.list.showNames}
 										onclick={() => toggleNames(entry.code, label)}>
@@ -271,7 +272,7 @@ const pickSort = (value: string) => {
 										<span class="sep" aria-hidden="true">·</span>
 										<span class="with-art">
 											{#if run.art}
-												<img class="art" src={run.art} alt="" width="32" height="32" loading="lazy">
+												<img class="art" src={run.art} alt="" width="24" height="24" loading="lazy">
 											{/if}
 											{run.episode}
 										</span>
@@ -320,7 +321,7 @@ const pickSort = (value: string) => {
 															src={pick.icon.src}
 															name={pick.icon.name}
 															round={pick.icon.round ?? false}
-															size={44} />
+															size={32} />
 														{#if namesOn(entry.code, m.combi.list.team)}
 															<span class="caption">{pick.icon.name}</span>
 														{/if}
@@ -357,7 +358,7 @@ const pickSort = (value: string) => {
 																		? `${pick.icon.name}, ${m.combi.list.kinds[pick.mark]}`
 																		: pick.icon.name}
 																	round
-																	size={40} />
+																	size={28} />
 																{#if pick.mark}
 																	<span class="mark" aria-hidden="true">
 																		{pick.mark === "evolved" ? "E" : "B"}
@@ -380,7 +381,12 @@ const pickSort = (value: string) => {
 												</span>
 											{/each}
 										{/snippet}
-										{@render pics(m.combi.editor.tabs.treasures, rings)}
+										{@render pics(
+											m.combi.editor.tabs.treasures,
+											rings,
+											namesOn(entry.code, m.combi.editor.tabs.treasures) &&
+												slots.some((piece) => piece.picks.length > 1),
+										)}
 									{/if}
 								{/snippet}
 								{@render line("treasures", m.combi.editor.tabs.treasures, treasuresBody)}
@@ -389,7 +395,7 @@ const pickSort = (value: string) => {
 									{#snippet icons()}
 										{#each boosts?.boosts ?? [] as boost (boost.id)}
 											<span class="cell">
-												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={40} />
+												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={28} />
 												{#if namesOn(entry.code, m.combi.editor.tabs.boosts)}
 													<span class="caption">{BOOST_LABELS[boost.id]}</span>
 												{/if}
@@ -423,7 +429,7 @@ const pickSort = (value: string) => {
 													aria-label={COOKIE_POWER_LABELS[power.id]}
 													title={COOKIE_POWER_LABELS[power.id]}>
 													{#each power.srcs.slice(0, 2) as src (src)}
-														<img {src} alt="" width="34" height="34" loading="lazy">
+														<img {src} alt="" width="26" height="26" loading="lazy">
 													{/each}
 												</span>
 												{#if namesOn(entry.code, fields.cookiePower)}
@@ -749,7 +755,7 @@ select {
 	grid-template-columns: 96px minmax(0, 1fr) auto;
 	gap: 12px;
 	align-items: center;
-	min-height: 60px;
+	min-height: 48px;
 	padding: 8px 0;
 }
 
@@ -800,8 +806,8 @@ select {
 }
 
 .art {
-	width: 32px;
-	height: 32px;
+	width: 24px;
+	height: 24px;
 	object-fit: contain;
 }
 
@@ -844,7 +850,7 @@ select {
 }
 
 .names .cell {
-	width: 84px;
+	width: 76px;
 	text-align: center;
 }
 
@@ -885,7 +891,7 @@ select {
 .names .pics .sep,
 .names .pics .slash,
 .names .pics .position {
-	line-height: 44px;
+	line-height: 32px;
 }
 
 /* An evolved or blessed treasure: a ring in its colour and its letter on the corner, as the picker draws them. */
@@ -942,14 +948,20 @@ select {
 	display: inline-flex;
 }
 
+/* An open treasure line with alternatives: one slot per line, so each slot's "or" reads as its own. */
+.pics.stacked {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
 .faces img {
-	width: 34px;
-	height: 34px;
+	width: 26px;
+	height: 26px;
 	object-fit: contain;
 }
 
 .faces img + img {
-	margin-inline-start: -14px;
+	margin-inline-start: -10px;
 }
 
 .stat {
