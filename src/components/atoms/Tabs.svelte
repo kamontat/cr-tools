@@ -48,27 +48,40 @@ function onkeydown(event: KeyboardEvent, from: number) {
 </div>
 
 <style>
+/* A tab bar: labels in a row over one line, the selected tab underlined. */
 .tabs {
 	display: flex;
 	flex-flow: row nowrap;
-	gap: 4px;
+	align-items: stretch;
 	overflow-x: auto;
+	box-shadow: inset 0 -1px var(--line);
 }
 
 button {
+	position: relative;
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	min-height: 32px;
-	padding: 6px 14px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	background: var(--surface);
-	color: var(--text);
+	min-height: 38px;
+	padding: 8px 14px;
+	border: 0;
+	background: none;
+	color: var(--muted);
 	font: inherit;
 	font-weight: 500;
 	white-space: nowrap;
 	cursor: pointer;
+}
+
+/* A short divider between neighbouring tabs. */
+button + button::before {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	height: 1em;
+	border-left: 1px solid var(--line);
+	content: "";
+	transform: translateY(-50%);
 }
 
 @media (pointer: coarse) {
@@ -78,18 +91,18 @@ button {
 }
 
 button:hover:not(:disabled) {
-	border-color: var(--accent);
+	background: var(--hover);
+	color: var(--text);
 }
 
 button:focus-visible {
 	outline: 2px solid var(--accent);
-	outline-offset: 2px;
+	outline-offset: -2px;
 }
 
 button[aria-selected="true"] {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
+	box-shadow: inset 0 -2px var(--accent);
+	color: var(--text);
 }
 
 button:disabled {
