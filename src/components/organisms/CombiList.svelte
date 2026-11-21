@@ -1,12 +1,15 @@
 <script lang="ts">
 import type { SavedCode } from "#lib/combi/saved"
+import type { TabName } from "#lib/combi/state"
 
 import { SvelteSet } from "svelte/reactivity"
 
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
+import { episodeArt } from "#lib/combi/art"
 import { ALL_GOALS } from "#lib/combi/codec"
-import { describeCombi, episodeText } from "#lib/combi/describe"
+import { episodeText, floorText, goalsText } from "#lib/combi/describe"
 import { combiSectionOf } from "#lib/combi/full-code"
+import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/combi/labels"
 import {
 	filterList,
 	type GoalFilter,
@@ -15,13 +18,13 @@ import {
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
+	rowBoosts,
 	rowEpisode,
 	rowFull,
 	rowGoals,
 	rowLoadout,
 	rowTeam,
 	sortList,
-	type TeamPiece,
 	writeListSort,
 } from "#lib/combi/list"
 import { descriptionTitle } from "#lib/combi/saved"
@@ -35,7 +38,8 @@ interface Props {
 	/** The code open in the editor, marked with `aria-current`. */
 	current: string | null
 	onnew: () => void
-	onopen: (entry: SavedCode) => void
+	/** Opens the entry in the editor, on `tab` when a line of its row asks for one. */
+	onopen: (entry: SavedCode, tab?: TabName) => void
 	oncopy: (entry: SavedCode) => void
 	onshare: (entry: SavedCode) => void
 	ondelete: (entry: SavedCode) => void
@@ -60,6 +64,13 @@ const date = $derived(new Intl.DateTimeFormat(LOCALES[lang], { day: "numeric", m
 
 /** The codes whose rows are open; any number at once. */
 const expanded = new SvelteSet<string>()
+/** The open rows showing each picture's name under it. */
+const named = new SvelteSet<string>()
+
+const toggleNames = (code: string) => {
+	if (named.has(code)) named.delete(code)
+	else named.add(code)
+}
 /** The code whose Delete was pressed once and now asks to be pressed again. */
 let arming = $state<string | null>(null)
 
@@ -79,25 +90,19 @@ const targetOf = (goal: GoalTarget["goal"], targets: readonly GoalTarget[]): str
 	return target === undefined ? null : rangeText(target.range)
 }
 
-/** A piece's caption: its role, and for a treasure kept in order its slot. */
-const roleText = (piece: TeamPiece): string => {
-	const { fields } = m.combi.describe
-	if (piece.role !== "treasure") return fields[piece.role]
-	return piece.position === undefined ? fields.treasures : `${fields.treasures} ${piece.position}`
-}
-
-/** The run settings an open row lists: those set, beyond the goals and episode its head already shows. */
-const settingsOf = (code: string) => {
-	const decoded = rowFull(code)
-	if (decoded === null) return []
-	const { fields, none } = m.combi.describe
-	return describeCombi(decoded.combi, m).rows.filter(
-		(row) =>
-			row.field !== fields.goal &&
-			row.field !== fields.episode &&
-			row.value !== none &&
-			row.value !== m.combi.actions.none,
-	)
+/** What an open row's Run line says beyond the mode: the goals, the floor and a starting action. */
+const runOf = (code: string) => {
+	const full = rowFull(code)
+	if (full === null) return null
+	const { combi } = full
+	return {
+		mode: m.combi.modes[combi.mode],
+		goals: goalsText(combi.goals, m),
+		episode: episodeText(combi.episode, m),
+		art: episodeArt(combi.episode, "/assets/"),
+		floor: combi.episode === "special2" ? floorText(combi.floor, m) : null,
+		action: combi.action === "none" ? null : m.combi.actions[combi.action],
+	}
 }
 
 /** The saved stats, the ones the code's goals aim for marked. */
@@ -119,6 +124,7 @@ const remove = (entry: SavedCode) => {
 	}
 	arming = null
 	expanded.delete(entry.code)
+	named.delete(entry.code)
 	ondelete(entry)
 }
 
@@ -216,97 +222,197 @@ const pickSort = (value: string) => {
 						{@const team = rowTeam(entry.code) ?? []}
 						{@const members = team.filter((piece) => piece.role !== "treasure")}
 						{@const slots = team.filter((piece) => piece.role === "treasure")}
+						{@const run = runOf(entry.code)}
+						{@const boosts = rowBoosts(entry.code)}
 						{@const stats = statsOf(entry)}
-						{@const settings = settingsOf(entry.code)}
+						{@const names = named.has(entry.code)}
+						{@const none = m.combi.describe.none}
 						<div {id} class="details">
-							<dl class="facts">
-								{#if members.length > 0}
-									<dt>{m.combi.list.team}</dt>
-									<dd class="pieces">
-										{#each members as piece, at (at)}
-											{@const pick = piece.picks[0]}
-											{#if pick}
-												<span class="piece">
-													<span class="chip" class:round={pick.icon.round}>
+							<div class="lines" class:names>
+								{#snippet line(tab: TabName, label: string, body: import("svelte").Snippet)}
+									<div class="row-line">
+										<span class="label">{label}</span>
+										<div class="value">{@render body()}</div>
+										<button
+											type="button"
+											class="go"
+											aria-label={m.combi.list.editSection(label, game)}
+											onclick={() => onopen(entry, tab)}>
+											<span class="go-mark" aria-hidden="true"></span>
+										</button>
+									</div>
+								{/snippet}
+								{#snippet pics(content: import("svelte").Snippet)}
+									<button
+										type="button"
+										class="pics"
+										aria-pressed={names}
+										title={m.combi.list.showNames}
+										onclick={() => toggleNames(entry.code)}>
+										{@render content()}
+									</button>
+								{/snippet}
+
+								{#snippet runBody()}
+									{#if run === null}
+										<span class="muted">{none}</span>
+									{:else}
+										<span class="pill">{run.mode}</span>
+										<span class="sep" aria-hidden="true">·</span>
+										<span>{run.goals}</span>
+										<span class="sep" aria-hidden="true">·</span>
+										<span class="with-art">
+											{#if run.art}
+												<img class="art" src={run.art} alt="" width="32" height="32" loading="lazy">
+											{/if}
+											{run.episode}
+										</span>
+										{#if run.floor}
+											<span class="sep" aria-hidden="true">·</span>
+											<span>{run.floor}</span>
+										{/if}
+										{#if run.action}
+											<span class="sep" aria-hidden="true">·</span>
+											<span>{run.action}</span>
+										{/if}
+									{/if}
+								{/snippet}
+								{@render line("main", m.combi.list.run, runBody)}
+
+								{#snippet cookiesBody()}
+									{#if members.length === 0}
+										<span class="muted">{none}</span>
+									{:else}
+										{#snippet faces()}
+											{#each members as piece, at (at)}
+												{@const pick = piece.picks[0]}
+												{#if at > 0}
+													<span class="sep" aria-hidden="true">·</span>
+												{/if}
+												{#if pick}
+													<span class="cell">
 														<EntryIcon
 															src={pick.icon.src}
 															name={pick.icon.name}
 															round={pick.icon.round ?? false}
-															size={30} />
+															size={44} />
+														{#if names}
+															<span class="caption">{pick.icon.name}</span>
+														{/if}
 													</span>
-													<span class="piece-text">
-														<span class="name">{pick.icon.name}</span>
-														<span class="role">{roleText(piece)}</span>
-													</span>
-												</span>
-											{/if}
-										{/each}
-									</dd>
-								{/if}
-								{#if slots.length > 0}
-									<dt>{m.combi.describe.fields.treasures}</dt>
-									<dd class="pieces">
-										{#each slots as piece, at (at)}
-											<span class="piece">
-												{#if piece.position !== undefined}
-													<span class="position">{piece.position}</span>
 												{/if}
-												<span class="chip slot" class:many={piece.picks.length > 1}>
+											{/each}
+										{/snippet}
+										{@render pics(faces)}
+									{/if}
+								{/snippet}
+								{@render line("cookies", m.combi.editor.tabs.cookies, cookiesBody)}
+
+								{#snippet treasuresBody()}
+									{#if slots.length === 0}
+										<span class="muted">{none}</span>
+									{:else}
+										{#snippet rings()}
+											{#each slots as piece, at (at)}
+												<span class="slot">
+													{#if piece.position !== undefined}
+														<span class="position">{piece.position}</span>
+													{/if}
 													{#each piece.picks as pick, n (n)}
 														{#if n > 0}
 															<span class="slash" aria-hidden="true">/</span>
 														{/if}
-														<EntryIcon
-															src={pick.icon.src}
-															name={pick.icon.name}
-															round
-															size={piece.picks.length > 1 ? 26 : 30} />
-													{/each}
-												</span>
-												<span class="piece-text">
-													{#each piece.picks as pick, n (n)}
-														<span class={n === 0 ? "name" : "or"}>
-															{#if n > 0}
-																{m.combi.describe.orTreasure.trim()}
-															{/if}
-															{pick.icon.name}
-															{#if pick.level}
-																<span class="level">{pick.level}</span>
+														<span class="cell">
+															<span class="ring" data-mark={pick.mark}>
+																<EntryIcon
+																	src={pick.icon.src}
+																	name={pick.mark
+																		? `${pick.icon.name}, ${m.combi.list.kinds[pick.mark]}`
+																		: pick.icon.name}
+																	round
+																	size={40} />
+																{#if pick.mark}
+																	<span class="mark" aria-hidden="true">
+																		{pick.mark === "evolved" ? "E" : "B"}
+																	</span>
+																{/if}
+															</span>
+															{#if names}
+																<span class="caption">
+																	{pick.icon.name}
+																	{#if pick.level}
+																		<span class="level">{pick.level}</span>
+																	{/if}
+																</span>
 															{/if}
 														</span>
 													{/each}
 												</span>
-											</span>
-										{/each}
-									</dd>
-								{/if}
-								{#if stats.length > 0}
-									<dt>{m.combi.list.results}</dt>
-									<dd class="inline">
+											{/each}
+										{/snippet}
+										{@render pics(rings)}
+									{/if}
+								{/snippet}
+								{@render line("treasures", m.combi.editor.tabs.treasures, treasuresBody)}
+
+								{#snippet boostsBody()}
+									{#if boosts === null}
+										<span class="muted">{none}</span>
+									{:else if !boosts.used}
+										<span class="muted">{m.combi.describe.notUsed}</span>
+									{:else if boosts.boosts.length === 0 && boosts.random === null && boosts.powers.length === 0}
+										<span class="muted">{none}</span>
+									{:else}
+										{#snippet extras()}
+											{#each boosts.boosts as boost (boost.id)}
+												<span class="cell">
+													<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={40} />
+													{#if names}
+														<span class="caption">{BOOST_LABELS[boost.id]}</span>
+													{/if}
+												</span>
+											{/each}
+											{#each boosts.powers as power (power.id)}
+												<span class="cell">
+													<span
+														class="faces"
+														role="img"
+														aria-label={COOKIE_POWER_LABELS[power.id]}
+														title={COOKIE_POWER_LABELS[power.id]}>
+														{#each power.srcs.slice(0, 2) as src (src)}
+															<img {src} alt="" width="34" height="34" loading="lazy">
+														{/each}
+													</span>
+													{#if names}
+														<span class="caption">{COOKIE_POWER_LABELS[power.id]}</span>
+													{/if}
+												</span>
+											{/each}
+										{/snippet}
+										{#if boosts.boosts.length > 0 || boosts.powers.length > 0}
+											{@render pics(extras)}
+										{/if}
+										{#if boosts.random !== null}
+											<span class="tag">{RANDOM_BOOST_LABELS[boosts.random]}</span>
+										{/if}
+									{/if}
+								{/snippet}
+								{@render line("boosts", m.combi.editor.tabs.boosts, boostsBody)}
+
+								{#snippet resultsBody()}
+									{#if stats.length === 0}
+										<span class="muted">{none}</span>
+									{:else}
 										{#each stats as stat (stat.field)}
-											<span>
-												{stat.label}
+											<span class="stat">
+												<span class="muted">{stat.label}</span>
 												<strong class:aimed={stat.aimed}>{stat.value}</strong>
 											</span>
 										{/each}
-									</dd>
-								{/if}
-								{#if settings.length > 0}
-									<dt>{m.combi.list.run}</dt>
-									<dd class="inline">
-										{#each settings as row (row.field)}
-											<span>
-												{#if row.field === m.combi.describe.fields.mode}
-													<strong>{row.value}</strong>
-												{:else}
-													{row.field}
-													<strong>{row.value}</strong>
-												{/if}
-											</span>
-										{/each}
-									</dd>
-								{/if}
-							</dl>
+									{/if}
+								{/snippet}
+								{@render line("runLog", m.combi.list.results, resultsBody)}
+							</div>
 							<div class="foot">
 								<span class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</span>
 								<div class="actions">
@@ -586,132 +692,252 @@ select {
 	transform: translateY(2px) rotate(225deg);
 }
 
-/* An open row: labelled lines (team, treasures, results, run), each shown with its icons, then the date and actions. */
+/* An open row: the old summary's lines (run, cookies, treasures, boosts, results), each a way to its tab. */
 .details {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 10px;
 	margin: 0 16px 14px;
-	padding: 14px;
+	padding: 4px 14px 12px;
 	border-radius: var(--radius-lg);
 	background: var(--bg);
+}
+
+.lines {
+	display: flex;
+	flex-direction: column;
+}
+
+.row-line {
+	display: grid;
+	grid-template-columns: 96px minmax(0, 1fr) auto;
+	gap: 12px;
+	align-items: center;
+	min-height: 60px;
+	padding: 8px 0;
+}
+
+.row-line + .row-line {
+	border-top: 1px solid var(--line);
+}
+
+.label {
+	color: var(--muted);
 	font-size: 0.8125rem;
 }
 
-.facts {
-	display: grid;
-	grid-template-columns: 76px minmax(0, 1fr);
-	gap: 14px 12px;
-	align-items: start;
-	margin: 0;
-}
-
-.facts dt {
-	color: var(--muted);
-}
-
-.facts dd {
-	min-width: 0;
-	margin: 0;
-}
-
-.facts dt:has(+ .pieces) {
-	padding-top: 9px;
-}
-
-.pieces {
+.value {
 	display: flex;
 	flex-flow: row wrap;
-	gap: 10px 18px;
-}
-
-.piece {
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
-	min-width: 0;
-}
-
-.chip {
-	display: flex;
-	flex: none;
-	gap: 1px;
+	gap: 6px 10px;
 	align-items: center;
-	justify-content: center;
-	min-width: 36px;
-	height: 36px;
-	border-radius: 10px;
-	background: var(--surface);
-}
-
-.chip.round {
-	border-radius: 50%;
-}
-
-.chip.slot {
-	padding: 0 3px;
-	border-radius: 18px;
-}
-
-.chip.slot.many {
-	padding: 0 8px;
-}
-
-.slash {
-	margin: 0 1px;
-	color: var(--muted);
-	font-size: 0.625rem;
-}
-
-.position {
-	padding-top: 10px;
-	color: var(--muted);
-	font-size: 0.75rem;
-	font-variant-numeric: tabular-nums;
-}
-
-.piece-text {
-	display: flex;
-	flex-direction: column;
 	min-width: 0;
-	padding-top: 1px;
-	line-height: 1.3;
 }
 
-.name {
-	font-weight: 600;
-	overflow-wrap: anywhere;
-}
-
-.role,
-.or {
+.muted,
+.sep,
+.slash {
 	color: var(--muted);
-	font-size: 0.75rem;
-	overflow-wrap: anywhere;
+}
+
+.pill {
+	padding: 1px 8px;
+	border: 2px solid var(--accent);
+	border-radius: 6px;
+	color: var(--accent);
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
+
+.tag {
+	padding: 1px 8px;
+	border: 1px solid var(--line);
+	border-radius: 6px;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.with-art {
+	display: inline-flex;
+	gap: 6px;
+	align-items: center;
+}
+
+.art {
+	width: 32px;
+	height: 32px;
+	object-fit: contain;
+}
+
+/* The pictures are one button: a press shows each one's name under it, a second hides them. */
+.pics {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 8px 12px;
+	align-items: center;
+	min-width: 0;
+	padding: 4px;
+	border: 0;
+	border-radius: var(--radius);
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.pics:hover {
+	background: var(--hover);
+}
+
+.pics:focus-visible,
+.go:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 1px;
+}
+
+.names .pics {
+	align-items: flex-start;
+}
+
+.cell {
+	display: inline-flex;
+	flex-direction: column;
+	gap: 4px;
+	align-items: center;
+}
+
+.names .cell {
+	width: 84px;
+	text-align: center;
+}
+
+.caption {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	font-size: 0.6875rem;
+	line-height: 1.25;
 }
 
 .level {
-	margin-inline-start: 4px;
 	color: var(--muted);
-	font-weight: 400;
 	font-variant-numeric: tabular-nums;
 }
 
-.inline {
-	display: flex;
-	flex-flow: row wrap;
-	gap: 4px 16px;
-	color: var(--muted);
+.slot {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
 }
 
-.inline strong {
-	color: var(--text);
+.names .slot {
+	align-items: flex-start;
+}
+
+.position {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
+/* With names shown, the marks between pictures line up with the pictures, not the names. */
+.names .pics .sep,
+.names .pics .slash,
+.names .pics .position {
+	line-height: 44px;
+}
+
+/* An evolved or blessed treasure: a ring in its colour and its letter on the corner, as the picker draws them. */
+.ring {
+	position: relative;
+	display: inline-flex;
+	padding: 2px;
+	border: 2px solid transparent;
+	border-radius: 50%;
+}
+
+.ring[data-mark="evolved"] {
+	--mark: var(--evolved);
+}
+
+.ring[data-mark="blessed"] {
+	--mark: var(--blessed);
+}
+
+.ring[data-mark] {
+	border-color: var(--mark);
+}
+
+.mark {
+	position: absolute;
+	top: -6px;
+	left: -6px;
+	padding: 0 4px;
+	border-radius: 4px;
+	background: var(--mark);
+	color: var(--bg);
+	font-family: var(--mono);
+	font-size: 0.625rem;
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+.faces {
+	display: inline-flex;
+}
+
+.faces img {
+	width: 34px;
+	height: 34px;
+	object-fit: contain;
+}
+
+.faces img + img {
+	margin-inline-start: -14px;
+}
+
+.stat {
+	display: inline-flex;
+	gap: 6px;
+	align-items: baseline;
+	font-variant-numeric: tabular-nums;
+}
+
+.stat strong {
 	font-weight: 600;
-	font-variant-numeric: tabular-nums;
 }
 
-.inline strong.aimed {
+.stat strong.aimed {
 	color: var(--accent);
+}
+
+/* The way to the line's tab. */
+.go {
+	display: flex;
+	align-items: center;
+	align-self: stretch;
+	justify-content: center;
+	width: 36px;
+	border: 0;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--muted);
+	cursor: pointer;
+}
+
+.go:hover {
+	background: var(--hover);
+	color: var(--accent);
+}
+
+.go-mark {
+	width: 8px;
+	height: 8px;
+	border-top: 2px solid currentColor;
+	border-right: 2px solid currentColor;
+	transform: translateX(-2px) rotate(45deg);
 }
 
 .foot {
@@ -767,17 +993,13 @@ select {
 		margin-inline: 10px;
 	}
 
-	.facts {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
+	.row-line {
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 4px 8px;
 	}
 
-	.facts dd + dt {
-		margin-top: 10px;
-	}
-
-	.facts dt:has(+ .pieces) {
-		padding-top: 0;
+	.label {
+		grid-column: 1 / -1;
 	}
 }
 </style>

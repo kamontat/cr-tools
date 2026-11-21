@@ -41,6 +41,8 @@ interface Props {
 	onreset: () => void
 	/** A typed code that reads; the caller opens it and shows its warnings. */
 	ontypecode: (code: string) => void
+	/** A tab to show, asked for from outside; a new object asks again, even for the same tab. */
+	request?: { tab: TabName } | null
 }
 
 let {
@@ -58,6 +60,7 @@ let {
 	ondelete,
 	onreset,
 	ontypecode,
+	request = null,
 }: Props = $props()
 
 let lang = $state<Lang>(currentLang(document))
@@ -94,6 +97,10 @@ function pickTab(next: string) {
 	chosen = next as TabName
 	if (store !== null) rememberTab(store, chosen)
 }
+
+$effect(() => {
+	if (request !== null) pickTab(request.tab)
+})
 
 /** The field each group of characters leads to, by the id its `Field` was given. */
 const FIELDS: Readonly<Record<string, string>> = {

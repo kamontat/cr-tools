@@ -81,7 +81,7 @@ test("a stat saved as one number shows once", () => {
 	expect(rowOf(code).textContent).not.toContain("3–3")
 })
 
-test("a row expands to its loadout, its run and its actions, and several rows stay open", async () => {
+test("a row expands to its run, cookies, treasures, boosts and results, and several rows stay open", async () => {
 	setup()
 	await expand(scoreCode)
 	const score = rowOf(scoreCode)
@@ -89,12 +89,17 @@ test("a row expands to its loadout, its run and its actions, and several rows st
 	const details = document.getElementById(toggleOf(score).getAttribute("aria-controls") ?? "") as HTMLElement
 	expect(score.contains(details)).toBe(true)
 	expect(within(details).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
-	expect(details.textContent).toContain(en.combi.list.team)
-	expect(details.textContent).toContain(en.combi.describe.fields.cookie)
-	expect(details.textContent).toContain(en.combi.list.run)
-	// Only what the code sets: no pet, no "None".
-	expect(details.textContent).not.toContain(en.combi.describe.fields.pet)
-	expect(details.textContent).not.toContain(en.combi.describe.none)
+	for (const label of [
+		en.combi.list.run,
+		en.combi.editor.tabs.cookies,
+		en.combi.editor.tabs.treasures,
+		en.combi.editor.tabs.boosts,
+		en.combi.list.results,
+	])
+		expect(details.textContent).toContain(label)
+	expect(details.textContent).toContain(en.combi.modes.manual)
+	// Pictures alone until asked: the name is the picture's alt, not text.
+	expect(details.textContent).not.toContain(nameFor("cookies", "01"))
 	await expand(moneyCode)
 	expect(toggleOf(rowOf(scoreCode)).getAttribute("aria-expanded")).toBe("true")
 	expect(toggleOf(rowOf(moneyCode)).getAttribute("aria-expanded")).toBe("true")
@@ -210,14 +215,43 @@ test("an unreadable code still lists its code and note", () => {
 	expect(rows()[0]?.textContent).toContain("Old one")
 })
 
-test("an open row shows a treasure slot's every treasure: icons in one chip, the others' names after “or”", async () => {
-	const code = full({ cookie: "01", treasures: [[treasurePick("001"), treasurePick("002", [0, 1, 2])]] })
+test("an open row shows a treasure slot's every treasure, an evolved one named so, and a press on the pictures shows names and levels", async () => {
+	const code = full({
+		cookie: "01",
+		treasures: [[treasurePick("001"), treasurePick("002", [0, 1, 2])], [treasurePick("098")]],
+	})
 	setup([{ code, description: "", savedAt: 1 }])
 	await expand(code)
 	const row = rowOf(code)
 	expect(within(row).getByRole("img", { name: nameFor("treasures", "001") })).toBeTruthy()
 	expect(within(row).getByRole("img", { name: nameFor("treasures", "002") })).toBeTruthy()
-	expect(row.textContent).toMatch(new RegExp(`or\\s+${nameFor("treasures", "002")}\\s+\\+0-2`))
+	expect(
+		within(row).getByRole("img", { name: `${nameFor("treasures", "098")}, ${en.combi.list.kinds.evolved}` }),
+	).toBeTruthy()
+	expect(row.textContent).not.toContain("+0-2")
+	const [faces] = within(row).getAllByRole("button", { pressed: false })
+	await fireEvent.click(faces as HTMLElement)
+	expect(row.textContent).toContain(nameFor("cookies", "01"))
+	expect(row.textContent).toMatch(new RegExp(`${nameFor("treasures", "002")}\\s+\\+0-2`))
+	expect(within(row).getAllByRole("button", { pressed: true }).length).toBeGreaterThan(0)
+})
+
+test("each line of an open row opens the entry on its own tab", async () => {
+	const { onopen } = setup()
+	const game = combiSectionOf(scoreCode)
+	await expand(scoreCode)
+	const row = rowOf(scoreCode)
+	const tabs = [
+		[en.combi.list.run, "main"],
+		[en.combi.editor.tabs.cookies, "cookies"],
+		[en.combi.editor.tabs.treasures, "treasures"],
+		[en.combi.editor.tabs.boosts, "boosts"],
+		[en.combi.list.results, "runLog"],
+	] as const
+	for (const [label, tab] of tabs) {
+		await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.editSection(label, game) }))
+		expect(onopen).toHaveBeenLastCalledWith(entries[0], tab)
+	}
 })
 
 test("Thai by default", () => {

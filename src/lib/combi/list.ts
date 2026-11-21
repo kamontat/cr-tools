@@ -7,13 +7,15 @@
  * that decodes one has an answer for a code that no longer reads.
  */
 
-import type { Episode, Goal } from "./codec"
+import type { Boost, CookiePower, Episode, Goal, RandomBoost } from "./codec"
 import type { FullCode } from "./full-code"
 import type { SavedCode } from "./saved"
 import type { StatField, StatRange } from "./stats"
 
 import { readKey, writeKey } from "#lib/storage"
-import { imageFor, isAnyId, labelFor, nameFor } from "./catalog"
+import { boostArt, cookiePowerArt } from "./art"
+import { type EntryKind, imageFor, isAnyId, kindFor, labelFor, nameFor } from "./catalog"
+import { limitsOf } from "./codec"
 import { levelText } from "./describe"
 import { combiSectionOf, decodeFull } from "./full-code"
 
@@ -126,8 +128,11 @@ export type TeamPiece = {
 	role: "cookie" | "relay" | "pet" | "treasure"
 	/** The slot's place when the code keeps the treasures in order, from 1. */
 	position?: number
-	/** What the piece accepts: one entry, or for a treasure slot each treasure it takes, with its levels. */
-	picks: { icon: RowIcon; level?: string }[]
+	/**
+	 * What the piece accepts: one entry, or for a treasure slot each treasure it
+	 * takes, with its levels and, for an evolved or blessed one, its kind.
+	 */
+	picks: { icon: RowIcon; level?: string; mark?: Exclude<EntryKind, "base"> }[]
 }
 
 /** The team an open row shows, set pieces only, in play order; null when the code does not decode. */
@@ -141,10 +146,37 @@ export function rowTeam(code: string): TeamPiece[] | null {
 	if (pet !== null) team.push({ role: "pet", picks: [{ icon: { ...iconFor("pets", pet), round: true } }] })
 	const numbered = ordered && treasures.length > 1
 	treasures.forEach((slot, index) => {
-		const picks = slot.map((pick) => ({ icon: iconFor("treasures", pick.id), level: levelText(pick) }))
+		const picks = slot.map((pick) => {
+			const kind = kindFor("treasures", pick.id)
+			const icon = iconFor("treasures", pick.id)
+			const level = levelText(pick)
+			return kind === null || kind === "base" ? { icon, level } : { icon, level, mark: kind }
+		})
 		team.push(numbered ? { role: "treasure", position: index + 1, picks } : { role: "treasure", picks })
 	})
 	return team
+}
+
+export type RowBoosts = {
+	/** Whether the code's episode takes boosts at all. */
+	used: boolean
+	boosts: { id: Boost; src: string | null }[]
+	random: RandomBoost | null
+	/** Each cookie power+, with the faces of the cookies and pets that bring it. */
+	powers: { id: CookiePower; srcs: readonly string[] }[]
+}
+
+/** What an open row's Boosts line shows; null when the code does not decode. */
+export function rowBoosts(code: string): RowBoosts | null {
+	const full = decoded(code)
+	if (full === null) return null
+	const { episode, boosts, randomBoost, cookiePowers } = full.combi
+	return {
+		used: limitsOf(episode).boosts,
+		boosts: boosts.map((id) => ({ id, src: boostArt(id, "/assets/")[0] ?? null })),
+		random: randomBoost,
+		powers: cookiePowers.map((id) => ({ id, srcs: cookiePowerArt(id, "/assets/") })),
+	}
 }
 
 /** The run stat that measures each goal. */

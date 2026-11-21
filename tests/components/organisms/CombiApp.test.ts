@@ -383,6 +383,19 @@ test("pressing the open entry's own row again keeps its edits, without a word", 
 	expect(notice()).toBe("")
 })
 
+test("a row's line opens the editor on that line's tab, and on the open entry switches the tab", async () => {
+	viewport(1440)
+	render(CombiApp)
+	const game = combiSectionOf(scoreCode)
+	const selected = () => screen.getByRole("tab", { selected: true }).textContent ?? ""
+	await expandRow(scoreCode)
+	await fireEvent.click(button(en.combi.list.editSection(en.combi.editor.tabs.boosts, game)))
+	expect(location.hash).toBe(`#${scoreCode}`)
+	expect(selected()).toContain(en.combi.editor.tabs.boosts)
+	await fireEvent.click(button(en.combi.list.editSection(en.combi.editor.tabs.treasures, game)))
+	expect(selected()).toContain(en.combi.editor.tabs.treasures)
+})
+
 test("with no edits, another row opens straight away", async () => {
 	viewport(1440)
 	render(CombiApp)

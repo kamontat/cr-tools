@@ -13,6 +13,9 @@
 	--code: #ffd23f;
 	--danger: #e5484d;
 	--success: #30a46c;
+	/* An evolved and a blessed treasure share a picture; these colours tell them apart. */
+	--evolved: #4ade80;
+	--blessed: #ffd23f;
 	--env: transparent;
 	--radius: 8px;
 	--radius-lg: 10px;
@@ -38,6 +41,8 @@
 		--accent: #d81b60;
 		--on-accent: #fff;
 		--code: #9a5b00;
+		--evolved: #1b7a43;
+		--blessed: #a86800;
 	}
 }
 
@@ -52,6 +57,8 @@
 	--accent: #d81b60;
 	--on-accent: #fff;
 	--code: #9a5b00;
+	--evolved: #1b7a43;
+	--blessed: #a86800;
 }
 
 :root[data-env="development"] {

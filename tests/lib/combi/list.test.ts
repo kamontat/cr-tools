@@ -11,6 +11,7 @@ import {
 	goalTargets,
 	LIST_SORT_KEY,
 	readListSort,
+	rowBoosts,
 	rowEpisode,
 	rowFull,
 	rowGoals,
@@ -186,6 +187,27 @@ test("row team: each set piece once, in play order, with every treasure a slot a
 	expect(loose?.map((piece) => piece.role)).toEqual(["cookie", "treasure", "treasure"])
 	expect(loose?.[1]?.position).toBeUndefined()
 	expect(rowTeam("not a code")).toBeNull()
+})
+
+test("row team: an evolved or blessed treasure carries its kind, a base one none", () => {
+	const team = rowTeam(full({ treasures: [[treasurePick("098"), treasurePick("I98"), treasurePick("001")]] }))
+	expect(team?.[0]?.picks.map((pick) => pick.mark)).toEqual([undefined, "evolved", "blessed"])
+})
+
+test("row boosts: each boost and cookie power+ with its pictures, the random boost, and whether the episode takes boosts", () => {
+	const code = full(
+		{},
+		{ episode: "episode5", boosts: ["hpExtension"], randomBoost: "doubleCoins", cookiePowers: ["cheerleader"] },
+	)
+	const boosts = rowBoosts(code)
+	expect(boosts?.used).toBe(true)
+	expect(boosts?.boosts.map((boost) => boost.id)).toEqual(["hpExtension"])
+	expect(boosts?.boosts[0]?.src?.startsWith("/assets/")).toBe(true)
+	expect(boosts?.random).toBe("doubleCoins")
+	expect(boosts?.powers.map((power) => power.id)).toEqual(["cheerleader"])
+	expect(boosts?.powers[0]?.srcs.length).toBeGreaterThan(0)
+	expect(rowBoosts(full({}, { episode: "special2" }))?.used).toBe(false)
+	expect(rowBoosts("not a code")).toBeNull()
 })
 
 test("row full: the decoded code, or null when it does not read", () => {

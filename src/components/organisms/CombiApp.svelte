@@ -22,7 +22,7 @@ import {
 	saveCode,
 	updateSaved,
 } from "#lib/combi/saved"
-import { codeInHash, hashFor, noteInHash, shareHashFor, statsInHash } from "#lib/combi/state"
+import { codeInHash, hashFor, noteInHash, shareHashFor, statsInHash, type TabName } from "#lib/combi/state"
 import { isEmptyStats } from "#lib/combi/stats"
 import { DOCK_MIN_WIDTH } from "#lib/frame"
 import { messagesFor } from "#lib/i18n/messages"
@@ -57,6 +57,8 @@ let entries = $state<SavedCode[]>(readSaved(store))
 /** The build in the editor; the editor is open while there is one. */
 let draft = $state.raw<Draft | null>(null)
 let share = $state<{ code: string; note: string; stats: RunStats } | null>(null)
+/** The tab a row last asked the editor to show. */
+let tabRequest = $state.raw<{ tab: TabName } | null>(null)
 
 let width = $state(window.innerWidth)
 const docked = $derived(width >= DOCK_MIN_WIDTH)
@@ -166,11 +168,16 @@ const openNew = () => {
 	openDraft(newDraft(), [])
 }
 
-/** A row of the list: the entry already open stays as it is, edits and all. */
-const openRow = (entry: SavedCode) => {
-	if (draft !== null && draft.from === entry.code) return
-	if (keepsEdits()) return
-	openEntry(entry)
+/**
+ * A row of the list: the entry already open stays as it is, edits and all.
+ * A row's line asks for its tab too, on the entry it opens or the one open.
+ */
+const openRow = (entry: SavedCode, tab?: TabName) => {
+	if (draft === null || draft.from !== entry.code) {
+		if (keepsEdits()) return
+		openEntry(entry)
+	}
+	if (tab !== undefined && draft?.from === entry.code) tabRequest = { tab }
 }
 
 const openEntry = (entry: SavedCode, sentence?: string) => {
@@ -458,7 +465,8 @@ const shareEntry = (entry: SavedCode) => {
 			onsaveasnew={saveNew}
 			{ondelete}
 			{onreset}
-			{ontypecode} />
+			{ontypecode}
+			request={tabRequest} />
 	{/if}
 </div>
 
