@@ -61,12 +61,17 @@ const date = $derived(new Intl.DateTimeFormat(LOCALES[lang], { day: "numeric", m
 
 /** The codes whose rows are open; any number at once. */
 const expanded = new SvelteSet<string>()
-/** The open rows showing each picture's name under it. */
+/** The lines, by `namesKey`, showing each picture's name under it. */
 const named = new SvelteSet<string>()
 
-const toggleNames = (code: string) => {
-	if (named.has(code)) named.delete(code)
-	else named.add(code)
+/** One line of one row at a time: its key is the code and the line's label. */
+const namesKey = (code: string, label: string) => `${code}\n${label}`
+const namesOn = (code: string, label: string) => named.has(namesKey(code, label))
+
+const toggleNames = (code: string, label: string) => {
+	const key = namesKey(code, label)
+	if (named.has(key)) named.delete(key)
+	else named.add(key)
 }
 /** The code whose Delete was pressed once and now asks to be pressed again. */
 let arming = $state<string | null>(null)
@@ -115,7 +120,7 @@ const remove = (entry: SavedCode) => {
 	}
 	arming = null
 	expanded.delete(entry.code)
-	named.delete(entry.code)
+	for (const key of [...named]) if (key.startsWith(`${entry.code}\n`)) named.delete(key)
 	ondelete(entry)
 }
 
@@ -217,13 +222,12 @@ const pickSort = (value: string) => {
 						{@const members = team.filter((piece) => piece.role !== "treasure")}
 						{@const slots = team.filter((piece) => piece.role === "treasure")}
 						{@const boosts = rowBoosts(entry.code)}
-						{@const names = named.has(entry.code)}
 						{@const none = m.combi.describe.none}
 						{@const fields = m.combi.describe.fields}
 						<div {id} class="details">
-							<div class="lines" class:names>
+							<div class="lines">
 								{#snippet line(tab: TabName, label: string, body: import("svelte").Snippet)}
-									<div class="row-line">
+									<div class="row-line" class:names={namesOn(entry.code, label)}>
 										<span class="label">{label}</span>
 										<div class="value">{@render body()}</div>
 										<button
@@ -235,13 +239,13 @@ const pickSort = (value: string) => {
 										</button>
 									</div>
 								{/snippet}
-								{#snippet pics(content: import("svelte").Snippet)}
+								{#snippet pics(label: string, content: import("svelte").Snippet)}
 									<button
 										type="button"
 										class="pics"
-										aria-pressed={names}
+										aria-pressed={namesOn(entry.code, label)}
 										title={m.combi.list.showNames}
-										onclick={() => toggleNames(entry.code)}>
+										onclick={() => toggleNames(entry.code, label)}>
 										{@render content()}
 									</button>
 								{/snippet}
@@ -317,14 +321,14 @@ const pickSort = (value: string) => {
 															name={pick.icon.name}
 															round={pick.icon.round ?? false}
 															size={44} />
-														{#if names}
+														{#if namesOn(entry.code, m.combi.list.team)}
 															<span class="caption">{pick.icon.name}</span>
 														{/if}
 													</span>
 												{/if}
 											{/each}
 										{/snippet}
-										{@render pics(faces)}
+										{@render pics(m.combi.list.team, faces)}
 									{/if}
 								{/snippet}
 								{@render line("cookies", m.combi.list.team, teamBody)}
@@ -358,7 +362,7 @@ const pickSort = (value: string) => {
 																	</span>
 																{/if}
 															</span>
-															{#if names}
+															{#if namesOn(entry.code, m.combi.editor.tabs.treasures)}
 																<span class="caption">
 																	{pick.icon.name}
 																	{#if pick.level}
@@ -371,7 +375,7 @@ const pickSort = (value: string) => {
 												</span>
 											{/each}
 										{/snippet}
-										{@render pics(rings)}
+										{@render pics(m.combi.editor.tabs.treasures, rings)}
 									{/if}
 								{/snippet}
 								{@render line("treasures", m.combi.editor.tabs.treasures, treasuresBody)}
@@ -381,13 +385,13 @@ const pickSort = (value: string) => {
 										{#each boosts?.boosts ?? [] as boost (boost.id)}
 											<span class="cell">
 												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={40} />
-												{#if names}
+												{#if namesOn(entry.code, m.combi.editor.tabs.boosts)}
 													<span class="caption">{BOOST_LABELS[boost.id]}</span>
 												{/if}
 											</span>
 										{/each}
 									{/snippet}
-									{@render pics(icons)}
+									{@render pics(m.combi.editor.tabs.boosts, icons)}
 								{/snippet}
 								{#snippet boostsBody()}
 									{@render boostsGate(boostIcons, (boosts?.boosts.length ?? 0) === 0)}
@@ -417,13 +421,13 @@ const pickSort = (value: string) => {
 														<img {src} alt="" width="34" height="34" loading="lazy">
 													{/each}
 												</span>
-												{#if names}
+												{#if namesOn(entry.code, fields.cookiePower)}
 													<span class="caption">{COOKIE_POWER_LABELS[power.id]}</span>
 												{/if}
 											</span>
 										{/each}
 									{/snippet}
-									{@render pics(powers)}
+									{@render pics(fields.cookiePower, powers)}
 								{/snippet}
 								{#snippet powersBody()}
 									{@render boostsGate(powerFaces, (boosts?.powers.length ?? 0) === 0)}

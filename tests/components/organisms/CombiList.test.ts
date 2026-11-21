@@ -236,11 +236,15 @@ test("an open row shows a treasure slot's every treasure, an evolved one named s
 		within(row).getByRole("img", { name: `${nameFor("treasures", "098")}, ${en.combi.list.kinds.evolved}` }),
 	).toBeTruthy()
 	expect(row.textContent).not.toContain("+0-2")
-	const [faces] = within(row).getAllByRole("button", { pressed: false })
+	const [faces, rings] = within(row).getAllByRole("button", { pressed: false })
+	// A press shows that line's names only.
 	await fireEvent.click(faces as HTMLElement)
 	expect(row.textContent).toContain(nameFor("cookies", "01"))
+	expect(row.textContent).not.toContain("+0-2")
+	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(1)
+	await fireEvent.click(rings as HTMLElement)
 	expect(row.textContent).toMatch(new RegExp(`${nameFor("treasures", "002")}\\s+\\+0-2`))
-	expect(within(row).getAllByRole("button", { pressed: true }).length).toBeGreaterThan(0)
+	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(2)
 })
 
 test("each line of an open row opens the entry on its own tab", async () => {

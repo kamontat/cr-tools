@@ -394,6 +394,9 @@ test("a row's line opens the editor on that line's tab, and on the open entry sw
 	expect(selected()).toContain(en.combi.editor.tabs.boosts)
 	await fireEvent.click(button(en.combi.list.editSection(en.combi.editor.tabs.treasures, game)))
 	expect(selected()).toContain(en.combi.editor.tabs.treasures)
+	// The editor's own tabs still answer afterwards.
+	await fireEvent.click(screen.getByRole("tab", { name: new RegExp(en.combi.editor.tabs.cookies) }))
+	expect(selected()).toContain(en.combi.editor.tabs.cookies)
 })
 
 test("with no edits, another row opens straight away", async () => {

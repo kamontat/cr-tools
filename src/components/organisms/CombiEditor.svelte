@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { SavedCode } from "#lib/combi/saved"
 
-import { tick } from "svelte"
+import { tick, untrack } from "svelte"
 
 import Tabs from "#components/atoms/Tabs.svelte"
 import CodeDisplay from "#components/molecules/CodeDisplay.svelte"
@@ -98,8 +98,10 @@ function pickTab(next: string) {
 	if (store !== null) rememberTab(store, chosen)
 }
 
+/** Follows only `request`: picking a tab reads `chosen`, which must not re-run this and undo a later click. */
 $effect(() => {
-	if (request !== null) pickTab(request.tab)
+	const asked = request
+	if (asked !== null) untrack(() => pickTab(asked.tab))
 })
 
 /** The field each group of characters leads to, by the id its `Field` was given. */
