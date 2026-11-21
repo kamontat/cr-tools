@@ -343,6 +343,6 @@ test("describes in Thai, keeping item names English", () => {
 // "Any" is an interface word, not an episode's name, so it follows the language.
 test("an Any episode reads in the catalogue's words", () => {
 	const anyEpisode = (m: typeof en | typeof th) => describeCombi({ ...base, episode: "any" }, m).rows[2]
-	expect(anyEpisode(th)).toEqual({ field: th.combi.describe.fields.episode, value: "ตอนใดก็ได้" })
+	expect(anyEpisode(th)).toEqual({ field: th.combi.describe.fields.episode, value: "ด่านใดก็ได้" })
 	expect(anyEpisode(en)).toEqual({ field: "Episode", value: "Any episode" })
 })
