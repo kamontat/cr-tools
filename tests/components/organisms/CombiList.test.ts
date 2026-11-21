@@ -222,7 +222,7 @@ test("an unreadable code still lists its code and note", () => {
 	expect(rows()[0]?.textContent).toContain("Old one")
 })
 
-test("an open row shows a treasure slot's every treasure, an evolved one named so, and a press on the pictures shows names and levels", async () => {
+test("an open row shows each treasure slot's first treasure with +N for the rest, an evolved one named so; a press shows every treasure with names and levels", async () => {
 	const code = full({
 		cookie: "01",
 		treasures: [[treasurePick("001"), treasurePick("002", [0, 1, 2])], [treasurePick("098")]],
@@ -231,7 +231,9 @@ test("an open row shows a treasure slot's every treasure, an evolved one named s
 	await expand(code)
 	const row = rowOf(code)
 	expect(within(row).getByRole("img", { name: nameFor("treasures", "001") })).toBeTruthy()
-	expect(within(row).getByRole("img", { name: nameFor("treasures", "002") })).toBeTruthy()
+	expect(within(row).queryByRole("img", { name: nameFor("treasures", "002") })).toBeNull()
+	expect(row.querySelector(".more")?.textContent?.trim()).toBe("+1")
+	expect(row.querySelectorAll(".more")).toHaveLength(1)
 	expect(
 		within(row).getByRole("img", { name: `${nameFor("treasures", "098")}, ${en.combi.list.kinds.evolved}` }),
 	).toBeTruthy()
@@ -243,6 +245,8 @@ test("an open row shows a treasure slot's every treasure, an evolved one named s
 	expect(row.textContent).not.toContain("+0-2")
 	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(1)
 	await fireEvent.click(rings as HTMLElement)
+	expect(within(row).getByRole("img", { name: nameFor("treasures", "002") })).toBeTruthy()
+	expect(row.querySelector(".more")).toBeNull()
 	expect(row.textContent).toMatch(new RegExp(`${nameFor("treasures", "002")}\\s+\\+0-2`))
 	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(2)
 })

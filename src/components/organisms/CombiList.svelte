@@ -338,12 +338,14 @@ const pickSort = (value: string) => {
 										<span class="muted">{none}</span>
 									{:else}
 										{#snippet rings()}
+											{@const full = namesOn(entry.code, m.combi.editor.tabs.treasures)}
 											{#each slots as piece, at (at)}
 												<span class="slot">
 													{#if piece.position !== undefined}
 														<span class="position">{piece.position}</span>
 													{/if}
-													{#each piece.picks as pick, n (n)}
+													<!-- Closed, a slot shows its first treasure and how many more it takes; open, every one. -->
+													{#each full ? piece.picks : piece.picks.slice(0, 1) as pick, n (n)}
 														{#if n > 0}
 															<span class="slash" aria-hidden="true">/</span>
 														{/if}
@@ -361,8 +363,11 @@ const pickSort = (value: string) => {
 																		{pick.mark === "evolved" ? "E" : "B"}
 																	</span>
 																{/if}
+																{#if !full && piece.picks.length > 1}
+																	<span class="more">+{piece.picks.length - 1}</span>
+																{/if}
 															</span>
-															{#if namesOn(entry.code, m.combi.editor.tabs.treasures)}
+															{#if full}
 																<span class="caption">
 																	{pick.icon.name}
 																	{#if pick.level}
@@ -857,10 +862,13 @@ select {
 	font-variant-numeric: tabular-nums;
 }
 
+/* An open slot with many treasures wraps inside the line rather than running past it. */
 .slot {
 	display: inline-flex;
+	flex-wrap: wrap;
 	gap: 4px;
 	align-items: center;
+	max-width: 100%;
 }
 
 .names .slot {
@@ -911,6 +919,21 @@ select {
 	color: var(--bg);
 	font-family: var(--mono);
 	font-size: 0.625rem;
+	font-weight: 700;
+	line-height: 1.4;
+}
+
+/* How many more treasures a closed slot takes, on the picture's corner. */
+.more {
+	position: absolute;
+	right: -8px;
+	bottom: -4px;
+	padding: 0 5px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text);
+	font-size: 0.6875rem;
 	font-weight: 700;
 	line-height: 1.4;
 }
