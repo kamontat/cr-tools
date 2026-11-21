@@ -13,15 +13,12 @@ import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/com
 import {
 	filterList,
 	type GoalFilter,
-	type GoalTarget,
 	goalTargets,
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
 	rowBoosts,
-	rowEpisode,
 	rowFull,
-	rowGoals,
 	rowLoadout,
 	rowTeam,
 	sortList,
@@ -83,12 +80,6 @@ const toggle = (code: string) => {
 
 const rangeText = (range: StatRange): string =>
 	range.min === range.max ? money.format(range.min) : `${money.format(range.min)}–${money.format(range.max)}`
-
-/** What the saved runs reached for a goal, or null when they do not say. */
-const targetOf = (goal: GoalTarget["goal"], targets: readonly GoalTarget[]): string | null => {
-	const target = targets.find((t) => t.goal === goal)
-	return target === undefined ? null : rangeText(target.range)
-}
 
 /** What an open row's Run line says beyond the mode: the goals, the floor and a starting action. */
 const runOf = (code: string) => {
@@ -173,13 +164,11 @@ const pickSort = (value: string) => {
 		<ul class="entries">
 			{#each shown as entry, index (entry.code)}
 				{@const game = combiSectionOf(entry.code)}
-				{@const note = descriptionTitle(entry.description)}
-				{@const targets = goalTargets(entry)}
-				{@const episode = rowEpisode(entry.code)}
+				{@const run = runOf(entry.code)}
+				{@const stats = statsOf(entry)}
 				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
 				{@const id = `entry-details-${index}`}
-				{@const subline = [note, episode === null ? "" : episodeText(episode, m)].filter(Boolean).join(" · ")}
 				<li class="entry" class:open aria-current={entry.code === current ? "true" : undefined}>
 					<button
 						type="button"
@@ -200,20 +189,25 @@ const pickSort = (value: string) => {
 						<span class="summary">
 							<span class="line">
 								<span class="code">{game}</span>
-								<span class="goals">
-									{#each rowGoals(entry.code) ?? [] as goal (goal)}
-										{@const target = targetOf(goal, targets)}
-										<span class="goal">
-											{m.combi.goals[goal]}
-											{#if target !== null}
-												<strong>{target}</strong>
-											{/if}
+								{#if run !== null}
+									<span class="aim">{run.mode} · {run.goals}</span>
+								{/if}
+							</span>
+							{#if run !== null}
+								<span class="episode">{run.episode}</span>
+							{:else}
+								<!-- A code that no longer reads still says what it was for. -->
+								<span class="episode">{descriptionTitle(entry.description)}</span>
+							{/if}
+							{#if !open && stats.length > 0}
+								<span class="stats">
+									{#each stats as stat (stat.field)}
+										<span class="stat">
+											<span class="muted">{stat.label}</span>
+											<strong class:aimed={stat.aimed}>{stat.value}</strong>
 										</span>
 									{/each}
 								</span>
-							</span>
-							{#if subline}
-								<span class="note">{subline}</span>
 							{/if}
 						</span>
 						<span class="chevron" aria-hidden="true"></span>
@@ -222,11 +216,10 @@ const pickSort = (value: string) => {
 						{@const team = rowTeam(entry.code) ?? []}
 						{@const members = team.filter((piece) => piece.role !== "treasure")}
 						{@const slots = team.filter((piece) => piece.role === "treasure")}
-						{@const run = runOf(entry.code)}
 						{@const boosts = rowBoosts(entry.code)}
-						{@const stats = statsOf(entry)}
 						{@const names = named.has(entry.code)}
 						{@const none = m.combi.describe.none}
+						{@const fields = m.combi.describe.fields}
 						<div {id} class="details">
 							<div class="lines" class:names>
 								{#snippet line(tab: TabName, label: string, body: import("svelte").Snippet)}
@@ -251,6 +244,17 @@ const pickSort = (value: string) => {
 										onclick={() => toggleNames(entry.code)}>
 										{@render content()}
 									</button>
+								{/snippet}
+								{#snippet boostsGate(body: import("svelte").Snippet, empty: boolean)}
+									{#if boosts === null}
+										<span class="muted">{none}</span>
+									{:else if !boosts.used}
+										<span class="muted">{m.combi.describe.notUsed}</span>
+									{:else if empty}
+										<span class="muted">{none}</span>
+									{:else}
+										{@render body()}
+									{/if}
 								{/snippet}
 
 								{#snippet runBody()}
@@ -279,7 +283,24 @@ const pickSort = (value: string) => {
 								{/snippet}
 								{@render line("main", m.combi.list.run, runBody)}
 
-								{#snippet cookiesBody()}
+								{#snippet resultsBody()}
+									{#if stats.length === 0}
+										<span class="muted">{none}</span>
+									{:else}
+										{#each stats as stat, at (stat.field)}
+											{#if at > 0}
+												<span class="sep" aria-hidden="true">·</span>
+											{/if}
+											<span class="stat">
+												<span class="muted">{stat.label}</span>
+												<strong class:aimed={stat.aimed}>{stat.value}</strong>
+											</span>
+										{/each}
+									{/if}
+								{/snippet}
+								{@render line("runLog", m.combi.list.results, resultsBody)}
+
+								{#snippet teamBody()}
 									{#if members.length === 0}
 										<span class="muted">{none}</span>
 									{:else}
@@ -306,7 +327,7 @@ const pickSort = (value: string) => {
 										{@render pics(faces)}
 									{/if}
 								{/snippet}
-								{@render line("cookies", m.combi.editor.tabs.cookies, cookiesBody)}
+								{@render line("cookies", m.combi.list.team, teamBody)}
 
 								{#snippet treasuresBody()}
 									{#if slots.length === 0}
@@ -355,63 +376,68 @@ const pickSort = (value: string) => {
 								{/snippet}
 								{@render line("treasures", m.combi.editor.tabs.treasures, treasuresBody)}
 
+								{#snippet boostIcons()}
+									{#snippet icons()}
+										{#each boosts?.boosts ?? [] as boost (boost.id)}
+											<span class="cell">
+												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={40} />
+												{#if names}
+													<span class="caption">{BOOST_LABELS[boost.id]}</span>
+												{/if}
+											</span>
+										{/each}
+									{/snippet}
+									{@render pics(icons)}
+								{/snippet}
 								{#snippet boostsBody()}
-									{#if boosts === null}
-										<span class="muted">{none}</span>
-									{:else if !boosts.used}
-										<span class="muted">{m.combi.describe.notUsed}</span>
-									{:else if boosts.boosts.length === 0 && boosts.random === null && boosts.powers.length === 0}
-										<span class="muted">{none}</span>
-									{:else}
-										{#snippet extras()}
-											{#each boosts.boosts as boost (boost.id)}
-												<span class="cell">
-													<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={40} />
-													{#if names}
-														<span class="caption">{BOOST_LABELS[boost.id]}</span>
-													{/if}
-												</span>
-											{/each}
-											{#each boosts.powers as power (power.id)}
-												<span class="cell">
-													<span
-														class="faces"
-														role="img"
-														aria-label={COOKIE_POWER_LABELS[power.id]}
-														title={COOKIE_POWER_LABELS[power.id]}>
-														{#each power.srcs.slice(0, 2) as src (src)}
-															<img {src} alt="" width="34" height="34" loading="lazy">
-														{/each}
-													</span>
-													{#if names}
-														<span class="caption">{COOKIE_POWER_LABELS[power.id]}</span>
-													{/if}
-												</span>
-											{/each}
-										{/snippet}
-										{#if boosts.boosts.length > 0 || boosts.powers.length > 0}
-											{@render pics(extras)}
-										{/if}
-										{#if boosts.random !== null}
-											<span class="tag">{RANDOM_BOOST_LABELS[boosts.random]}</span>
-										{/if}
-									{/if}
+									{@render boostsGate(boostIcons, (boosts?.boosts.length ?? 0) === 0)}
 								{/snippet}
 								{@render line("boosts", m.combi.editor.tabs.boosts, boostsBody)}
 
-								{#snippet resultsBody()}
-									{#if stats.length === 0}
-										<span class="muted">{none}</span>
-									{:else}
-										{#each stats as stat (stat.field)}
-											<span class="stat">
-												<span class="muted">{stat.label}</span>
-												<strong class:aimed={stat.aimed}>{stat.value}</strong>
-											</span>
-										{/each}
+								{#snippet randomText()}
+									{#if boosts?.random}
+										<span>{RANDOM_BOOST_LABELS[boosts.random]}</span>
 									{/if}
 								{/snippet}
-								{@render line("runLog", m.combi.list.results, resultsBody)}
+								{#snippet randomBody()}
+									{@render boostsGate(randomText, (boosts?.random ?? null) === null)}
+								{/snippet}
+								{@render line("boosts", fields.randomBoost, randomBody)}
+
+								{#snippet powerFaces()}
+									{#snippet powers()}
+										{#each boosts?.powers ?? [] as power (power.id)}
+											<span class="cell">
+												<span
+													class="faces"
+													role="img"
+													aria-label={COOKIE_POWER_LABELS[power.id]}
+													title={COOKIE_POWER_LABELS[power.id]}>
+													{#each power.srcs.slice(0, 2) as src (src)}
+														<img {src} alt="" width="34" height="34" loading="lazy">
+													{/each}
+												</span>
+												{#if names}
+													<span class="caption">{COOKIE_POWER_LABELS[power.id]}</span>
+												{/if}
+											</span>
+										{/each}
+									{/snippet}
+									{@render pics(powers)}
+								{/snippet}
+								{#snippet powersBody()}
+									{@render boostsGate(powerFaces, (boosts?.powers.length ?? 0) === 0)}
+								{/snippet}
+								{@render line("boosts", fields.cookiePower, powersBody)}
+
+								{#snippet noteBody()}
+									{#if entry.description.trim() === ""}
+										<span class="muted">{none}</span>
+									{:else}
+										<span class="note-text">{entry.description}</span>
+									{/if}
+								{/snippet}
+								{@render line("runLog", m.combi.list.note, noteBody)}
 							</div>
 							<div class="foot">
 								<span class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</span>
@@ -655,26 +681,27 @@ select {
 	letter-spacing: 0.08em;
 }
 
-.goals {
-	display: flex;
-	flex-flow: row wrap;
-	gap: 4px 12px;
-	color: var(--muted);
-	font-size: 0.8125rem;
-	font-variant-numeric: tabular-nums;
-}
-
-.goal strong {
-	color: var(--text);
+.aim {
+	font-size: 0.875rem;
 	font-weight: 600;
 }
 
-.note {
-	overflow: hidden;
+.episode {
 	color: var(--muted);
 	font-size: 0.8125rem;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+}
+
+/* The saved stats under a closed row; an open row lists them in its Results line instead. */
+.stats {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 2px 14px;
+	font-size: 0.8125rem;
+}
+
+.note-text {
+	white-space: pre-line;
+	overflow-wrap: anywhere;
 }
 
 .chevron {

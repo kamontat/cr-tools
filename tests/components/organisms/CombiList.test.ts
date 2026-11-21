@@ -57,31 +57,35 @@ const rowOf = (code: string) => rows().find((row) => row.textContent?.includes(c
 const toggleOf = (row: HTMLElement) => row.querySelector("button[aria-expanded]") as HTMLButtonElement
 const expand = (code: string) => fireEvent.click(toggleOf(rowOf(code)))
 
-test("a collapsed row shows the 10 characters, each goal with its saved stat, the episode and the note's first line", () => {
+test("a collapsed row shows the 10 characters, the mode and goals, the episode and the saved stats, not the note", async () => {
 	setup()
 	expect(rows()).toHaveLength(2)
 	const score = rowOf(scoreCode)
 	const money = rowOf(moneyCode)
-	expect(score.textContent).toContain("Score farm")
-	expect(score.textContent).not.toContain("second line")
-	expect(score.textContent).toContain(en.combi.goals.score)
+	expect(score.textContent).toContain(`${en.combi.modes.manual} · ${en.combi.goals.score}`)
 	expect(score.textContent).toContain(en.combi.describe.anyEpisode)
+	expect(score.textContent).not.toContain("Score farm")
 	expect(money.textContent).toContain(en.combi.goals.money)
-	expect(money.textContent).toContain("12,000–15,000")
+	expect(money.textContent).toMatch(/Money\s*12,000–15,000/)
 	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("false")
 	// The head carries the cookie's picture; the actions wait for the row to open.
 	expect(within(toggleOf(score)).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
+	// Open, the stats move to the Results line, and the note shows whole.
+	await expand(moneyCode)
+	expect(rowOf(moneyCode).querySelector(".head")?.textContent).not.toContain("12,000–15,000")
+	await expand(scoreCode)
+	expect(rowOf(scoreCode).textContent).toMatch(/Score farm\s*second line/)
 })
 
 test("a stat saved as one number shows once", () => {
 	const code = full({}, { goals: ["box"] })
 	setup([{ code, description: "", stats: { boxes: { min: 3, max: 3 } }, savedAt: 1 }])
-	expect(rowOf(code).textContent).toContain(`${en.combi.goals.box} 3`)
+	expect(rowOf(code).textContent).toMatch(new RegExp(`${en.combi.editor.statLabels.boxes}\\s*3`))
 	expect(rowOf(code).textContent).not.toContain("3–3")
 })
 
-test("a row expands to its run, cookies, treasures, boosts and results, and several rows stay open", async () => {
+test("a row expands to its run, results, team, treasures, boosts, random boost, cookie power+ and note, and several rows stay open", async () => {
 	setup()
 	await expand(scoreCode)
 	const score = rowOf(scoreCode)
@@ -89,14 +93,17 @@ test("a row expands to its run, cookies, treasures, boosts and results, and seve
 	const details = document.getElementById(toggleOf(score).getAttribute("aria-controls") ?? "") as HTMLElement
 	expect(score.contains(details)).toBe(true)
 	expect(within(details).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
-	for (const label of [
+	const labels = Array.from(details.querySelectorAll(".label"), (label) => label.textContent?.trim())
+	expect(labels).toEqual([
 		en.combi.list.run,
-		en.combi.editor.tabs.cookies,
+		en.combi.list.results,
+		en.combi.list.team,
 		en.combi.editor.tabs.treasures,
 		en.combi.editor.tabs.boosts,
-		en.combi.list.results,
+		en.combi.describe.fields.randomBoost,
+		en.combi.describe.fields.cookiePower,
+		en.combi.list.note,
 	])
-		expect(details.textContent).toContain(label)
 	expect(details.textContent).toContain(en.combi.modes.manual)
 	// Pictures alone until asked: the name is the picture's alt, not text.
 	expect(details.textContent).not.toContain(nameFor("cookies", "01"))
@@ -243,10 +250,13 @@ test("each line of an open row opens the entry on its own tab", async () => {
 	const row = rowOf(scoreCode)
 	const tabs = [
 		[en.combi.list.run, "main"],
-		[en.combi.editor.tabs.cookies, "cookies"],
+		[en.combi.list.results, "runLog"],
+		[en.combi.list.team, "cookies"],
 		[en.combi.editor.tabs.treasures, "treasures"],
 		[en.combi.editor.tabs.boosts, "boosts"],
-		[en.combi.list.results, "runLog"],
+		[en.combi.describe.fields.randomBoost, "boosts"],
+		[en.combi.describe.fields.cookiePower, "boosts"],
+		[en.combi.list.note, "runLog"],
 	] as const
 	for (const [label, tab] of tabs) {
 		await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.editSection(label, game) }))

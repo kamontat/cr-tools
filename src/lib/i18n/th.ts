@@ -151,6 +151,8 @@ export const th: Messages = {
 			share: "แชร์",
 			edit: "แก้ไข",
 			kinds: { evolved: "วิวัฒน์", blessed: "ได้รับพร" },
+			team: "ทีม",
+			note: "โน้ต",
 			results: "ผลการวิ่ง",
 			run: "การวิ่ง",
 			editCode: (code: string) => `แก้ไข ${code}`,

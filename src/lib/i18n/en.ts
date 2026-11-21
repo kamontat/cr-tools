@@ -164,6 +164,8 @@ export const en = {
 			share: "Share",
 			edit: "Edit",
 			kinds: { evolved: "Evolved", blessed: "Blessed" },
+			team: "Team",
+			note: "Note",
 			results: "Results",
 			run: "Run",
 			editCode: (code: string) => `Edit ${code}`,
