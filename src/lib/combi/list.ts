@@ -7,8 +7,10 @@
  * that decodes one has an answer for a code that no longer reads.
  */
 
-import type { Goal } from "./codec"
+import type { Episode, Goal } from "./codec"
+import type { FullCode } from "./full-code"
 import type { SavedCode } from "./saved"
+import type { StatField, StatRange } from "./stats"
 
 import { readKey, writeKey } from "#lib/storage"
 import { imageFor, isAnyId, labelFor, nameFor } from "./catalog"
@@ -107,6 +109,35 @@ export function filterList(entries: readonly SavedCode[], query: string, goal: G
 /** The goals a code aims for, or null when the code does not decode. */
 export function rowGoals(code: string): Goal[] | null {
 	return decoded(code)?.combi.goals ?? null
+}
+
+/** The episode a code runs, or null when the code does not decode. */
+export function rowEpisode(code: string): Episode | null {
+	return decoded(code)?.combi.episode ?? null
+}
+
+/** The whole decoded code, for a row's details; null when the code does not decode. Do not change it. */
+export function rowFull(code: string): FullCode | null {
+	return decoded(code)
+}
+
+/** The run stat that measures each goal. */
+const GOAL_STATS: Readonly<Record<Goal, Exclude<StatField, "time">>> = {
+	score: "score",
+	money: "money",
+	exp: "exp",
+	box: "boxes",
+}
+
+export type GoalTarget = { goal: Goal; field: Exclude<StatField, "time">; range: StatRange }
+
+/** What the entry's saved runs reached for each goal its code aims for, in the code's goal order; goals with no saved stat are left out. */
+export function goalTargets(entry: SavedCode): GoalTarget[] {
+	return (rowGoals(entry.code) ?? []).flatMap((goal) => {
+		const field = GOAL_STATS[goal]
+		const range = entry.stats?.[field]
+		return range === undefined ? [] : [{ goal, field, range }]
+	})
 }
 
 export type RowIcon = { src: string | null; name: string; round?: true; more?: number }

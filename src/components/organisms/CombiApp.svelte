@@ -376,10 +376,14 @@ const onupdate = () => {
 
 const ondelete = () => {
 	if (draft === null || draft.from === null) return
-	const code = draft.from
+	deleteCode(draft.from)
+}
+
+/** Deletes a saved entry, from the editor or its row; an editor open on it closes with it. */
+const deleteCode = (code: string) => {
 	const result = removeSaved(store, code)
 	entries = result.entries
-	draft = null
+	if (draft?.from === code) draft = null
 	void focusList()
 	if (result.stored && persistent !== null) say(m.combi.notices.deleted(combiSectionOf(code)))
 	else say(m.combi.notices.refusedDelete, "error")
@@ -436,7 +440,8 @@ const shareEntry = (entry: SavedCode) => {
 			onnew={openNew}
 			onopen={openRow}
 			oncopy={(entry) => copy(entry.code)}
-			onshare={shareEntry} />
+			onshare={shareEntry}
+			ondelete={(entry) => deleteCode(entry.code)} />
 	</div>
 	{#if draft !== null}
 		<CombiEditor

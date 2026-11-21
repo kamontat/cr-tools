@@ -63,7 +63,19 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-const rows = () => screen.getAllByRole("row").filter((row) => row.closest("tbody"))
+const rows = () => screen.getAllByRole("listitem").filter((item) => item.matches("li.entry"))
+/** The saved entry's row, opened so its actions show. */
+const expandRow = async (code: string) => {
+	const row = rows().find((item) => item.textContent?.includes(combiSectionOf(code))) as HTMLElement
+	const toggle = row.querySelector("button[aria-expanded]") as HTMLButtonElement
+	if (toggle.getAttribute("aria-expanded") !== "true") await fireEvent.click(toggle)
+	return row
+}
+/** Opens a saved entry in the editor through its row's Edit. */
+const openEntry = async (code: string) => {
+	await expandRow(code)
+	await fireEvent.click(button(en.combi.list.editCode(combiSectionOf(code))))
+}
 const editor = () => screen.queryByRole("dialog")
 const notice = () => document.querySelector('[role="status"] button, [role="alert"] button')?.textContent ?? ""
 const button = (name: string) => screen.getByRole("button", { name })
@@ -118,6 +130,7 @@ test("a row's Copy copies that row's 10 characters", async () => {
 	const writeText = vi.fn(() => Promise.resolve())
 	setClipboard({ writeText })
 	render(CombiApp)
+	await expandRow(moneyCode)
 	await fireEvent.click(button(en.combi.list.copyCode(combiSectionOf(moneyCode))))
 	expect(writeText).toHaveBeenCalledWith(combiSectionOf(moneyCode))
 	expect(editor()).toBeNull()
@@ -160,7 +173,7 @@ test("an unreadable saved entry lists, and opening it notices instead of throwin
 	seed([...seeded, { code: "1-ZZZZZZZZZZ", description: "Old", savedAt: 0 }])
 	render(CombiApp)
 	expect(rows()).toHaveLength(3)
-	await fireEvent.click(button("ZZZZZZZZZZ"))
+	await openEntry("1-ZZZZZZZZZZ")
 	expect(editor()).toBeNull()
 	expect(notice()).toMatch(/^ZZZZZZZZZZ no longer reads: /)
 })
@@ -168,6 +181,7 @@ test("an unreadable saved entry lists, and opening it notices instead of throwin
 test("a clipboard refusal notices with the code and does not throw", async () => {
 	setClipboard({ writeText: vi.fn(() => Promise.reject(new Error("denied"))) })
 	render(CombiApp)
+	await expandRow(scoreCode)
 	await fireEvent.click(button(en.combi.list.copyCode(combiSectionOf(scoreCode))))
 	await waitFor(() => expect(notice()).toBe(en.combi.notices.copyBlocked(combiSectionOf(scoreCode))))
 	expect(document.querySelector('[role="alert"] button')).not.toBeNull()
@@ -200,7 +214,7 @@ test("an unreadable paste, or one into a text box, is ignored", async () => {
 
 test("Update rewrites the open entry, and Delete removes it and closes the editor", async () => {
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
 	await fireEvent.input(screen.getByRole("textbox", { name: en.combi.editor.note }), {
 		target: { value: "Score farm v2" },
@@ -282,7 +296,7 @@ const dismissNotice = () => {
 test("a paste over unsaved edits in the docked editor is refused, and the edits stay", async () => {
 	viewport(1440)
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	await editNote("Edited")
 	;(document.activeElement as HTMLElement | null)?.blur()
 	paste(linkCode)
@@ -310,7 +324,7 @@ test("a paste of a saved code says it opened that entry", async () => {
 
 test("typing a note does not rewrite the address bar while the code stays the same", async () => {
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	const write = vi.spyOn(history, "replaceState")
 	await editNote("A")
 	await fireEvent.input(noteBox(), { target: { value: "AB" } })
@@ -333,13 +347,13 @@ test("a browser that refuses to rewrite the address bar does not break the edito
 const editedDocked = async () => {
 	viewport(1440)
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	await editNote("Edited")
 }
 
 test("opening another row over unsaved edits in the docked editor is refused, and the edits stay", async () => {
 	await editedDocked()
-	await fireEvent.click(button(combiSectionOf(moneyCode)))
+	await openEntry(moneyCode)
 	expect(notice()).toBe(en.combi.notices.unsavedEdits)
 	expect(noteBox().value).toBe("Edited")
 	expect(location.hash).toBe(`#${scoreCode}`)
@@ -364,7 +378,7 @@ test("a new link in the address bar over unsaved edits is refused, and the addre
 
 test("pressing the open entry's own row again keeps its edits, without a word", async () => {
 	await editedDocked()
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	expect(noteBox().value).toBe("Edited")
 	expect(notice()).toBe("")
 })
@@ -372,8 +386,8 @@ test("pressing the open entry's own row again keeps its edits, without a word", 
 test("with no edits, another row opens straight away", async () => {
 	viewport(1440)
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
-	await fireEvent.click(button(combiSectionOf(moneyCode)))
+	await openEntry(scoreCode)
+	await openEntry(moneyCode)
 	expect(location.hash).toBe(`#${moneyCode}`)
 	expect(notice()).toBe("")
 })
@@ -381,7 +395,7 @@ test("with no edits, another row opens straight away", async () => {
 test("closing the docked editor puts focus on New code, not nowhere", async () => {
 	viewport(1440)
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	button(en.frame.close).focus()
 	await fireEvent.click(button(en.frame.close))
 	await waitFor(() => expect(document.activeElement).toBe(button(en.combi.list.newCode)))
@@ -389,8 +403,22 @@ test("closing the docked editor puts focus on New code, not nowhere", async () =
 
 test("Delete puts focus on New code, not nowhere", async () => {
 	render(CombiApp)
-	await fireEvent.click(button(combiSectionOf(scoreCode)))
+	await openEntry(scoreCode)
 	await fireEvent.click(button(en.combi.editor.more))
 	await fireEvent.click(screen.getByRole("menuitem", { name: en.combi.editor.delete }))
 	await waitFor(() => expect(document.activeElement).toBe(button(en.combi.list.newCode)))
+})
+
+test("a row's Delete, pressed twice, removes the entry and closes an editor open on it", async () => {
+	render(CombiApp)
+	await openEntry(scoreCode)
+	expect(editor()).toBeTruthy()
+	const game = combiSectionOf(scoreCode)
+	await fireEvent.click(button(en.combi.list.deleteCode(game)))
+	await fireEvent.click(button(en.combi.list.confirmDeleteCode(game)))
+	expect(rows()).toHaveLength(1)
+	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
+	expect(editor()).toBeNull()
+	expect(notice()).toBe(en.combi.notices.deleted(game))
+	expect(stored().map((entry) => entry.code)).toEqual([moneyCode])
 })

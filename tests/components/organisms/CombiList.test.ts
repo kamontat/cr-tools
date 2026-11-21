@@ -46,25 +46,58 @@ afterEach(() => {
 })
 
 function setup(list: SavedCode[] = entries, current: string | null = null) {
-	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), onshare: vi.fn() }
+	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), onshare: vi.fn(), ondelete: vi.fn() }
 	const result = render(CombiList, { props: { entries: list, current, ...handlers } })
 	return { ...result, ...handlers }
 }
 
-const rows = () => screen.getAllByRole("row").filter((row) => row.closest("tbody"))
+const rows = () => screen.getAllByRole("listitem").filter((item) => item.matches("li.entry"))
+const rowOf = (code: string) => rows().find((row) => row.textContent?.includes(combiSectionOf(code))) as HTMLElement
+/** The row's own toggle: the button that says whether its details are shown. */
+const toggleOf = (row: HTMLElement) => row.querySelector("button[aria-expanded]") as HTMLButtonElement
+const expand = (code: string) => fireEvent.click(toggleOf(rowOf(code)))
 
-test("rows show the 10 characters, the loadout icons and the note's first line or the goals", () => {
+test("a collapsed row shows the 10 characters, each goal with its saved stat, the episode and the note's first line", () => {
 	setup()
 	expect(rows()).toHaveLength(2)
-	const score = rows().find((row) => row.textContent?.includes(combiSectionOf(scoreCode)))
-	const money = rows().find((row) => row.textContent?.includes(combiSectionOf(moneyCode)))
-	expect(score).toBeTruthy()
-	expect(money).toBeTruthy()
-	expect(within(score as HTMLElement).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
-	expect(score?.textContent).toContain("Score farm")
-	expect(score?.textContent).not.toContain("second line")
-	expect(money?.textContent).toContain(en.combi.goals.money)
-	expect(money?.textContent).toContain("13,500")
+	const score = rowOf(scoreCode)
+	const money = rowOf(moneyCode)
+	expect(score.textContent).toContain("Score farm")
+	expect(score.textContent).not.toContain("second line")
+	expect(score.textContent).toContain(en.combi.goals.score)
+	expect(score.textContent).toContain(en.combi.describe.anyEpisode)
+	expect(money.textContent).toContain(en.combi.goals.money)
+	expect(money.textContent).toContain("12,000–15,000")
+	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("false")
+	// The loadout and the actions wait for the row to open.
+	expect(within(score).queryByRole("img", { name: nameFor("cookies", "01") })).toBeNull()
+	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
+})
+
+test("a stat saved as one number shows once", () => {
+	const code = full({}, { goals: ["box"] })
+	setup([{ code, description: "", stats: { boxes: { min: 3, max: 3 } }, savedAt: 1 }])
+	expect(rowOf(code).textContent).toContain(`${en.combi.goals.box} 3`)
+	expect(rowOf(code).textContent).not.toContain("3–3")
+})
+
+test("a row expands to its loadout, its run and its actions, and several rows stay open", async () => {
+	setup()
+	await expand(scoreCode)
+	const score = rowOf(scoreCode)
+	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("true")
+	const details = document.getElementById(toggleOf(score).getAttribute("aria-controls") ?? "") as HTMLElement
+	expect(score.contains(details)).toBe(true)
+	expect(within(details).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
+	expect(details.textContent).toContain(en.combi.describe.fields.cookie)
+	expect(details.textContent).toContain(en.combi.describe.fields.pet)
+	expect(details.textContent).toContain(en.combi.describe.fields.mode)
+	await expand(moneyCode)
+	expect(toggleOf(rowOf(scoreCode)).getAttribute("aria-expanded")).toBe("true")
+	expect(toggleOf(rowOf(moneyCode)).getAttribute("aria-expanded")).toBe("true")
+	expect(rowOf(moneyCode).textContent).toContain(en.combi.editor.statLabels.money)
+	await expand(scoreCode)
+	expect(toggleOf(rowOf(scoreCode)).getAttribute("aria-expanded")).toBe("false")
 })
 
 test("search narrows the rows", async () => {
@@ -99,23 +132,38 @@ test("the sort orders the rows and persists", async () => {
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(scoreCode))
 })
 
-test("a click or Enter opens a row; Copy and Share do not", async () => {
+test("expanding a row opens nothing; Edit, Copy and Share act on its entry", async () => {
 	const { onopen, oncopy, onshare } = setup()
 	const game = combiSectionOf(scoreCode)
 	const score = entries[0]
 
-	await fireEvent.click(screen.getByRole("button", { name: en.combi.list.copyCode(game) }))
+	await expand(scoreCode)
+	expect(onopen).not.toHaveBeenCalled()
+	const row = rowOf(scoreCode)
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.copyCode(game) }))
 	expect(oncopy).toHaveBeenCalledWith(score)
-	await fireEvent.click(screen.getByRole("button", { name: en.combi.list.shareCode(game) }))
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.shareCode(game) }))
 	expect(onshare).toHaveBeenCalledWith(score)
 	expect(onopen).not.toHaveBeenCalled()
-
-	const row = rows().find((r) => r.textContent?.includes(game)) as HTMLElement
-	await fireEvent.click(row)
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.editCode(game) }))
 	expect(onopen).toHaveBeenCalledWith(score)
-	// The code is the row's button: Enter on it is a click, and the click reaches the row once.
-	await fireEvent.click(within(row).getByRole("button", { name: game }))
-	expect(onopen).toHaveBeenCalledTimes(2)
+})
+
+test("Delete asks once more before it deletes, and leaving the button takes the question back", async () => {
+	const { ondelete } = setup()
+	const game = combiSectionOf(scoreCode)
+	await expand(scoreCode)
+	const row = rowOf(scoreCode)
+
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.deleteCode(game) }))
+	expect(ondelete).not.toHaveBeenCalled()
+	const confirm = within(row).getByRole("button", { name: en.combi.list.confirmDeleteCode(game) })
+	await fireEvent.blur(confirm)
+	expect(within(row).queryByRole("button", { name: en.combi.list.confirmDeleteCode(game) })).toBeNull()
+
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.deleteCode(game) }))
+	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.confirmDeleteCode(game) }))
+	expect(ondelete).toHaveBeenCalledWith(entries[0])
 })
 
 test("New code calls onnew", async () => {
@@ -142,7 +190,7 @@ test("the empty state and the no-match state", async () => {
 	expect(screen.getByText(en.combi.list.noMatch)).toBeTruthy()
 })
 
-test("two entries with the same 10 characters show different icons", () => {
+test("two entries with the same 10 characters show different icons", async () => {
 	const a = full({ cookie: "01" })
 	const b = full({ cookie: "06" })
 	expect(combiSectionOf(a)).toBe(combiSectionOf(b))
@@ -150,6 +198,7 @@ test("two entries with the same 10 characters show different icons", () => {
 		{ code: a, description: "", savedAt: 1 },
 		{ code: b, description: "", savedAt: 2 },
 	])
+	for (const row of rows()) await fireEvent.click(toggleOf(row))
 	expect(screen.getAllByRole("img", { name: nameFor("cookies", "01") })).toHaveLength(1)
 	expect(screen.getAllByRole("img", { name: nameFor("cookies", "06") })).toHaveLength(1)
 })

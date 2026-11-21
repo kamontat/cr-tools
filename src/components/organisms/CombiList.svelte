@@ -1,23 +1,29 @@
 <script lang="ts">
 import type { SavedCode } from "#lib/combi/saved"
 
+import { SvelteSet } from "svelte/reactivity"
+
 import LoadoutIcons from "#components/molecules/LoadoutIcons.svelte"
 import { ALL_GOALS } from "#lib/combi/codec"
-import { goalsText } from "#lib/combi/describe"
+import { describeCombi, describeLoadout, episodeText } from "#lib/combi/describe"
 import { combiSectionOf } from "#lib/combi/full-code"
 import {
-	averageMoney,
 	filterList,
 	type GoalFilter,
+	type GoalTarget,
+	goalTargets,
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
+	rowEpisode,
+	rowFull,
 	rowGoals,
 	rowLoadout,
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
 import { descriptionTitle } from "#lib/combi/saved"
+import { STAT_FIELDS, type StatRange } from "#lib/combi/stats"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
 import { localStore } from "#lib/storage"
@@ -30,9 +36,10 @@ interface Props {
 	onopen: (entry: SavedCode) => void
 	oncopy: (entry: SavedCode) => void
 	onshare: (entry: SavedCode) => void
+	ondelete: (entry: SavedCode) => void
 }
 
-let { entries, current, onnew, onopen, oncopy, onshare }: Props = $props()
+let { entries, current, onnew, onopen, oncopy, onshare, ondelete }: Props = $props()
 
 let lang = $state<Lang>(currentLang(document))
 const m = $derived(messagesFor(lang))
@@ -49,9 +56,55 @@ const shown = $derived(sortList(filterList(entries, query, goal), sort))
 const money = $derived(new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: 0 }))
 const date = $derived(new Intl.DateTimeFormat(LOCALES[lang], { day: "numeric", month: "short", year: "numeric" }))
 
-const goalsOf = (code: string): string => {
-	const goals = rowGoals(code)
-	return goals === null ? "" : goalsText(goals, m)
+/** The codes whose rows are open; any number at once. */
+const expanded = new SvelteSet<string>()
+/** The code whose Delete was pressed once and now asks to be pressed again. */
+let arming = $state<string | null>(null)
+
+const toggle = (code: string) => {
+	if (expanded.has(code)) {
+		expanded.delete(code)
+		if (arming === code) arming = null
+	} else expanded.add(code)
+}
+
+const rangeText = (range: StatRange): string =>
+	range.min === range.max ? money.format(range.min) : `${money.format(range.min)}–${money.format(range.max)}`
+
+/** A goal by name, with what the saved runs reached for it when they say. */
+const goalText = (goal: GoalTarget["goal"], targets: readonly GoalTarget[]): string => {
+	const target = targets.find((t) => t.goal === goal)
+	return target === undefined ? m.combi.goals[goal] : `${m.combi.goals[goal]} ${rangeText(target.range)}`
+}
+
+/** What an open row lists: the loadout, then the run beyond the goals and episode its head already shows. */
+const detailsOf = (code: string) => {
+	const decoded = rowFull(code)
+	if (decoded === null) return []
+	const { fields } = m.combi.describe
+	return [
+		...describeLoadout(decoded.loadout, m),
+		...describeCombi(decoded.combi, m).rows.filter((row) => row.field !== fields.goal && row.field !== fields.episode),
+	]
+}
+
+const statsOf = (entry: SavedCode) =>
+	STAT_FIELDS.flatMap((field) => {
+		const value = entry.stats?.[field]
+		if (value === undefined) return []
+		const text = typeof value === "number" ? money.format(value) : rangeText(value)
+		return [{ field: m.combi.editor.statLabels[field], value: text }]
+	})
+
+/** The first press asks; the second, on the same button, deletes. */
+const remove = (entry: SavedCode) => {
+	if (arming !== entry.code) {
+		arming = entry.code
+		return
+	}
+	arming = null
+	expanded.delete(entry.code)
+	ondelete(entry)
 }
 
 const pickGoal = (value: string) => {
@@ -61,12 +114,6 @@ const pickGoal = (value: string) => {
 const pickSort = (value: string) => {
 	sort = (LIST_SORTS as readonly string[]).includes(value) ? (value as ListSort) : "newest"
 	writeListSort(sort, store)
-}
-
-/** Copy and Share act on the row's entry without opening it. */
-const act = (event: MouseEvent, run: (entry: SavedCode) => void, entry: SavedCode) => {
-	event.stopPropagation()
-	run(entry)
 }
 </script>
 
@@ -102,64 +149,93 @@ const act = (event: MouseEvent, run: (entry: SavedCode) => void, entry: SavedCod
 	{:else if shown.length === 0}
 		<p class="empty">{m.combi.list.noMatch}</p>
 	{:else}
-		<table>
-			<thead>
-				<tr>
-					<th scope="col">{m.combi.list.columns.code}</th>
-					<th scope="col">{m.combi.list.columns.loadout}</th>
-					<th scope="col">{m.combi.list.columns.note}</th>
-					<th scope="col">{m.combi.list.columns.goal}</th>
-					<th scope="col" class="num">{m.combi.list.columns.money}</th>
-					<th scope="col">{m.combi.list.columns.saved}</th>
-					<td></td>
-				</tr>
-			</thead>
-			<tbody>
-				{#each shown as entry (entry.code)}
-					{@const game = combiSectionOf(entry.code)}
-					{@const note = descriptionTitle(entry.description)}
-					{@const goals = goalsOf(entry.code)}
-					{@const average = averageMoney(entry)}
-					<!-- The code is the row's button, for the keyboard; a click anywhere else on the row is a pointer's shortcut to it. -->
-					<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-					<tr aria-current={entry.code === current ? "true" : undefined} onclick={() => onopen(entry)}>
-						<td class="code"><button type="button" class="open">{game}</button></td>
-						<td class="loadout"><LoadoutIcons loadout={rowLoadout(entry.code)} size={26} /></td>
-						<td class="note">
-							<span class="narrow">{note || goals}</span>
-							<span class="wide">{note || "–"}</span>
-						</td>
-						<td class="goal wide-cell">{goals || "–"}</td>
-						<td class="num money" class:none={average === null}>
-							{#if average !== null}
-								<span class="narrow">{m.combi.list.average}</span>
-								{money.format(average)}
-							{:else}
-								<span class="wide">–</span>
+		<ul class="entries">
+			{#each shown as entry, index (entry.code)}
+				{@const game = combiSectionOf(entry.code)}
+				{@const note = descriptionTitle(entry.description)}
+				{@const targets = goalTargets(entry)}
+				{@const episode = rowEpisode(entry.code)}
+				{@const open = expanded.has(entry.code)}
+				{@const id = `entry-details-${index}`}
+				<li class="entry" class:open aria-current={entry.code === current ? "true" : undefined}>
+					<button
+						type="button"
+						class="head"
+						aria-expanded={open}
+						aria-controls={open ? id : undefined}
+						onclick={() => toggle(entry.code)}>
+						<span class="code">{game}</span>
+						<span class="tags">
+							{#each rowGoals(entry.code) ?? [] as goal (goal)}
+								<span class="tag goal">{goalText(goal, targets)}</span>
+							{/each}
+							{#if episode !== null}
+								<span class="tag">{episodeText(episode, m)}</span>
 							{/if}
-						</td>
-						<td class="saved wide-cell">{date.format(entry.savedAt)}</td>
-						<td class="actions">
-							<button
-								type="button"
-								class="icon"
-								aria-label={m.combi.list.shareCode(game)}
-								title={m.combi.list.share}
-								onclick={(event) => act(event, onshare, entry)}>
-								↗
-							</button>
-							<button
-								type="button"
-								class="copy"
-								aria-label={m.combi.list.copyCode(game)}
-								onclick={(event) => act(event, oncopy, entry)}>
-								{m.combi.list.copy}
-							</button>
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+						</span>
+						<span class="chevron" aria-hidden="true"></span>
+						{#if note}
+							<span class="note">{note}</span>
+						{/if}
+					</button>
+					{#if open}
+						<div {id} class="details">
+							<LoadoutIcons loadout={rowLoadout(entry.code)} size={32} />
+							<dl>
+								{#each [...detailsOf(entry.code), ...statsOf(entry)] as row (row.field)}
+									<div>
+										<dt>{row.field}</dt>
+										<dd>{row.value}</dd>
+									</div>
+								{/each}
+							</dl>
+							<p class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</p>
+							<div class="actions">
+								<button
+									type="button"
+									class="btn primary"
+									aria-label={m.combi.list.editCode(game)}
+									onclick={() => onopen(entry)}>
+									{m.combi.list.edit}
+								</button>
+								<button
+									type="button"
+									class="btn"
+									aria-label={m.combi.list.copyCode(game)}
+									onclick={() => oncopy(entry)}>
+									{m.combi.list.copy}
+								</button>
+								<button
+									type="button"
+									class="btn"
+									aria-label={m.combi.list.shareCode(game)}
+									onclick={() => onshare(entry)}>
+									{m.combi.list.share}
+								</button>
+								{#if arming === entry.code}
+									<button
+										type="button"
+										class="btn danger armed"
+										aria-label={m.combi.list.confirmDeleteCode(game)}
+										onclick={() => remove(entry)}
+										onblur={() => (arming = null)}>
+										{m.combi.list.confirmDelete}
+									</button>
+								{:else}
+									<button
+										type="button"
+										class="btn danger"
+										aria-label={m.combi.list.deleteCode(game)}
+										onclick={() => remove(entry)}>
+										{m.combi.list.delete}
+									</button>
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</li>
+			{/each}
+		</ul>
 	{/if}
 </section>
 
@@ -240,7 +316,7 @@ select {
 	.btn,
 	.search,
 	select,
-	.actions button {
+	.head {
 		min-height: var(--tap);
 	}
 }
@@ -254,203 +330,171 @@ select {
 	color: var(--muted);
 }
 
-table {
-	width: 100%;
-	border-collapse: separate;
-	border-spacing: 0;
+.entries {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
 	border: 1px solid var(--line);
 	border-radius: var(--radius-lg);
 	background: var(--surface);
+	list-style: none;
 	overflow: hidden;
 }
 
-/* A list narrower than the table needs shows each row as a card: code, icons, note and money on the left, the actions on the right. */
-thead {
-	display: none;
-}
-
-table,
-tbody {
-	display: block;
-}
-
-tbody tr {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto;
-	column-gap: 12px;
-	row-gap: 4px;
-	align-items: center;
-	padding: 12px 14px;
+.entry {
 	border-bottom: 1px solid var(--line);
-	cursor: pointer;
 }
 
-tbody tr:last-child {
+.entry:last-child {
 	border-bottom: 0;
 }
 
-tbody tr:hover {
-	background: var(--hover);
-}
-
-tbody tr[aria-current="true"] {
-	background: var(--hover);
+.entry[aria-current="true"] {
 	box-shadow: inset 3px 0 0 var(--accent);
 }
 
-td {
-	display: block;
-	grid-column: 1;
-	min-width: 0;
-	padding: 0;
-}
-
-td.actions {
-	grid-column: 2;
-	grid-row: 1 / span 4;
-}
-
-.wide,
-.wide-cell,
-td.none {
-	display: none;
-}
-
-.note,
-.money {
-	color: var(--muted);
-	font-size: 0.8125rem;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.num {
-	font-variant-numeric: tabular-nums;
-}
-
-.code .open {
-	padding: 0;
+/* The head: the code, its goals and episode, the chevron, and the note under them. */
+.head {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	column-gap: 12px;
+	row-gap: 6px;
+	align-items: center;
+	width: 100%;
+	padding: 12px 14px;
 	border: 0;
-	border-radius: 4px;
 	background: none;
+	color: var(--text);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.head:hover,
+.entry.open .head {
+	background: var(--hover);
+}
+
+.head:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
+}
+
+.code {
 	color: var(--code);
 	font-family: var(--mono);
 	font-size: 1.0625rem;
 	font-weight: 600;
 	letter-spacing: 0.08em;
-	cursor: pointer;
 }
 
-.code .open:focus-visible {
-	outline: 2px solid var(--accent);
-	outline-offset: 2px;
+.tags {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 6px;
+	min-width: 0;
+}
+
+.tag {
+	padding: 2px 8px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.tag.goal {
+	color: var(--text);
+}
+
+.chevron {
+	width: 8px;
+	height: 8px;
+	margin-inline: 4px;
+	border-right: 2px solid var(--muted);
+	border-bottom: 2px solid var(--muted);
+	transform: translateY(-2px) rotate(45deg);
+	transition: transform 0.15s;
+}
+
+.entry.open .chevron {
+	transform: translateY(2px) rotate(225deg);
+}
+
+.note {
+	grid-column: 1 / -1;
+	overflow: hidden;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* A narrow list puts the goals and episode on their own line under the code. */
+@container list (max-width: 480px) {
+	.head {
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
+
+	.tags {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+}
+
+.details {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 4px 14px 14px;
+	background: var(--hover);
+}
+
+dl {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 8px 16px;
+	margin: 0;
+}
+
+dl div {
+	min-width: 0;
+}
+
+dt {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+
+dd {
+	margin: 0;
+	font-size: 0.875rem;
+	overflow-wrap: anywhere;
+}
+
+.saved {
+	margin: 0;
+	color: var(--muted);
+	font-size: 0.8125rem;
 }
 
 .actions {
 	display: flex;
-	gap: 2px;
-	justify-content: flex-end;
+	flex-flow: row wrap;
+	gap: 8px;
 }
 
-.actions button {
-	min-height: 32px;
-	padding: 6px 8px;
-	border: 0;
-	border-radius: 6px;
-	background: none;
-	font: inherit;
-	cursor: pointer;
+.btn.danger {
+	color: var(--danger);
 }
 
-.actions .icon {
-	color: var(--muted);
-	font-size: 1rem;
-}
-
-.actions .copy {
-	color: var(--accent);
-	font-weight: 600;
-}
-
-.actions button:hover {
-	background: var(--hover);
-	color: var(--text);
-}
-
-/*
- * The table from 720px of list: its columns need about that much with the
- * longest goal mix, and a narrower table would clip under its rounded border.
- */
-@container list (min-width: 720px) {
-	table {
-		display: table;
-	}
-
-	thead {
-		display: table-header-group;
-	}
-
-	tbody {
-		display: table-row-group;
-	}
-
-	tbody tr {
-		display: table-row;
-		padding: 0;
-	}
-
-	td,
-	th {
-		display: table-cell;
-		padding: 10px 12px;
-		border-bottom: 1px solid var(--line);
-		text-align: start;
-		vertical-align: middle;
-		white-space: nowrap;
-	}
-
-	tbody tr:last-child td {
-		border-bottom: 0;
-	}
-
-	th {
-		color: var(--muted);
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-
-	th.num,
-	td.num {
-		text-align: end;
-	}
-
-	td.note {
-		width: 100%;
-		max-width: 0;
-	}
-
-	td.none {
-		display: table-cell;
-	}
-
-	.narrow {
-		display: none;
-	}
-
-	.wide {
-		display: inline;
-	}
-
-	.wide-cell {
-		display: table-cell;
-	}
-
-	.goal,
-	.saved,
-	.money {
-		color: var(--text);
-		font-size: 0.875rem;
-	}
+.btn.danger.armed {
+	border-color: var(--danger);
+	background: var(--danger);
+	color: #fff;
 }
 </style>

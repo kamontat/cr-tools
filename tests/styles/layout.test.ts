@@ -26,10 +26,10 @@ test("the docked editor stays in view and keeps its footer on screen", () => {
 	expect(docked).toMatch(/max-height:\s*calc\(100dvh/)
 })
 
-test("the saved list picks the table or the cards by its own width, not the window's", () => {
+test("the saved list lays its rows out by its own width, not the window's", () => {
 	const list = read("src/components/organisms/CombiList.svelte")
 	expect(rule(list, ".list")).toMatch(/container(?:-type)?:\s*(?:list\s*\/\s*)?inline-size/)
-	expect(list).toMatch(/@container list \(min-width: \d+px\)\s*\{\s*table\s*\{/)
+	expect(list).toMatch(/@container list \(max-width: \d+px\)\s*\{\s*\.head\s*\{/)
 	expect(list).not.toMatch(/@media \(min-width: 1100px\)/)
 })
 

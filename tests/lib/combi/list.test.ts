@@ -8,8 +8,11 @@ import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
 import {
 	averageMoney,
 	filterList,
+	goalTargets,
 	LIST_SORT_KEY,
 	readListSort,
+	rowEpisode,
+	rowFull,
 	rowGoals,
 	rowLoadout,
 	sortList,
@@ -154,4 +157,29 @@ test("row goals: the goals a code aims for, or null when it does not read", () =
 test("a code is decoded once, however often the list asks", () => {
 	const code = full({}, { goals: ["money", "box"] })
 	expect(rowGoals(code)).toBe(rowGoals(code))
+})
+
+test("row episode: the episode a code runs, or null when it does not read", () => {
+	expect(rowEpisode(full({}, { episode: "any" }))).toBe("any")
+	expect(rowEpisode("not a code")).toBeNull()
+})
+
+test("row full: the decoded code, or null when it does not read", () => {
+	expect(rowFull(full({ cookie: "01" }))?.loadout.cookie).toBe("01")
+	expect(rowFull("not a code")).toBeNull()
+})
+
+test("goal targets: the saved stat for each goal the code aims for, in the code's goal order", () => {
+	const code = full({}, { goals: ["money", "box"] })
+	const stats = { money: { min: 12000, max: 15000 }, boxes: { min: 2, max: 2 }, score: { min: 1, max: 2 } }
+	expect(goalTargets(entry(code, { stats }))).toEqual([
+		{ goal: "money", field: "money", range: { min: 12000, max: 15000 } },
+		{ goal: "box", field: "boxes", range: { min: 2, max: 2 } },
+	])
+	// A goal with no saved stat is left out, and so is every goal of a code that does not read.
+	expect(goalTargets(entry(code, { stats: { money: { min: 1, max: 1 } } }))).toEqual([
+		{ goal: "money", field: "money", range: { min: 1, max: 1 } },
+	])
+	expect(goalTargets(entry(code))).toEqual([])
+	expect(goalTargets(entry("not a code", { stats }))).toEqual([])
 })
