@@ -25,7 +25,7 @@ function pick(option: string) {
 			aria-pressed={value.includes(option.value)}
 			onclick={() => pick(option.value)}>
 			{#if option.icon}
-				<img src={option.icon} alt="" width="20" height="20" loading="lazy">
+				<img width="20" height="20" src={option.icon} alt="" loading="lazy">
 			{/if}
 			<span>{option.label}</span>
 		</button>
@@ -71,6 +71,8 @@ button:disabled {
 }
 
 img {
+	width: 20px;
+	height: 20px;
 	border-radius: 4px;
 	object-fit: contain;
 }

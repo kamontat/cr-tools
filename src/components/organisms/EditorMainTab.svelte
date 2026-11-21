@@ -105,6 +105,7 @@ function floorInput(event: Event) {
 		help={m.combi.help.floor}
 		helpLabel={m.combi.editor.help}>
 		<input
+			name="floor"
 			class="floor"
 			type="number"
 			inputmode="numeric"

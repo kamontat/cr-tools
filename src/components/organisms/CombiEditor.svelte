@@ -324,6 +324,7 @@ function onclick(event: MouseEvent) {
 					<input
 						bind:this={typeInput}
 						type="text"
+						name="code"
 						class="type-code"
 						aria-label={m.combi.editor.code}
 						aria-describedby="{uid}-type-status"

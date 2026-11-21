@@ -11,7 +11,17 @@ let { src, name, round = false, size = 40 }: Props = $props()
 </script>
 
 {#if src}
-	<img {src} alt={name} title={name} width={size} height={size} loading="lazy" class:round>
+	<!-- The reset gives every image height: auto, so the style says the size too, or a lazy load has none to reserve. -->
+	<img
+		width={size}
+		height={size}
+		{src}
+		alt={name}
+		title={name}
+		loading="lazy"
+		class:round
+		style:width="{size}px"
+		style:height="{size}px">
 {:else}
 	<span
 		class="tile"

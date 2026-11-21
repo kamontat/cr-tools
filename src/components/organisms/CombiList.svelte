@@ -142,10 +142,12 @@ const pickSort = (value: string) => {
 		<input
 			class="search"
 			type="search"
+			name="search"
 			aria-label={m.combi.list.search}
 			placeholder={m.combi.list.search}
 			bind:value={query}>
 		<select
+			name="goal"
 			aria-label={m.combi.list.columns.goal}
 			value={goal}
 			onchange={(event) => pickGoal(event.currentTarget.value)}>
@@ -154,7 +156,11 @@ const pickSort = (value: string) => {
 				<option value={id}>{m.combi.goals[id]}</option>
 			{/each}
 		</select>
-		<select aria-label={m.combi.list.sortBy} value={sort} onchange={(event) => pickSort(event.currentTarget.value)}>
+		<select
+			name="sort"
+			aria-label={m.combi.list.sortBy}
+			value={sort}
+			onchange={(event) => pickSort(event.currentTarget.value)}>
 			{#each LIST_SORTS as id (id)}
 				<option value={id}>{m.combi.list.sort[id]}</option>
 			{/each}
@@ -272,7 +278,7 @@ const pickSort = (value: string) => {
 										<span class="sep" aria-hidden="true">·</span>
 										<span class="with-art">
 											{#if run.art}
-												<img class="art" src={run.art} alt="" width="28" height="28" loading="lazy">
+												<img class="art" width="28" height="28" src={run.art} alt="" loading="lazy">
 											{/if}
 											{run.episode}
 										</span>
@@ -429,7 +435,7 @@ const pickSort = (value: string) => {
 													aria-label={COOKIE_POWER_LABELS[power.id]}
 													title={COOKIE_POWER_LABELS[power.id]}>
 													{#each power.srcs.slice(0, 2) as src (src)}
-														<img {src} alt="" width="30" height="30" loading="lazy">
+														<img width="30" height="30" {src} alt="" loading="lazy">
 													{/each}
 												</span>
 												{#if namesOn(entry.code, fields.cookiePower)}

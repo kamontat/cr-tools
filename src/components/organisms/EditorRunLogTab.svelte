@@ -66,6 +66,7 @@ function statInput(field: StatField, text: string) {
 
 <Field id="{uid}-note" label={m.combi.editor.note} help={m.combi.help.note} helpLabel={m.combi.editor.help}>
 	<textarea
+		name="note"
 		aria-label={m.combi.editor.note}
 		maxlength={DESCRIPTION_MAX}
 		rows="3"

@@ -39,7 +39,7 @@ const shown = $derived.by(() => {
 
 <!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and layout -->
 <div class="picker" role="group" aria-label={label}>
-	<input type="search" aria-label={searchLabel} placeholder={searchLabel} bind:value={query}>
+	<input type="search" name="entry-search" aria-label={searchLabel} placeholder={searchLabel} bind:value={query}>
 	<div class="grid">
 		{#if onclear && noneLabel}
 			<button type="button" class="cell none" aria-pressed={value === null} onclick={onclear}>{noneLabel}</button>
