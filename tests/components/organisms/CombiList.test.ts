@@ -90,8 +90,10 @@ test("a row expands to its loadout, its run and its actions, and several rows st
 	expect(score.contains(details)).toBe(true)
 	expect(within(details).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(details.textContent).toContain(en.combi.describe.fields.cookie)
-	expect(details.textContent).toContain(en.combi.describe.fields.pet)
 	expect(details.textContent).toContain(en.combi.describe.fields.mode)
+	// Only what the code sets: no pet, no "None".
+	expect(details.textContent).not.toContain(en.combi.describe.fields.pet)
+	expect(details.textContent).not.toContain(en.combi.describe.none)
 	await expand(moneyCode)
 	expect(toggleOf(rowOf(scoreCode)).getAttribute("aria-expanded")).toBe("true")
 	expect(toggleOf(rowOf(moneyCode)).getAttribute("aria-expanded")).toBe("true")

@@ -14,6 +14,7 @@ import type { StatField, StatRange } from "./stats"
 
 import { readKey, writeKey } from "#lib/storage"
 import { imageFor, isAnyId, labelFor, nameFor } from "./catalog"
+import { levelText } from "./describe"
 import { combiSectionOf, decodeFull } from "./full-code"
 
 export const LIST_SORTS = ["newest", "oldest", "money", "code"] as const
@@ -119,6 +120,31 @@ export function rowEpisode(code: string): Episode | null {
 /** The whole decoded code, for a row's details; null when the code does not decode. Do not change it. */
 export function rowFull(code: string): FullCode | null {
 	return decoded(code)
+}
+
+export type TeamPiece = {
+	role: "cookie" | "relay" | "pet" | "treasure"
+	/** The slot's place when the code keeps the treasures in order, from 1. */
+	position?: number
+	/** What the piece accepts: one entry, or for a treasure slot each treasure it takes, with its levels. */
+	picks: { icon: RowIcon; level?: string }[]
+}
+
+/** The team an open row shows, set pieces only, in play order; null when the code does not decode. */
+export function rowTeam(code: string): TeamPiece[] | null {
+	const full = decoded(code)
+	if (full === null) return null
+	const { cookie, relay, pet, treasures, ordered } = full.loadout
+	const team: TeamPiece[] = []
+	if (cookie !== null) team.push({ role: "cookie", picks: [{ icon: iconFor("cookies", cookie) }] })
+	if (relay !== null) team.push({ role: "relay", picks: [{ icon: iconFor("cookies", relay) }] })
+	if (pet !== null) team.push({ role: "pet", picks: [{ icon: { ...iconFor("pets", pet), round: true } }] })
+	const numbered = ordered && treasures.length > 1
+	treasures.forEach((slot, index) => {
+		const picks = slot.map((pick) => ({ icon: iconFor("treasures", pick.id), level: levelText(pick) }))
+		team.push(numbered ? { role: "treasure", position: index + 1, picks } : { role: "treasure", picks })
+	})
+	return team
 }
 
 /** The run stat that measures each goal. */

@@ -15,6 +15,7 @@ import {
 	rowFull,
 	rowGoals,
 	rowLoadout,
+	rowTeam,
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
@@ -162,6 +163,29 @@ test("a code is decoded once, however often the list asks", () => {
 test("row episode: the episode a code runs, or null when it does not read", () => {
 	expect(rowEpisode(full({}, { episode: "any" }))).toBe("any")
 	expect(rowEpisode("not a code")).toBeNull()
+})
+
+test("row team: each set piece once, in play order, with every treasure a slot accepts and its levels", () => {
+	const code = full({
+		cookie: "01",
+		relay: "06",
+		pet: "06",
+		treasures: [[treasurePick("001", levelRange(0)), treasurePick("002", [0, 1, 2, 9])], [treasurePick("001")]],
+		ordered: true,
+	})
+	const team = rowTeam(code)
+	expect(team?.map((piece) => piece.role)).toEqual(["cookie", "relay", "pet", "treasure", "treasure"])
+	expect(team?.[0]?.picks[0]?.icon.name).toBe(rowLoadout(code)?.cookie?.name)
+	expect(team?.[2]?.picks[0]?.icon.round).toBe(true)
+	expect(team?.[3]?.position).toBe(1)
+	expect(team?.[4]?.position).toBe(2)
+	expect(team?.[3]?.picks.map((pick) => pick.level)).toEqual(["+0", "+0-2, +9"])
+	expect(team?.[3]?.picks[1]?.icon.src?.startsWith("/assets/")).toBe(true)
+	// Unordered slots carry no position; unset pieces are left out.
+	const loose = rowTeam(full({ cookie: "01", treasures: [[treasurePick("001")], [treasurePick("002")]] }))
+	expect(loose?.map((piece) => piece.role)).toEqual(["cookie", "treasure", "treasure"])
+	expect(loose?.[1]?.position).toBeUndefined()
+	expect(rowTeam("not a code")).toBeNull()
 })
 
 test("row full: the decoded code, or null when it does not read", () => {

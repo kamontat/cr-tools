@@ -3,9 +3,9 @@ import type { SavedCode } from "#lib/combi/saved"
 
 import { SvelteSet } from "svelte/reactivity"
 
-import LoadoutIcons from "#components/molecules/LoadoutIcons.svelte"
+import EntryIcon from "#components/atoms/EntryIcon.svelte"
 import { ALL_GOALS } from "#lib/combi/codec"
-import { describeCombi, describeLoadout, episodeText } from "#lib/combi/describe"
+import { describeCombi, episodeText } from "#lib/combi/describe"
 import { combiSectionOf } from "#lib/combi/full-code"
 import {
 	filterList,
@@ -18,12 +18,13 @@ import {
 	rowEpisode,
 	rowFull,
 	rowGoals,
-	rowLoadout,
+	rowTeam,
 	sortList,
+	type TeamPiece,
 	writeListSort,
 } from "#lib/combi/list"
 import { descriptionTitle } from "#lib/combi/saved"
-import { STAT_FIELDS, type StatRange } from "#lib/combi/stats"
+import { STAT_FIELDS, type StatField, type StatRange } from "#lib/combi/stats"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
 import { localStore } from "#lib/storage"
@@ -71,30 +72,43 @@ const toggle = (code: string) => {
 const rangeText = (range: StatRange): string =>
 	range.min === range.max ? money.format(range.min) : `${money.format(range.min)}–${money.format(range.max)}`
 
-/** A goal by name, with what the saved runs reached for it when they say. */
-const goalText = (goal: GoalTarget["goal"], targets: readonly GoalTarget[]): string => {
+/** What the saved runs reached for a goal, or null when they do not say. */
+const targetOf = (goal: GoalTarget["goal"], targets: readonly GoalTarget[]): string | null => {
 	const target = targets.find((t) => t.goal === goal)
-	return target === undefined ? m.combi.goals[goal] : `${m.combi.goals[goal]} ${rangeText(target.range)}`
+	return target === undefined ? null : rangeText(target.range)
 }
 
-/** What an open row lists: the loadout, then the run beyond the goals and episode its head already shows. */
-const detailsOf = (code: string) => {
+/** A piece's caption: its role, and for a treasure kept in order its slot. */
+const roleText = (piece: TeamPiece): string => {
+	const { fields } = m.combi.describe
+	if (piece.role !== "treasure") return fields[piece.role]
+	return piece.position === undefined ? fields.treasures : `${fields.treasures} ${piece.position}`
+}
+
+/** The run settings an open row lists: those set, beyond the goals and episode its head already shows. */
+const settingsOf = (code: string) => {
 	const decoded = rowFull(code)
 	if (decoded === null) return []
-	const { fields } = m.combi.describe
-	return [
-		...describeLoadout(decoded.loadout, m),
-		...describeCombi(decoded.combi, m).rows.filter((row) => row.field !== fields.goal && row.field !== fields.episode),
-	]
+	const { fields, none } = m.combi.describe
+	return describeCombi(decoded.combi, m).rows.filter(
+		(row) =>
+			row.field !== fields.goal &&
+			row.field !== fields.episode &&
+			row.value !== none &&
+			row.value !== m.combi.actions.none,
+	)
 }
 
-const statsOf = (entry: SavedCode) =>
-	STAT_FIELDS.flatMap((field) => {
+/** The saved stats, the ones the code's goals aim for marked. */
+const statsOf = (entry: SavedCode) => {
+	const aimed = new Set<StatField>(goalTargets(entry).map((target) => target.field))
+	return STAT_FIELDS.flatMap((field) => {
 		const value = entry.stats?.[field]
 		if (value === undefined) return []
 		const text = typeof value === "number" ? money.format(value) : rangeText(value)
-		return [{ field: m.combi.editor.statLabels[field], value: text }]
+		return [{ field, label: m.combi.editor.statLabels[field], value: text, aimed: aimed.has(field) }]
 	})
+}
 
 /** The first press asks; the second, on the same button, deletes. */
 const remove = (entry: SavedCode) => {
@@ -167,10 +181,16 @@ const pickSort = (value: string) => {
 						<span class="code">{game}</span>
 						<span class="tags">
 							{#each rowGoals(entry.code) ?? [] as goal (goal)}
-								<span class="tag goal">{goalText(goal, targets)}</span>
+								{@const target = targetOf(goal, targets)}
+								<span class="tag goal">
+									{m.combi.goals[goal]}
+									{#if target !== null}
+										<strong>{target}</strong>
+									{/if}
+								</span>
 							{/each}
 							{#if episode !== null}
-								<span class="tag">{episodeText(episode, m)}</span>
+								<span class="episode">{episodeText(episode, m)}</span>
 							{/if}
 						</span>
 						<span class="chevron" aria-hidden="true"></span>
@@ -179,57 +199,111 @@ const pickSort = (value: string) => {
 						{/if}
 					</button>
 					{#if open}
+						{@const team = rowTeam(entry.code) ?? []}
+						{@const stats = statsOf(entry)}
+						{@const settings = settingsOf(entry.code)}
 						<div {id} class="details">
-							<LoadoutIcons loadout={rowLoadout(entry.code)} size={32} />
-							<dl>
-								{#each [...detailsOf(entry.code), ...statsOf(entry)] as row (row.field)}
-									<div>
-										<dt>{row.field}</dt>
-										<dd>{row.value}</dd>
-									</div>
-								{/each}
-							</dl>
-							<p class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</p>
-							<div class="actions">
-								<button
-									type="button"
-									class="btn primary"
-									aria-label={m.combi.list.editCode(game)}
-									onclick={() => onopen(entry)}>
-									{m.combi.list.edit}
-								</button>
-								<button
-									type="button"
-									class="btn"
-									aria-label={m.combi.list.copyCode(game)}
-									onclick={() => oncopy(entry)}>
-									{m.combi.list.copy}
-								</button>
-								<button
-									type="button"
-									class="btn"
-									aria-label={m.combi.list.shareCode(game)}
-									onclick={() => onshare(entry)}>
-									{m.combi.list.share}
-								</button>
-								{#if arming === entry.code}
+							{#if team.length > 0}
+								<ul class="team">
+									{#each team as piece, index (index)}
+										{@const [first, ...others] = piece.picks}
+										<li class="piece">
+											{#if first}
+												<EntryIcon
+													src={first.icon.src}
+													name={first.icon.name}
+													round={first.icon.round ?? false}
+													size={40} />
+												<span class="piece-text">
+													<span class="role">{roleText(piece)}</span>
+													<span class="name">
+														{first.icon.name}
+														{#if first.level}
+															<span class="level">{first.level}</span>
+														{/if}
+													</span>
+													{#each others as other, at (at)}
+														<span class="or">
+															{m.combi.describe.orTreasure.trim()}
+															{other.icon.name}
+															{#if other.level}
+																<span class="level">{other.level}</span>
+															{/if}
+														</span>
+													{/each}
+												</span>
+											{/if}
+										</li>
+									{/each}
+								</ul>
+							{/if}
+							{#if stats.length > 0 || settings.length > 0}
+								<div class="run">
+									{#if stats.length > 0}
+										<dl class="stats">
+											{#each stats as stat (stat.field)}
+												<div class="stat" class:aimed={stat.aimed}>
+													<dt>{stat.label}</dt>
+													<dd>{stat.value}</dd>
+												</div>
+											{/each}
+										</dl>
+									{/if}
+									{#if settings.length > 0}
+										<dl class="settings">
+											{#each settings as row (row.field)}
+												<div>
+													<dt>{row.field}</dt>
+													<dd>{row.value}</dd>
+												</div>
+											{/each}
+										</dl>
+									{/if}
+								</div>
+							{/if}
+							<div class="foot">
+								<span class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</span>
+								<div class="actions">
+									{#if arming === entry.code}
+										<button
+											type="button"
+											class="btn small danger armed"
+											aria-label={m.combi.list.confirmDeleteCode(game)}
+											onclick={() => remove(entry)}
+											onblur={() => (arming = null)}>
+											{m.combi.list.confirmDelete}
+										</button>
+									{:else}
+										<button
+											type="button"
+											class="btn small danger"
+											aria-label={m.combi.list.deleteCode(game)}
+											onclick={() => remove(entry)}>
+											{m.combi.list.delete}
+										</button>
+									{/if}
 									<button
 										type="button"
-										class="btn danger armed"
-										aria-label={m.combi.list.confirmDeleteCode(game)}
-										onclick={() => remove(entry)}
-										onblur={() => (arming = null)}>
-										{m.combi.list.confirmDelete}
+										class="btn small"
+										aria-label={m.combi.list.shareCode(game)}
+										onclick={() => onshare(entry)}>
+										{m.combi.list.share}
 									</button>
-								{:else}
 									<button
 										type="button"
-										class="btn danger"
-										aria-label={m.combi.list.deleteCode(game)}
-										onclick={() => remove(entry)}>
-										{m.combi.list.delete}
+										class="btn small"
+										aria-label={m.combi.list.copyCode(game)}
+										onclick={() => oncopy(entry)}>
+										{m.combi.list.copy}
 									</button>
-								{/if}
+									<button
+										type="button"
+										class="btn small primary"
+										aria-label={m.combi.list.editCode(game)}
+										onclick={() => onopen(entry)}>
+										{m.combi.list.edit}
+									</button>
+								</div>
 							</div>
 						</div>
 					{/if}
@@ -371,8 +445,7 @@ select {
 	cursor: pointer;
 }
 
-.head:hover,
-.entry.open .head {
+.head:hover {
 	background: var(--hover);
 }
 
@@ -397,17 +470,25 @@ select {
 }
 
 .tag {
-	padding: 2px 8px;
-	border: 1px solid var(--line);
+	padding: 2px 9px;
 	border-radius: 999px;
+	background: var(--hover);
 	color: var(--muted);
 	font-size: 0.8125rem;
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
 
-.tag.goal {
+.tag strong {
 	color: var(--text);
+	font-weight: 600;
+}
+
+.episode {
+	align-self: center;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	white-space: nowrap;
 }
 
 .chevron {
@@ -445,39 +526,132 @@ select {
 	}
 }
 
+/*
+ * An open row: the team on the left, what the runs reached and how they ran
+ * on the right, and the date and the actions along the bottom.
+ */
 .details {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	padding: 4px 14px 14px;
-	background: var(--hover);
-}
-
-dl {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-	gap: 8px 16px;
-	margin: 0;
+	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	gap: 16px 24px;
+	padding: 16px 14px 14px;
+	border-top: 1px solid var(--line);
 }
 
-dl div {
+.team {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 12px 16px;
+	align-content: start;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.piece {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
 	min-width: 0;
 }
 
-dt {
+.piece-text {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+
+.role {
 	color: var(--muted);
-	font-size: 0.75rem;
+	font-size: 0.6875rem;
 	font-weight: 600;
 }
 
-dd {
-	margin: 0;
+.name,
+.or {
 	font-size: 0.875rem;
 	overflow-wrap: anywhere;
 }
 
-.saved {
+.or {
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.level {
+	margin-inline-start: 4px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.run {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-width: 0;
+}
+
+dl {
 	margin: 0;
+}
+
+dd {
+	margin: 0;
+}
+
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+	gap: 8px;
+}
+
+.stat {
+	padding: 8px 10px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+}
+
+.stat.aimed {
+	border-color: var(--accent);
+}
+
+.stat dt,
+.settings dt {
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+
+.stat dd {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.settings {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 4px 12px;
+	font-size: 0.875rem;
+}
+
+.settings div {
+	display: contents;
+}
+
+.foot {
+	display: flex;
+	flex-flow: row wrap;
+	grid-column: 1 / -1;
+	gap: 8px 12px;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 12px;
+	border-top: 1px dashed var(--line);
+}
+
+.saved {
 	color: var(--muted);
 	font-size: 0.8125rem;
 }
@@ -485,16 +659,39 @@ dd {
 .actions {
 	display: flex;
 	flex-flow: row wrap;
-	gap: 8px;
+	gap: 6px;
+}
+
+.btn.small {
+	min-height: 32px;
+	padding: 4px 12px;
+	font-size: 0.875rem;
 }
 
 .btn.danger {
+	border-color: transparent;
+	background: none;
 	color: var(--danger);
+}
+
+.btn.danger:hover {
+	background: var(--hover);
 }
 
 .btn.danger.armed {
 	border-color: var(--danger);
 	background: var(--danger);
 	color: #fff;
+}
+
+/* A narrow list stacks the team over the run. */
+@container list (max-width: 560px) {
+	.details {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.team {
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	}
 }
 </style>

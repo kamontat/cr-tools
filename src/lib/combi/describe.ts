@@ -157,8 +157,8 @@ function entryName(section: CatalogSection, id: string, m: Messages): string {
 	return isRetired(section, id) ? m.combi.describe.retired(name) : name
 }
 
-/** Runs joined by commas: `orTreasure` is what separates two treasures. */
-function levelText({ levels }: TreasurePick): string {
+/** A treasure's accepted levels, runs joined by commas: `+0-2, +9`. */
+export function levelText({ levels }: TreasurePick): string {
 	return levelRuns(levels)
 		.map(([min, max]) => (min === max ? `+${min}` : `+${min}-${max}`))
 		.join(", ")
