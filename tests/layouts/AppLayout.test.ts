@@ -46,6 +46,8 @@ test("AppLayout's wide prop marks the wrapper, which fills the width from the do
 	).toBe(false)
 	const source = await readFile("src/layouts/AppLayout.astro", "utf8")
 	expect(source).toMatch(/@media \(width >= 1400px\) \{[\s\S]*\.wrap\[data-wide\] \{[^}]*max-width: none/)
+	// Below the dock breakpoint a wide page takes up to 1100px, room for the saved list's table.
+	expect(source).toMatch(/@media \(width >= 700px\) \{\s*\.wrap\[data-wide\] \{[^}]*max-width: 1100px/)
 })
 
 test("AppLayout localizes the frame's attributes before it wires the frame", async () => {
