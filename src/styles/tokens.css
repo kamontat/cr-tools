@@ -13,11 +13,20 @@
 	--code: #ffd23f;
 	--danger: #e5484d;
 	--success: #30a46c;
+	/* An evolved and a blessed treasure share a picture; these colours tell them apart. */
+	--evolved: #4ade80;
+	--blessed: #ffd23f;
 	--env: transparent;
 	--radius: 8px;
 	--radius-lg: 10px;
 	--mono: ui-monospace, sfmono-regular, menlo, monospace;
 	--tap: 2.75rem;
+	/* Stacking, lowest first: the drawer's scrim, the sidebar over the page, the top bar, pop-ups, notices. */
+	--z-scrim: 15;
+	--z-sidebar: 20;
+	--z-topbar: 30;
+	--z-panel: 40;
+	--z-toast: 50;
 }
 
 @media (prefers-color-scheme: light) {
@@ -32,6 +41,8 @@
 		--accent: #d81b60;
 		--on-accent: #fff;
 		--code: #9a5b00;
+		--evolved: #1b7a43;
+		--blessed: #a86800;
 	}
 }
 
@@ -46,6 +57,8 @@
 	--accent: #d81b60;
 	--on-accent: #fff;
 	--code: #9a5b00;
+	--evolved: #1b7a43;
+	--blessed: #a86800;
 }
 
 :root[data-env="development"] {

@@ -58,3 +58,8 @@ test("l10nAttr defaults to Thai and carries both", () => {
 		"data-l10n": "",
 	})
 })
+
+test("the changes a code was read with join the way each language writes sentences", () => {
+	expect(en.combi.notices.changes(["One", "Two"])).toBe("One. Two")
+	expect(th.combi.notices.changes(["หนึ่ง", "สอง"])).toBe("หนึ่ง สอง")
+})

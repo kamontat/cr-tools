@@ -2,11 +2,20 @@
 import type { Pick } from "#lib/i18n/messages"
 
 import Text from "#components/atoms/Text.astro"
+import CombiApp from "#components/organisms/CombiApp.svelte"
 import AppLayout from "#layouts/AppLayout.astro"
 
 const title: Pick = (m) => m.tools["combi-name"].title
 ---
 
-<AppLayout title={title} current="combi-name">
+<AppLayout title={title} current="combi-name" wide>
 	<h1><Text pick={title} /></h1>
+	<CombiApp client:only="svelte" />
 </AppLayout>
+
+<style>
+h1 {
+	margin: 0 0 16px;
+	font-size: 1.5rem;
+}
+</style>

@@ -1,6 +1,7 @@
 ---
 import Text from "#components/atoms/Text.astro"
 import ToolCard from "#components/molecules/ToolCard.astro"
+import HomeSaved from "#components/organisms/HomeSaved.svelte"
 import AppLayout from "#layouts/AppLayout.astro"
 import { TOOLS } from "#lib/tools"
 ---
@@ -8,6 +9,7 @@ import { TOOLS } from "#lib/tools"
 <AppLayout title={(m) => m.site.name} current="home">
 	<h1><Text pick={(m) => m.site.name} /></h1>
 	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
+	<HomeSaved client:only="svelte" />
 	<div class="tools">
 		{TOOLS.map((tool) => <ToolCard {...tool} />)}
 	</div>

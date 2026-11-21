@@ -14,11 +14,27 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `Text` | atom | `.astro` | One string in both languages: `pick` (a `Pick`). Renders `<span data-lang="th">…</span><span data-lang="en">…</span>` with no wrapper. See "Text in two languages". |
 | `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label` (`Record<Lang, string>`, from `both`), `current` (sets `aria-current="page"`). The label is a `.label` span, holding both language spans, that the sidebar hides in the rail; `title` is the tooltip in both languages. |
 | `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label, lang? }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`; an option's `lang` goes on its button, for a label in another language than the page's (a language's own name). |
+| `Chips` | atom | `.svelte` | A group of toggle chips: `label`, `options` (`{ value, label, icon?, disabled? }[]`), `value` (the picked values), `multiple`, `onchange`. |
+| `EntryIcon` | atom | `.svelte` | One catalogue icon from `/assets/`: `src`, `name`, `round`, `size`; a missing `src` draws a placeholder. |
+| `HelpToggle` | atom | `.svelte` | The `?` button that shows and hides a help line: `label`, `controls`, `expanded`, `ontoggle`. |
+| `Tabs` | atom | `.svelte` | A tab strip with roving focus: `label`, `tabs` (`{ value, label, badge?, disabled? }[]`), `value`, `onchange`. |
+| `Toast` | atom | `.svelte` | A dismissible message in a status or alert live region by `tone` (`info`, `warn`, `error`): `message`, `tone`, `ondismiss`. It moves itself inside the topmost open pop-up (`topModal` in `#lib/modal`), so `aria-modal` never hides it, and otherwise sits at the end of `<body>` on `--z-toast`, above every pop-up. |
 | `ToolCard` | molecule | `.astro` | A Home card: `slug`, `icon` — a `TOOLS` entry spreads straight in. Name and tagline come from the catalogues' `tools[slug]` through `Text`. |
-| `Panel` | molecule | `.svelte` | The one pop-up: side panel from the right, bottom sheet under 700px. See below. |
+| `Panel` | molecule | `.svelte` | The one panel: a pop-up side panel (bottom sheet under 700px), or docked beside the page. See below. |
+| `CodeDisplay` | molecule | `.svelte` | The full code drawn character by character with the field each belongs to: `code`, `summary`, `hints`, `onjump`, `canJump`. |
+| `EntryPicker` | molecule | `.svelte` | A searchable grid of catalogue entries with icons: `label`, `searchLabel`, `options`, `value`, `onpick`, optional clear. |
+| `Field` | molecule | `.svelte` | A labelled editor field with its help line and optional note: `id`, `label`, `help`, `helpLabel`, `note`, and a `children` snippet. |
+| `LoadoutIcons` | molecule | `.svelte` | The cookie, pet and treasure icons of a saved code from `rowLoadout`: `loadout`, `size`. |
 | `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`, named through `l10nAttr`), the page `title` (a `Pick`, rendered with `Text`), the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
 | `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
 | `SettingsApp` | organism | `.svelte` | The Settings page island: Language, Appearance (theme) and About (a `Panel` of `aboutRows`). Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
+| `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
+| `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and docks the editor from `DOCK_MIN_WIDTH` (1400px) or pops it up below. |
+| `CombiList` | organism | `.svelte` | The saved list: search, goal filter, sort, rows with `LoadoutIcons`, and the New, Open, Copy and Share actions. |
+| `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (`docked` or pop-up): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
+| `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
+| `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
+| `ShareDialog` | organism | `.svelte` | The Share panel over the editor: the link with its note, the full code, Copy and Share to app. |
 
 The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
 components still to come and their tiers; the rules below are what every one follows.
@@ -26,7 +42,7 @@ components still to come and their tiers; the rules below are what every one fol
 ### Panel
 
 `Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
-snippet, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
+snippet, an optional `docked` flag, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
 handle's names, which the caller passes in the page's language (`m.frame.close`,
 `m.frame.resize`); there is no English default. It renders nothing while
 `open` is false.
@@ -34,10 +50,14 @@ handle's names, which the caller passes in the page's language (`m.frame.close`,
 - `id` names the remembered width — `frame:panel-width:<id>` through `#lib/panel-width` —
   and the title's id. `id="editor"` gets the editor's wider default (640px) and share (70%
   of the window, 60% for the others); every width is clamped to at least 360px.
+- `docked` draws it as a `<section>` in the page's flow (the combi editor beside the saved
+  list from 1400px, `DOCK_MIN_WIDTH`): not modal, no scrim, no focus trap, and Escape from
+  inside it calls `onclose` unless a control handled the key or a pop-up is open. Its left
+  edge resizes the same way and measures from the section's right edge.
 - On a wide screen the left edge is a `role="separator"` handle: drag, or ←/→ in 16px
   steps; double-click resets to the default. Under 700px (`RAIL_MIN_WIDTH`) it is a bottom
   sheet with no handle.
-- It is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
+- A pop-up is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
   `#lib/modal`: focus moves in when it opens, Tab wraps inside it, Escape and the scrim
   call `onclose`, and focus returns on close to what held it before.
 - Panels stack (Share over the editor): only the topmost handles Tab, focus and Escape,
@@ -91,8 +111,8 @@ A component reaches for these rather than re-implementing them:
 - **`#lib/modal`** — `holdFocus(dialog, onescape?)` for any modal (returns the release),
   `isModalOpen(doc)`, and `focusables(root)`. One module-level stack, which the build emits
   once, so every modal on a page shares it.
-- **`#lib/frame`** — `FramePage`, `SIDEBAR_KEY`, the breakpoints `RAIL_MIN_WIDTH` (700)
-  and `FULL_MIN_WIDTH` (1100), `sidebarMode(width)`, and `initFrame(doc, store)`, which
+- **`#lib/frame`** — `FramePage`, `SIDEBAR_KEY`, the breakpoints `RAIL_MIN_WIDTH` (700),
+  `FULL_MIN_WIDTH` (1100) and `DOCK_MIN_WIDTH` (1400), `sidebarMode(width)`, and `initFrame(doc, store)`, which
   `AppLayout` calls once per page. Use the constants rather than writing 700 or 1100 in a
   script; CSS cannot read them, so a stylesheet's breakpoint carries a comment pointing
   here.

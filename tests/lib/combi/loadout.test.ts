@@ -11,6 +11,7 @@ import {
 	type TreasurePick,
 	treasurePick,
 } from "#lib/combi/loadout"
+import { expectThrows } from "./issue-expect"
 
 const t = (id: string, min = 0, max = min): TreasurePick => treasurePick(id, levelRange(min, max))
 
@@ -44,10 +45,14 @@ test("a cookie, relay or pet slot carries the Any id like any other", () => {
 // holds a list of alternatives, which is a different idea and a different
 // design; nothing should be able to smuggle one in through T.
 test("a treasure slot refuses the Any id", () => {
-	expect(() => encodeLoadout(loadout({ treasures: [[t("___")]] }))).toThrow('"___" is not 3 characters of [0-9A-Z]')
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[t("___")]] })),
+		"loadoutIdShape",
+		'loadout group "T": "___" is not 3 characters of [0-9A-Z]',
+	)
 	// On the wire `_` is also the alternative separator, so the would-be
 	// sentinel falls apart into empty ids before it could be read as one.
-	expect(() => decodeLoadout("1TU___")).toThrow('"" is not 3 characters of [0-9A-Z]')
+	expectThrows(() => decodeLoadout("1TU___"), "loadoutIdShape", 'loadout group "T": "" is not 3 characters of [0-9A-Z]')
 })
 
 test("groups are written in C R P T order", () => {
@@ -112,43 +117,59 @@ test("a non-canonical code decodes as written and re-encodes canonically", () =>
 })
 
 test("the version character is checked", () => {
-	expect(() => decodeLoadout("2C00")).toThrow('unsupported loadout version "2"')
-	expect(() => decodeLoadout("")).toThrow("loadout section is empty")
+	expectThrows(() => decodeLoadout("2C00"), "loadoutVersion", 'unsupported loadout version "2"')
+	expectThrows(() => decodeLoadout(""), "loadoutEmpty", "loadout section is empty")
 })
 
 test("an unknown group tag is rejected", () => {
-	expect(() => decodeLoadout("1X00")).toThrow('unknown loadout group "X"')
+	expectThrows(() => decodeLoadout("1X00"), "loadoutUnknownGroup", 'unknown loadout group "X"')
 })
 
 test("a repeated group is rejected", () => {
-	expect(() => decodeLoadout("1C01C02")).toThrow('loadout group "C" appears twice')
+	expectThrows(() => decodeLoadout("1C01C02"), "loadoutGroupTwice", 'loadout group "C" appears twice')
 })
 
 test("groups out of C R P T order are rejected", () => {
-	expect(() => decodeLoadout("1P06C01")).toThrow('loadout group "C" is out of order, expected C R P T')
+	expectThrows(
+		() => decodeLoadout("1P06C01"),
+		"loadoutGroupOrder",
+		'loadout group "C" is out of order, expected C R P T',
+	)
 })
 
 test("an id of the wrong width or shape is rejected", () => {
-	expect(() => decodeLoadout("1C0")).toThrow('loadout group "C": "0" is not 2 characters of [0-9A-Z]')
-	expect(() => decodeLoadout("1TU00")).toThrow('loadout group "T": "00" is not 3 characters of [0-9A-Z]')
+	expectThrows(() => decodeLoadout("1C0"), "loadoutIdShape", 'loadout group "C": "0" is not 2 characters of [0-9A-Z]')
+	expectThrows(
+		() => decodeLoadout("1TU00"),
+		"loadoutIdShape",
+		'loadout group "T": "00" is not 3 characters of [0-9A-Z]',
+	)
 })
 
 test("an id absent from the catalog is rejected", () => {
-	expect(() => decodeLoadout("1CZZ")).toThrow('loadout group "C": no cookie has id "ZZ"')
-	expect(() => decodeLoadout("1TUZZZ")).toThrow('loadout group "T": no treasure has id "ZZZ"')
+	expectThrows(() => decodeLoadout("1CZZ"), "loadoutUnknownId", 'loadout group "C": no cookie has id "ZZ"')
+	expectThrows(() => decodeLoadout("1TUZZZ"), "loadoutUnknownId", 'loadout group "T": no treasure has id "ZZZ"')
 })
 
 test("the order flag has to be U or O", () => {
-	expect(() => decodeLoadout("1TX000")).toThrow('loadout group "T": order flag "X" is neither "U" nor "O"')
-	expect(() => decodeLoadout("1T")).toThrow('loadout group "T": missing the order flag')
+	expectThrows(
+		() => decodeLoadout("1TX000"),
+		"loadoutOrderFlag",
+		'loadout group "T": order flag "X" is neither "U" nor "O"',
+	)
+	expectThrows(() => decodeLoadout("1T"), "loadoutNoOrderFlag", 'loadout group "T": missing the order flag')
 })
 
 test("more than three slots is rejected", () => {
-	expect(() => decodeLoadout("1TU001.002.003.004")).toThrow('loadout group "T": 4 treasure slots, at most 3 fit')
+	expectThrows(
+		() => decodeLoadout("1TU001.002.003.004"),
+		"loadoutTooManySlots",
+		'loadout group "T": 4 treasure slots, at most 3 fit',
+	)
 })
 
 test("an empty slot is rejected", () => {
-	expect(() => decodeLoadout("1TU001..002")).toThrow('loadout group "T": slot 2 is empty')
+	expectThrows(() => decodeLoadout("1TU001..002"), "loadoutSlotEmpty", 'loadout group "T": slot 2 is empty')
 })
 
 // On the wire an id repeats within a slot to list another run of its levels,
@@ -156,22 +177,35 @@ test("an empty slot is rejected", () => {
 // so encoding one that lists an id twice is still an error.
 test("a repeated id within one slot merges on decode, is rejected on encode, and may repeat across slots", () => {
 	expect(decodeLoadout("1TU001_001").treasures).toEqual([[t("001")]])
-	expect(() => encodeLoadout(loadout({ treasures: [[t("001"), t("001", 3)]] }))).toThrow(
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[t("001"), t("001", 3)]] })),
+		"loadoutSlotTwice",
 		'loadout group "T": slot 1 lists "001" twice',
 	)
 	expect(decodeLoadout("1TU001.001").treasures).toEqual([[t("001")], [t("001")]])
 })
 
 test("encoding validates the same rules as decoding", () => {
-	expect(() => encodeLoadout(loadout({ cookie: "ZZ" }))).toThrow('loadout group "C": no cookie has id "ZZ"')
-	expect(() =>
-		encodeLoadout(
-			loadout({
-				treasures: [[t("001")], [t("002")], [t("003")], [t("004")]],
-			}),
-		),
-	).toThrow('loadout group "T": 4 treasure slots, at most 3 fit')
-	expect(() => encodeLoadout(loadout({ treasures: [[]] }))).toThrow('loadout group "T": slot 1 is empty')
+	expectThrows(
+		() => encodeLoadout(loadout({ cookie: "ZZ" })),
+		"loadoutUnknownId",
+		'loadout group "C": no cookie has id "ZZ"',
+	)
+	expectThrows(
+		() =>
+			encodeLoadout(
+				loadout({
+					treasures: [[t("001")], [t("002")], [t("003")], [t("004")]],
+				}),
+			),
+		"loadoutTooManySlots",
+		'loadout group "T": 4 treasure slots, at most 3 fit',
+	)
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[]] })),
+		"loadoutSlotEmpty",
+		'loadout group "T": slot 1 is empty',
+	)
 })
 
 test("a level is written after its id: none for +0, one digit, or a range", () => {
@@ -214,21 +248,37 @@ test("slots differing only in level still sort to one code", () => {
 })
 
 test("a malformed level is rejected", () => {
-	expect(() => decodeLoadout("1TU098123")).toThrow(
+	expectThrows(
+		() => decodeLoadout("1TU098123"),
+		"loadoutLevelDigits",
 		'loadout group "T": "098123" has level "123", expected at most two digits',
 	)
-	expect(() => decodeLoadout("1TU098X")).toThrow('loadout group "T": "098X" has level "X", expected at most two digits')
-	expect(() => decodeLoadout("1TU09895")).toThrow('loadout group "T": "098" level runs backwards, 9-5')
+	expectThrows(
+		() => decodeLoadout("1TU098X"),
+		"loadoutLevelDigits",
+		'loadout group "T": "098X" has level "X", expected at most two digits',
+	)
+	expectThrows(
+		() => decodeLoadout("1TU09895"),
+		"loadoutLevelBackwards",
+		'loadout group "T": "098" level runs backwards, 9-5',
+	)
 })
 
 test("encoding validates levels the same way", () => {
-	expect(() => encodeLoadout(loadout({ treasures: [[treasurePick("098", [])]] }))).toThrow(
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[treasurePick("098", [])]] })),
+		"loadoutNoLevel",
 		'loadout group "T": "098" accepts no level',
 	)
-	expect(() => encodeLoadout(loadout({ treasures: [[t("098", 0, 10)]] }))).toThrow(
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[t("098", 0, 10)]] })),
+		"loadoutLevelOutside",
 		'loadout group "T": "098" level 10 is outside 0-9',
 	)
-	expect(() => encodeLoadout(loadout({ treasures: [[t("098", 1.5)]] }))).toThrow(
+	expectThrows(
+		() => encodeLoadout(loadout({ treasures: [[t("098", 1.5)]] })),
+		"loadoutLevelOutside",
 		'loadout group "T": "098" level 1.5 is outside 0-9',
 	)
 })

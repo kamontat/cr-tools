@@ -1,6 +1,6 @@
 ---
 name: project-combi-codec
-description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, stats.ts). Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
+description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
 ---
 
 # The combi codec
@@ -154,6 +154,13 @@ hand-typed codes can contradict themselves. `isSemiAuto` is always the authority
 normalizes slot 1 to match it. Keep that division — a page must be able to show a contradictory
 code rather than refusing it.
 
+Neither kind is a sentence. A warning is an `Issue` (`{ id, values }`, from `issues.ts`), and
+an error is a `CodeError` carrying one; `parseStat` refuses with an `Issue` and `parseSaved`
+reports a skipped line's `reason` as one. `issueText(issue, m)` words it from
+`combi.issues` in the catalogue, so a page shows it in Thai or English. A `CodeError`'s
+`message` is the English text, so a log reads as it always did. A new message is a new id in
+`IssueValues` and `ISSUE_IDS`, a case in `issueText`, and its text in `en.ts` and `th.ts`.
+
 ## The exhaustive test
 
 `tests/lib/combi/exhaustive.test.ts` round-trips all 10,621,776 combinations a code can carry
@@ -252,5 +259,16 @@ taking bare codes and shared links too, canonicalising each code through `decode
 `encodeFull`, and adding only codes not already saved. `stats.ts` holds Score, Money, Exp
 and Boxes as `{ min, max }` ranges and Time as seconds; the redesign converts these ranges
 into rounds (see the spec), so read it before changing them.
+
+`draft.ts` is the editor's build: `picks` holds everything someone chose, kept whole, so a
+pick the episode or mode has no room for (a relay on Special Episode 1, an action on a
+manual run, the floor off the tower) comes back when they switch back; `full` is the build as
+its code can say it (`normalize`, `fitLoadout`), recomputed from `picks` by every setter, and
+the only one the code, the verdict and `isDirty` read. Setters return a new draft. `editor.ts`
+is what the editor draws from a draft (picker options, verdict and episode notes in words,
+where a click on the code display leads), and `list.ts` is the saved list's views (`sortList`,
+`filterList`, `LIST_SORTS` under `combi-name:list-sort`) and `rowLoadout(code)` for a row's
+icons. `issues.ts` holds `Issue` and `CodeError` as described above. None of them touch the
+DOM or the wire format.
 
 `README.md` documents the slot format, and the loadout grammar, for humans.

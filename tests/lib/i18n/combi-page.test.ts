@@ -58,9 +58,11 @@ test("the empty list quotes the New code button by its own label", () => {
 	expect(en.combi.list.empty).toContain(`“${en.combi.list.newCode}”`)
 })
 
-test("the episode stays ตอน in Thai, never ด่าน", () => {
-	expect(th.combi.describe.notUsed).toBe("ไม่ใช้กับตอนที่เลือก")
-	expect(JSON.stringify(th.combi)).not.toContain("ด่าน")
+test("the episode is ด่าน in Thai; ตอน is left only for “at the start”", () => {
+	expect(th.combi.describe.notUsed).toBe("ไม่ใช้กับด่านที่เลือก")
+	expect(th.combi.describe.fields.episode).toBe("ด่าน")
+	const rest = JSON.stringify(th).replaceAll("ตอนเริ่ม", "")
+	expect(rest).not.toContain("ตอน")
 })
 
 test("treasures in an exact order say so in both languages", () => {

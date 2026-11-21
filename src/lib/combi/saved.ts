@@ -17,6 +17,7 @@ import type { Episode } from "./codec"
 import { en } from "#lib/i18n/en"
 import { describeRun } from "./describe"
 import { decodeFull, encodeFull } from "./full-code"
+import { CodeError, type Issue, issue } from "./issues"
 import { codeInHash, noteInHash, statsInHash } from "./state"
 import {
 	formatStat,
@@ -401,7 +402,7 @@ export interface SkippedLine {
 	/** One-based, the way an editor numbers it. */
 	readonly line: number
 	readonly text: string
-	readonly reason: string
+	readonly reason: Issue
 }
 
 /** A stat on a line of its own under a code, as `formatSaved` writes it. */
@@ -466,7 +467,7 @@ export function parseSaved(text: string): {
 				if (parsed.ok) {
 					if (current !== null) putStat(current.stats, field, parsed.value)
 				} else {
-					skipped.push({ line: index + 1, text: line, reason: parsed.error })
+					skipped.push({ line: index + 1, text: line, reason: parsed.issue })
 				}
 				return
 			}
@@ -479,7 +480,7 @@ export function parseSaved(text: string): {
 				skipped.push({
 					line: index + 1,
 					text: line,
-					reason: error instanceof Error ? error.message : String(error),
+					reason: error instanceof CodeError ? error.issue : issue("unreadableLine"),
 				})
 			}
 		})

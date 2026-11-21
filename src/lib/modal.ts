@@ -18,11 +18,53 @@ const FOCUSABLE = [
 	"[tabindex]",
 ].join(",")
 
-/** The elements inside `root` that Tab reaches, in document order. */
+/** Whether `el` or an element around it is `display: none` by its style attribute. */
+const styledAway = (el: HTMLElement): boolean => {
+	for (let at: HTMLElement | null = el; at !== null; at = at.parentElement) {
+		if (at.style.display === "none") return true
+	}
+	return false
+}
+
+/**
+ * The elements inside `root` that Tab reaches, in document order: not
+ * disabled, not hidden, not inert, and not `display: none` by a style
+ * attribute. Computed styles are not read, so a stylesheet that hides a
+ * control is not seen.
+ */
 export function focusables(root: HTMLElement): HTMLElement[] {
 	return [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
-		(el) => el.tabIndex >= 0 && el.closest("[hidden], [inert]") === null,
+		(el) => el.tabIndex >= 0 && el.closest("[hidden], [inert]") === null && !styledAway(el),
 	)
+}
+
+/** How many open pop-ups hold each document's scroll, and the overflow they found. */
+const locks = new WeakMap<Document, { count: number; previous: string }>()
+
+/**
+ * Stops the page behind a pop-up from scrolling. Pop-ups stack, so the page
+ * scrolls again only when the last one lets go, and gets back the inline
+ * `overflow` it had before the first. Returns the release; calling it twice
+ * releases once.
+ */
+export function lockScroll(doc: Document): () => void {
+	const root = doc.documentElement
+	const lock = locks.get(doc)
+	if (lock === undefined) {
+		locks.set(doc, { count: 1, previous: root.style.overflow })
+		root.style.overflow = "hidden"
+	} else lock.count++
+	let released = false
+	return () => {
+		if (released) return
+		released = true
+		const held = locks.get(doc)
+		if (held === undefined) return
+		held.count--
+		if (held.count > 0) return
+		locks.delete(doc)
+		root.style.overflow = held.previous
+	}
 }
 
 /** Open modals, oldest first; only the last one in its document handles keys and focus. */
@@ -34,6 +76,11 @@ const isTop = (dialog: HTMLElement) =>
 /** Whether a modal is open in `doc`; the frame's own Escape handling stands aside while one is. */
 export function isModalOpen(doc: Document): boolean {
 	return stack.some((entry) => entry.ownerDocument === doc)
+}
+
+/** The topmost open modal in `doc`, or null when none is open: where a notice goes to be seen and heard. */
+export function topModal(doc: Document): HTMLElement | null {
+	return stack.findLast((entry) => entry.ownerDocument === doc) ?? null
 }
 
 /**

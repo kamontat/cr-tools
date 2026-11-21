@@ -1,4 +1,6 @@
 import type { Action, Goal, Mode } from "#lib/combi/codec"
+import type { LoadoutNoun, SlotField } from "#lib/combi/issues"
+import type { StatField } from "#lib/combi/stats"
 import type { ToolSlug, ToolText } from "#lib/tools"
 
 // Annotated, not cast: a registered tool missing here (or an unregistered one) fails `astro check`.
@@ -16,12 +18,75 @@ const goals: Record<Goal, string> = { score: "Score", money: "Money", exp: "Exp"
 const modes: Record<Mode, string> = { manual: "Manual", auto: "Auto", semiauto: "Semi-auto" }
 const actions: Record<Action, string> = { none: "No action", jumpAtStart: "Jump at start" }
 
+// What the codec says about a code. The wording is the codec's own from before
+// the catalogue, kept word for word; `issueText` in `#lib/combi/issues` picks one.
+const slotFields: Record<SlotField, string> = {
+	mode: "mode",
+	goal: "goal",
+	episode: "episode",
+	boosts: "boosts",
+	randomBoost: "random boost",
+	cookiePower: "cookie power+",
+}
+const statTakes: Record<StatField, string> = {
+	score: "Score takes a positive whole number, or a range like 1200000-1500000.",
+	money: "Money takes a positive whole number, or a range like 12000-15000.",
+	exp: "Exp takes a positive whole number, or a range like 300-450.",
+	boxes: "Boxes takes 0 to 5, or a range like 2-4.",
+	time: "Time takes seconds, as a positive whole number.",
+}
+const group = (tag: string) => `loadout group "${tag}"`
+const issues = {
+	codeLength: (length: number, got: number, code: string) =>
+		`code must be exactly ${length} characters, got ${got}: "${code}"`,
+	unknownChar: (slots: string, field: SlotField, chars: string) =>
+		`${slots.includes("-") ? "slots" : "slot"} ${slots} (${slotFields[field]}): unknown ${chars.length === 1 ? "char" : "chars"} "${chars}"`,
+	goalSet: (goals: string) => `goals must be Score alone or 1-3 of Money, Exp and Box, got [${goals}]`,
+	floorRange: (max: number, floor: number) => `floor must be 1-${max}, got ${floor}`,
+	floorDigits: (text: string) => `slots 5-7 (floor): "${text}" is not 3 digits`,
+	floorAbove: (text: string, max: number) => `slots 5-7 (floor): ${text} is above ${max}`,
+	floorReserved: (rest: string, expected: string) =>
+		`slots 8-10 (reserved on this episode): "${rest}", expected "${expected}"`,
+	episodeNoBoosts: "this episode takes no boosts, random boost, or cookie power+ — ignoring them",
+	autoScore: "slots 2-3 say Score but an auto run aims for Money, Exp, or Box — Score is played by hand",
+	autoButSemi: "slot 1 says Auto but Fast Start or a random boost is present — treating as Semi-auto",
+	semiButAuto: "slot 1 says Semi-auto but there is no Fast Start or random boost",
+	separators: (separator: string, count: number) => `a code holds at most one "${separator}", got ${count}`,
+	episodeNoRelay: "this episode takes no relay cookie — ignoring it",
+	episodeNoTreasures: "this episode takes no treasures — ignoring them",
+	relayButAuto: "slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto",
+	loadoutEmpty: "loadout section is empty",
+	loadoutVersion: (version: string) => `unsupported loadout version "${version}"`,
+	loadoutUnknownGroup: (tag: string) => `unknown loadout group "${tag}"`,
+	loadoutGroupTwice: (tag: string) => `${group(tag)} appears twice`,
+	loadoutGroupOrder: (tag: string) => `${group(tag)} is out of order, expected C R P T`,
+	loadoutLevelDigits: (tag: string, text: string, level: string) =>
+		`${group(tag)}: "${text}" has level "${level}", expected at most two digits`,
+	loadoutLevelBackwards: (tag: string, id: string, min: number, max: number) =>
+		`${group(tag)}: "${id}" level runs backwards, ${min}-${max}`,
+	loadoutNoLevel: (tag: string, id: string) => `${group(tag)}: "${id}" accepts no level`,
+	loadoutLevelOutside: (tag: string, id: string, level: number, max: number) =>
+		`${group(tag)}: "${id}" level ${level} is outside 0-${max}`,
+	loadoutIdShape: (tag: string, id: string, width: number) =>
+		`${group(tag)}: "${id}" is not ${width} characters of [0-9A-Z]`,
+	loadoutUnknownId: (tag: string, noun: LoadoutNoun, id: string) => `${group(tag)}: no ${noun} has id "${id}"`,
+	loadoutTooManySlots: (tag: string, count: number, max: number) =>
+		`${group(tag)}: ${count} treasure slots, at most ${max} fit`,
+	loadoutSlotEmpty: (tag: string, slot: number) => `${group(tag)}: slot ${slot} is empty`,
+	loadoutSlotTwice: (tag: string, slot: number, id: string) => `${group(tag)}: slot ${slot} lists "${id}" twice`,
+	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: missing the order flag`,
+	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: order flag "${flag}" is neither "U" nor "O"`,
+	statFormat: (field: StatField) => statTakes[field],
+	unreadableLine: "this line names no code",
+}
+
 export const en = {
 	site: {
 		name: "Cookie Run tools",
 		intro: "Small tools for what the game doesn't write down. Everything stays in your browser.",
 	},
 	frame: { menu: "Menu", nav: "Site", home: "Home", settings: "Settings", close: "Close", resize: "Resize panel" },
+	home: { saved: { title: "Latest saved codes", seeAll: "See all" } },
 	tools,
 	settings: {
 		title: "Settings",
@@ -44,6 +109,7 @@ export const en = {
 		goals,
 		modes,
 		actions,
+		issues,
 		describe: {
 			none: "None",
 			anyGoal: "Any goal",
@@ -91,9 +157,25 @@ export const en = {
 			search: "Search",
 			allGoals: "All goals",
 			sort: { newest: "Newest", oldest: "Oldest", money: "Highest average money", code: "Code A–Z" },
+			sortBy: "Sort",
+			copyCode: (code: string) => `Copy ${code}`,
+			shareCode: (code: string) => `Share ${code}`,
 			copy: "Copy",
 			share: "Share",
-			copied: "Copied",
+			edit: "Edit",
+			kinds: { evolved: "Evolved", blessed: "Blessed" },
+			team: "Team",
+			note: "Note",
+			results: "Results",
+			run: "Run",
+			editCode: (code: string) => `Edit ${code}`,
+			editSection: (section: string, code: string) => `Edit ${section} of ${code}`,
+			showNames: "Show names",
+			delete: "Delete",
+			deleteCode: (code: string) => `Delete ${code}`,
+			confirmDelete: "Delete for good",
+			confirmDeleteCode: (code: string) => `Delete ${code} for good`,
+			saved: (date: string) => `Saved ${date}`,
 			empty: "No saved codes yet. Press “New code” to make one.",
 			noMatch: "No saved code matches.",
 			rounds: (n: number) => `${n} ${n === 1 ? "round" : "rounds"}`,
@@ -119,6 +201,49 @@ export const en = {
 			reset: "Reset",
 			help: "Help",
 			note: "Note",
+			copy: "Copy",
+			share: "Share",
+			saveAsNew: "Save as new",
+			delete: "Delete",
+			code: "Code",
+			typeHint: "Type or paste a code.",
+			typeCount: (n: number, total: number) => `${n} of ${total} characters.`,
+			sections: "Editor sections",
+			verdictAuto: "Plays itself all the way: full auto.",
+			verdictSemi: (reasons: string) => `Plays as semi-auto because of ${reasons}.`,
+			reasonsJoin: ", ",
+			takesNoBoosts: (episode: string) => `${episode} takes no boosts.`,
+			takesNoTreasures: (episode: string) => `${episode} takes no treasures.`,
+			noRelay: (episode: string) => `${episode} has no relay.`,
+			relayReason: "a relay cookie",
+			roles: "Pick for",
+			clear: "Clear",
+			done: "Done",
+			autoOnlyAction: "Only an auto run starts with an action.",
+			order: "Order",
+			anyOrder: "Any order",
+			exactOrder: "Exact order",
+			anySlot: "Any slot",
+			slot: (n: number) => `Slot ${n}`,
+			anyCookie: "Any cookie",
+			anyPet: "Any pet",
+			search: "Search",
+			noMatch: "Nothing matches.",
+			addTreasure: "Add treasure",
+			removeTreasure: "Remove",
+			allLevels: "All levels",
+			level: (n: number) => `Level +${n}`,
+			floorInput: "Floor, 1 to 100, empty for any",
+			notePlaceholder: "What is this build for? Ctrl+Enter saves.",
+			stats: "Run stats",
+			statLabels: { score: "Score", money: "Money", exp: "Exp", boxes: "Boxes", time: "Time (seconds)" },
+			statPlaceholders: {
+				score: "1200000-1500000",
+				money: "12000-15000",
+				exp: "300-450",
+				boxes: "0-5",
+				time: "Seconds",
+			},
 		},
 		share: {
 			title: "Share code",
@@ -126,6 +251,35 @@ export const en = {
 			fullCode: "Full code",
 			shareToApp: "Share to app",
 			copy: "Copy",
+			copyLink: "Copy link",
+			copyFull: (code: string) => `Copy ${code}`,
+			copied: "Copied",
+			copyFailed: "Could not copy. The text is selected, so you can copy it by hand.",
+		},
+		notices: {
+			readWithChanges: "Read with changes",
+			/** The changes a code was read with, as one run of sentences. */
+			changes: (lines: readonly string[]) => lines.join(". "),
+			noLongerReads: (code: string, why: string) => `${code} no longer reads: ${why}`,
+			linkUnreadable: (code: string, why: string) => `The link's code ${code} does not read: ${why}`,
+			linkNote: "This link came with a note. Save keeps it.",
+			linkStats: "This link came with run stats. Save keeps them.",
+			linkBoth: "This link came with a note and run stats. Save keeps them.",
+			linkSaved: (name: string) => `This link's code is already saved as ${name}.`,
+			pasted: "Code pasted.",
+			pastedSaved: (name: string) => `Code pasted. It is already saved, so ${name} is open.`,
+			unsavedEdits: "The editor has changes that are not saved. Save them, or close the editor, first.",
+			codeUnreadable: (code: string, why: string) => `${code} does not read: ${why}`,
+			unreadable: "it could not be read",
+			saved: (code: string) => `Saved ${code}.`,
+			updated: (name: string) => `Updated ${name}.`,
+			deleted: (code: string) => `Deleted ${code}.`,
+			gone: "That entry is gone. Save adds it again.",
+			taken: (name: string) => `This build is already saved as ${name}. Change the build, or delete that entry first.`,
+			refusedSave: "The browser refused to store it. It is listed for this visit only.",
+			refusedDelete: "The browser refused to store the change. It is gone for this visit only.",
+			copied: (code: string) => `Copied ${code}.`,
+			copyBlocked: (code: string) => `The browser blocked the clipboard. Select the code and copy it by hand: ${code}`,
 		},
 		help: {
 			mode: "Slot 1. Whether you play the run yourself (Manual), it plays itself (Auto), or a mix of both (Semi-auto). An auto run turns semi-auto with Fast Start, a random boost, a jump at the start or a relay cookie.",
@@ -148,6 +302,10 @@ export const en = {
 			cookiePower: "Slots 8-10. The cookie power+ selections, one slot per group, or none of a group.",
 			rounds:
 				"The money each round earned, so the list can show the average. It travels in the share link, not in the code.",
+			treasureOrder: "Whether the treasure slots must be filled in this order, or the treasures fit in any order.",
+			note: "A note for yourself: what the build is for. It is saved with the code and travels in the share link, never in the code.",
+			stats:
+				"What the run brought home: score, money, exp and boxes as a number or a range like 12000-15000, and the time in seconds. Saved with the code, not part of it.",
 		},
 	},
 }

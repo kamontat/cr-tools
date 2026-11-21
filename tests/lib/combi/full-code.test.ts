@@ -4,6 +4,7 @@ import { expect, test } from "vitest"
 
 import { combiSectionOf, decodeFull, encodeFull, isSemiAutoBuild } from "#lib/combi/full-code"
 import { emptyLoadout, type Loadout, levelRange, type TreasurePick, treasurePick } from "#lib/combi/loadout"
+import { englishOf, expectThrows, idsOf } from "./issue-expect"
 
 const t = (id: string, min = 0, max = min): TreasurePick => treasurePick(id, levelRange(min, max))
 
@@ -62,16 +63,20 @@ test("both sections decode together", () => {
 test("the combi section's soft warning survives the join", () => {
 	const { warnings } = decodeFull("1C01-AM031RV000")
 
-	expect(warnings).toHaveLength(1)
-	expect(warnings[0]).toContain("slot 1 says Auto")
+	expect(idsOf(warnings)).toEqual(["autoButSemi"])
+	expect(englishOf(warnings)[0]).toContain("slot 1 says Auto")
 })
 
 test("a second section separator is refused", () => {
-	expect(() => decodeFull("1C01-MS0A000000-x")).toThrow('a code holds at most one "-", got 2')
+	expectThrows(() => decodeFull("1C01-MS0A000000-x"), "separators", 'a code holds at most one "-", got 2')
 })
 
 test("an unreadable combi section still throws from the combi codec", () => {
-	expect(() => decodeFull("1C01-MS0A00000")).toThrow("code must be exactly 10 characters")
+	expectThrows(
+		() => decodeFull("1C01-MS0A00000"),
+		"codeLength",
+		'code must be exactly 10 characters, got 9: "MS0A00000"',
+	)
 })
 
 test("combiSectionOf picks the right half, or the whole code", () => {
@@ -218,7 +223,10 @@ test("a code saying Auto beside a relay warns rather than refusing", () => {
 	const { full, warnings } = decodeFull("1R0P-AM0A000000")
 
 	expect(full.combi.mode).toBe("auto")
-	expect(warnings).toEqual(["slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto"])
+	expect(idsOf(warnings)).toEqual(["relayButAuto"])
+	expect(englishOf(warnings)).toEqual([
+		"slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto",
+	])
 	expect(encodeFull(full)).toBe("1R0P-SM0A000000")
 })
 
@@ -266,7 +274,8 @@ test("decoding drops what the episode has no room for, with a warning", () => {
 
 	expect(full.loadout.relay).toBeNull()
 	expect(full.loadout.treasures).toEqual([])
-	expect(warnings).toEqual([
+	expect(idsOf(warnings)).toEqual(["episodeNoRelay", "episodeNoTreasures"])
+	expect(englishOf(warnings)).toEqual([
 		"this episode takes no relay cookie — ignoring it",
 		"this episode takes no treasures — ignoring them",
 	])

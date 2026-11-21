@@ -12,6 +12,7 @@
  */
 
 import { type Combi, decode, encode, isSemiAuto, limitsOf } from "./codec"
+import { CodeError, type Issue, issue } from "./issues"
 import { decodeLoadout, emptyLoadout, encodeLoadout, type Loadout } from "./loadout"
 
 export type FullCode = {
@@ -76,11 +77,11 @@ export function combiSectionOf(code: string): string {
 
 export function decodeFull(code: string): {
 	full: FullCode
-	warnings: string[]
+	warnings: Issue[]
 } {
 	const parts = code.split(SECTION_SEPARATOR)
 	if (parts.length > 2) {
-		throw new Error(`a code holds at most one "${SECTION_SEPARATOR}", got ${parts.length - 1}`)
+		throw new CodeError(issue("separators", { separator: SECTION_SEPARATOR, count: parts.length - 1 }))
 	}
 
 	const [first = "", second] = parts
@@ -104,13 +105,13 @@ export function decodeFull(code: string): {
 }
 
 /** What `fitLoadout` dropped from a loadout as written. */
-function loadoutWarnings(written: Loadout, kept: Loadout): string[] {
-	const warnings: string[] = []
+function loadoutWarnings(written: Loadout, kept: Loadout): Issue[] {
+	const warnings: Issue[] = []
 	if (written.relay !== null && kept.relay === null) {
-		warnings.push("this episode takes no relay cookie — ignoring it")
+		warnings.push(issue("episodeNoRelay"))
 	}
 	if (written.treasures.length > 0 && kept.treasures.length === 0) {
-		warnings.push("this episode takes no treasures — ignoring them")
+		warnings.push(issue("episodeNoTreasures"))
 	}
 	return warnings
 }
@@ -121,7 +122,7 @@ function loadoutWarnings(written: Loadout, kept: Loadout): string[] {
  * and the relay wins. Hand-typed codes are allowed to say it — decoding keeps
  * what the code says, and re-encoding is what snaps the slot back.
  */
-function relayWarnings(combi: Combi): string[] {
+function relayWarnings(combi: Combi): Issue[] {
 	if (combi.mode !== "auto") return []
-	return ["slot 1 says Auto but the loadout carries a relay cookie — treating as Semi-auto"]
+	return [issue("relayButAuto")]
 }

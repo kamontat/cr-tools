@@ -43,7 +43,9 @@ the GTM call and the favicon in the source text.
 `src/layouts/AppLayout.astro` wraps `BaseLayout` and is what every page renders in
 (`tests/pages/pages.test.ts` fails a page that does not reach it). Its props are `title`
 (a `Pick`, forwarded to `BaseLayout` and shown in the top bar) and `current`, a `FramePage` from
-`#lib/frame` — `"home"`, `"settings"` or a tool slug — that marks the sidebar's current link.
+`#lib/frame` — `"home"`, `"settings"` or a tool slug — that marks the sidebar's current link —
+and an optional `wide`, which marks the wrapper `data-wide` so it fills the width from
+1400px (`DOCK_MIN_WIDTH`), for the combi page's list with its editor docked beside it.
 It renders:
 
 - a `define:vars` boot script, before the frame's markup, that sets
@@ -54,7 +56,8 @@ It renders:
 - `TopBar` (☰, the page title, the `pr-<n>` badge on previews, the environment line);
 - a grid of `Sidebar`, its scrim (`#sidebar-scrim`) and `main#content`;
 - inside `main`, `<div class="wrap">` around the page's `<slot />`: the one page gutter
-  (28px 24px and 640px wide; 20px 16px under 700px; 32px 40px and 1100px wide from 1400px).
+  (28px 24px and 640px wide; 20px 16px under 700px; 32px 40px and 1100px wide from 1400px,
+  or the full width with `wide`).
   Pages never pad their own outer edge, so they line up;
 - a processed `<script>` that calls `localizeAttrs(document, currentLang(document))` (so
   the frame's `l10nAttr` attributes follow the language the head's boot chose), then

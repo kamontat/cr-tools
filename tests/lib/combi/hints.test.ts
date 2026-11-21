@@ -163,6 +163,6 @@ test("hints read in Thai", () => {
 })
 
 test("an Any episode's slot 4 reads in the catalogue's words", () => {
-	expect(hintsIn("MS0A000000", th)[3]?.hint).toBe(`${th.combi.hints.slot4Episode} · ตอนใดก็ได้`)
+	expect(hintsIn("MS0A000000", th)[3]?.hint).toBe(`${th.combi.hints.slot4Episode} · ด่านใดก็ได้`)
 	expect(hints("MS0A000000")[3]).toBe("Slot 4 · Episode · Any episode")
 })

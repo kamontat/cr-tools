@@ -1,6 +1,8 @@
 import { expect, test } from "vitest"
 
+import { issueText } from "#lib/combi/issues"
 import { formatStat, isEmptyStats, parseStat, readStats, STAT_FIELDS, statsSentence } from "#lib/combi/stats"
+import { en } from "#lib/i18n/en"
 
 test("a stat is a whole number or a range of them", () => {
 	expect(parseStat("money", "12000")).toEqual({
@@ -55,7 +57,10 @@ test("time is a positive number of seconds, not a range", () => {
 test("a refused stat says what it takes", () => {
 	const result = parseStat("boxes", "9")
 	expect(result.ok).toBe(false)
-	if (!result.ok) expect(result.error).toBe("Boxes takes 0 to 5, or a range like 2-4.")
+	if (!result.ok) {
+		expect(result.issue).toEqual({ id: "statFormat", values: { field: "boxes" } })
+		expect(issueText(result.issue, en)).toBe("Boxes takes 0 to 5, or a range like 2-4.")
+	}
 })
 
 test("a stat is written the way it is typed", () => {

@@ -8,6 +8,8 @@
  * back from either, a value that is not well formed is dropped on the way in.
  */
 
+import { type Issue, issue } from "./issues"
+
 export interface StatRange {
 	readonly min: number
 	readonly max: number
@@ -46,32 +48,13 @@ export function putStat<F extends StatField>(stats: StatsDraft, field: F, value:
 	else stats[field] = value
 }
 
-const LIMITS: Readonly<Record<StatField, { min: number; max: number; range: boolean; takes: string }>> = {
-	score: {
-		min: 1,
-		max: Number.MAX_SAFE_INTEGER,
-		range: true,
-		takes: "a positive whole number, or a range like 1200000-1500000",
-	},
-	money: {
-		min: 1,
-		max: Number.MAX_SAFE_INTEGER,
-		range: true,
-		takes: "a positive whole number, or a range like 12000-15000",
-	},
-	exp: {
-		min: 1,
-		max: Number.MAX_SAFE_INTEGER,
-		range: true,
-		takes: "a positive whole number, or a range like 300-450",
-	},
-	boxes: { min: 0, max: 5, range: true, takes: "0 to 5, or a range like 2-4" },
-	time: {
-		min: 1,
-		max: Number.MAX_SAFE_INTEGER,
-		range: false,
-		takes: "seconds, as a positive whole number",
-	},
+/** What each stat accepts; `statFormat` in the catalogue says it in words. */
+const LIMITS: Readonly<Record<StatField, { min: number; max: number; range: boolean }>> = {
+	score: { min: 1, max: Number.MAX_SAFE_INTEGER, range: true },
+	money: { min: 1, max: Number.MAX_SAFE_INTEGER, range: true },
+	exp: { min: 1, max: Number.MAX_SAFE_INTEGER, range: true },
+	boxes: { min: 0, max: 5, range: true },
+	time: { min: 1, max: Number.MAX_SAFE_INTEGER, range: false },
 }
 
 function inLimits(field: StatField, value: number): boolean {
@@ -97,7 +80,7 @@ function wholeNumber(text: string): number | null {
 	return /^\d+$/.test(digits) ? Number(digits) : null
 }
 
-export type StatResult<F extends StatField> = { ok: true; value: StatValue<F> | null } | { ok: false; error: string }
+export type StatResult<F extends StatField> = { ok: true; value: StatValue<F> | null } | { ok: false; issue: Issue }
 
 /**
  * Reads what someone typed for one stat. Blank is no stat. A range may use a
@@ -107,10 +90,7 @@ export function parseStat<F extends StatField>(field: F, text: string): StatResu
 	const trimmed = text.trim()
 	if (trimmed === "") return { ok: true, value: null }
 	const limits = LIMITS[field]
-	const refused = {
-		ok: false as const,
-		error: `${STAT_LABELS[field]} takes ${limits.takes}.`,
-	}
+	const refused = { ok: false as const, issue: issue("statFormat", { field }) }
 
 	const parts = trimmed.split(/[-–~]/)
 	if (parts.length > 2 || (parts.length === 2 && !limits.range)) return refused

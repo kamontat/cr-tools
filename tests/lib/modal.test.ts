@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest"
 
-import { focusables, holdFocus, isModalOpen } from "#lib/modal"
+import { focusables, holdFocus, isModalOpen, lockScroll, topModal } from "#lib/modal"
 
 afterEach(() => {
 	document.body.innerHTML = ""
@@ -160,4 +160,46 @@ test("after release, Tab is no longer held", () => {
 	release()
 	;(dialog.querySelector("#last") as HTMLElement).focus()
 	expect(tab().defaultPrevented).toBe(false)
+})
+
+test("skips hidden and inert elements", () => {
+	const root = document.createElement("div")
+	root.innerHTML = `
+		<button id="shown">Shown</button>
+		<button hidden>Hidden itself</button>
+		<div hidden><button>Inside hidden</button></div>
+		<button inert>Inert itself</button>
+		<div inert><a href="#x">Inside inert</a></div>
+		<button style="display: none">Display none</button>
+		<div style="display:none"><input /></div>
+		<input id="kept" />`
+	document.body.append(root)
+	expect(focusables(root).map((el) => el.id)).toEqual(["shown", "kept"])
+})
+
+test("lockScroll hides the page's overflow until the last release, and a second release is ignored", () => {
+	const root = document.documentElement
+	root.style.overflow = "auto"
+	const first = lockScroll(document)
+	const second = lockScroll(document)
+	expect(root.style.overflow).toBe("hidden")
+	first()
+	first()
+	expect(root.style.overflow).toBe("hidden")
+	second()
+	expect(root.style.overflow).toBe("auto")
+	root.style.overflow = ""
+})
+
+test("topModal names the topmost open modal, and null when none is open", () => {
+	const { lower, upper } = stacked()
+	expect(topModal(document)).toBeNull()
+	const releaseLower = holdFocus(lower)
+	expect(topModal(document)).toBe(lower)
+	const releaseUpper = holdFocus(upper)
+	expect(topModal(document)).toBe(upper)
+	releaseUpper()
+	expect(topModal(document)).toBe(lower)
+	releaseLower()
+	expect(topModal(document)).toBeNull()
 })

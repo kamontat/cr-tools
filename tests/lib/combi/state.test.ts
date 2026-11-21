@@ -126,6 +126,10 @@ test("a remembered tab is read back", () => {
 	expect(storedTab(held)).toBe("treasures")
 })
 
+test("storedTab accepts runLog", () => {
+	expect(storedTab(storage("runLog"))).toBe("runLog")
+})
+
 test("an unknown or missing tab reads as main", () => {
 	expect(storedTab(storage("nope"))).toBe("main")
 	expect(storedTab(storage(null))).toBe("main")

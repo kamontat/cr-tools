@@ -56,3 +56,22 @@ test.each([
 	expect(doc.querySelectorAll("main#content > .wrap")).toHaveLength(1)
 	expect(doc.querySelector(`main#content > .wrap > ${content}`)).not.toBeNull()
 })
+
+test("the combi page mounts the CombiApp island in the wide wrapper, client-only", () => {
+	const html = readFileSync(`${root}/dist/combi-name/index.html`, "utf8")
+	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
+	const island = doc.querySelector("main#content > .wrap[data-wide] > astro-island")
+	expect(island).not.toBeNull()
+	expect(island?.getAttribute("component-url")).toMatch(/CombiApp/)
+	expect(island?.getAttribute("client")).toBe("only")
+})
+
+test("Home mounts the HomeSaved island between the intro and the tool cards, client-only", () => {
+	const html = readFileSync(`${root}/dist/index.html`, "utf8")
+	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
+	const island = doc.querySelector("main#content > .wrap > p.intro ~ astro-island")
+	expect(island).not.toBeNull()
+	expect(island?.getAttribute("component-url")).toMatch(/HomeSaved/)
+	expect(island?.getAttribute("client")).toBe("only")
+	expect(island?.nextElementSibling?.classList.contains("tools")).toBe(true)
+})

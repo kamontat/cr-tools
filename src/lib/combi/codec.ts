@@ -1,3 +1,5 @@
+import { CodeError, type Issue, issue, type SlotField } from "./issues"
+
 /**
  * What a run aims for. A run aims for a set of these: Score alone, or 1-3 of
  * the other three — `GOAL_CHARS` lists every set a code can say.
@@ -293,7 +295,7 @@ export function limitsOf(episode: Episode): EpisodeLimits {
 
 export type DecodeResult = {
 	combi: Combi
-	warnings: string[]
+	warnings: Issue[]
 }
 
 function invert<K extends string>(table: Record<K, string>): Map<string, K> {
@@ -343,10 +345,9 @@ function setCodec<T extends string>({ members, combos }: SetSlot<T>): SetCodec<T
 const BOOST_CODEC = setCodec(BOOST_SLOT)
 const COOKIE_POWER_CODECS = COOKIE_POWER_SLOTS.map(setCodec)
 
-function lookup<V>(table: Map<string, V>, chars: string, slot: string): V {
+function lookup<V>(table: Map<string, V>, chars: string, slots: string, field: SlotField): V {
 	if (!table.has(chars)) {
-		const noun = chars.length === 1 ? "char" : "chars"
-		throw new Error(`${slot}: unknown ${noun} "${chars}"`)
+		throw new CodeError(issue("unknownChar", { slots, field, chars }))
 	}
 	return table.get(chars) as V
 }
@@ -390,7 +391,7 @@ function encodeMode(combi: Combi, forced: boolean): string {
 function encodeGoals(goals: readonly Goal[]): string {
 	const chars = GOAL_CHARS[goals.join(" ")]
 	if (chars === undefined) {
-		throw new Error(`goals must be Score alone or 1-3 of Money, Exp and Box, got [${goals.join(", ")}]`)
+		throw new CodeError(issue("goalSet", { goals: goals.join(", ") }))
 	}
 	return chars
 }
@@ -398,7 +399,7 @@ function encodeGoals(goals: readonly Goal[]): string {
 function encodeFloor(floor: number | null): string {
 	if (floor === null) return OFF.repeat(FLOOR_DIGITS)
 	if (!Number.isInteger(floor) || floor < 1 || floor > FLOOR_MAX) {
-		throw new Error(`floor must be 1-${FLOOR_MAX}, got ${floor}`)
+		throw new CodeError(issue("floorRange", { max: FLOOR_MAX, floor }))
 	}
 	return String(floor).padStart(FLOOR_DIGITS, "0")
 }
@@ -439,18 +440,18 @@ export function encode(combi: Combi, forcedSemiAuto = false): string {
 function decodeFloor(code: string): number | null {
 	const text = code.slice(AT.floor, AT.floor + FLOOR_DIGITS)
 	if (!/^[0-9]{3}$/.test(text)) {
-		throw new Error(`slots 5-7 (floor): "${text}" is not 3 digits`)
+		throw new CodeError(issue("floorDigits", { text }))
 	}
 
 	const floor = Number.parseInt(text, 10)
 	if (floor > FLOOR_MAX) {
-		throw new Error(`slots 5-7 (floor): ${text} is above ${FLOOR_MAX}`)
+		throw new CodeError(issue("floorAbove", { text, max: FLOOR_MAX }))
 	}
 
 	const rest = code.slice(AT.floorRest)
 	const expected = OFF.repeat(CODE_LENGTH - AT.floorRest)
 	if (rest !== expected) {
-		throw new Error(`slots 8-10 (reserved on this episode): "${rest}", expected "${expected}"`)
+		throw new CodeError(issue("floorReserved", { rest, expected }))
 	}
 
 	return floor === 0 ? null : floor
@@ -459,7 +460,7 @@ function decodeFloor(code: string): number | null {
 function decodeCookiePowers(code: string): CookiePower[] {
 	return COOKIE_POWER_CODECS.flatMap((codec, index) => {
 		const at = AT.cookiePowers + index
-		return lookup(codec.decode, code[at] as string, `slot ${at + 1} (cookie power+)`)
+		return lookup(codec.decode, code[at] as string, String(at + 1), "cookiePower")
 	})
 }
 
@@ -475,27 +476,28 @@ function decodeCookiePowers(code: string): CookiePower[] {
  */
 export function decode(code: string, forcedSemiAuto = false): DecodeResult {
 	if (code.length !== CODE_LENGTH) {
-		throw new Error(`code must be exactly ${CODE_LENGTH} characters, got ${code.length}: "${code}"`)
+		throw new CodeError(issue("codeLength", { length: CODE_LENGTH, got: code.length, code }))
 	}
 
 	// Slot 1 first, so a code in some other layout is refused by its first
 	// character rather than by whichever slot happened to be read first.
-	const { mode, action } = lookup(MODE_BY_CHAR, code[AT.mode] as string, "slot 1 (mode)")
-	const episode = lookup(EPISODE_BY_CHAR, code[AT.episode] as string, "slot 4 (episode)")
+	const { mode, action } = lookup(MODE_BY_CHAR, code[AT.mode] as string, "1", "mode")
+	const episode = lookup(EPISODE_BY_CHAR, code[AT.episode] as string, "4", "episode")
 	const hasFloor = limitsOf(episode).floor
 
 	const written: Combi = {
-		goals: lookup(GOALS_BY_CHARS, code.slice(AT.goal, AT.goal + GOAL_WIDTH), "slots 2-3 (goal)"),
+		goals: lookup(GOALS_BY_CHARS, code.slice(AT.goal, AT.goal + GOAL_WIDTH), "2-3", "goal"),
 		mode,
 		episode,
 		floor: hasFloor ? decodeFloor(code) : null,
-		boosts: hasFloor ? [] : lookup(BOOST_CODEC.decode, code[AT.boosts] as string, "slot 5 (boosts)"),
+		boosts: hasFloor ? [] : lookup(BOOST_CODEC.decode, code[AT.boosts] as string, "5", "boosts"),
 		randomBoost: hasFloor
 			? null
 			: lookup(
 					RANDOM_BOOST_BY_CHARS,
 					code.slice(AT.randomBoost, AT.randomBoost + RANDOM_BOOST_WIDTH),
-					"slots 6-7 (random boost)",
+					"6-7",
+					"randomBoost",
 				),
 		cookiePowers: hasFloor ? [] : decodeCookiePowers(code),
 		action,
@@ -510,20 +512,20 @@ export function decode(code: string, forcedSemiAuto = false): DecodeResult {
 }
 
 /** What `normalize` is about to drop from a code as written. */
-function droppedWarnings(combi: Combi): string[] {
+function droppedWarnings(combi: Combi): Issue[] {
 	if (
 		!limitsOf(combi.episode).boosts &&
 		(combi.boosts.length > 0 || combi.randomBoost !== null || combi.cookiePowers.length > 0)
 	) {
-		return ["this episode takes no boosts, random boost, or cookie power+ — ignoring them"]
+		return [issue("episodeNoBoosts")]
 	}
 	return []
 }
 
-function goalWarnings(combi: Combi): string[] {
+function goalWarnings(combi: Combi): Issue[] {
 	if (combi.mode === "manual") return []
 	if (combi.goals.every((goal) => AUTO_GOALS.includes(goal))) return []
-	return ["slots 2-3 say Score but an auto run aims for Money, Exp, or Box — Score is played by hand"]
+	return [issue("autoScore")]
 }
 
 /**
@@ -532,7 +534,7 @@ function goalWarnings(combi: Combi): string[] {
  * what the code actually says, and `isSemiAuto` remains the authority. `J`
  * cannot disagree: the jump it carries is a reason of its own.
  */
-function modeWarnings(combi: Combi, forced: boolean): string[] {
+function modeWarnings(combi: Combi, forced: boolean): Issue[] {
 	const semi = isSemiAuto(combi)
 
 	// Whatever forces manual work from outside these ten characters is the
@@ -541,11 +543,11 @@ function modeWarnings(combi: Combi, forced: boolean): string[] {
 	if (forced) return []
 
 	if (combi.mode === "auto" && semi) {
-		return ["slot 1 says Auto but Fast Start or a random boost is present — treating as Semi-auto"]
+		return [issue("autoButSemi")]
 	}
 
 	if (combi.mode === "semiauto" && !semi) {
-		return ["slot 1 says Semi-auto but there is no Fast Start or random boost"]
+		return [issue("semiButAuto")]
 	}
 
 	return []
