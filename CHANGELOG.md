@@ -2,6 +2,56 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-21: The combi page as a saved list, with an editor pop-up
+
+### Features
+
+- The combi page is the saved list. New code, a search (full code, cookie and pet names,
+  note), a goal filter and a sort (newest, oldest, highest average money, code A–Z), with
+  the filter and sort remembered in this browser.
+- A closed row shows the cookie with its pet, the 10 characters, the mode and goals, the
+  episode and the saved stats (score, money, exp, boxes, time).
+- Pressing a row opens it, and several can be open at once. An open row lists Run, Results,
+  Team, Treasures, Boosts, Random boost, Cookie power+ and Note as icon lines; pressing a
+  line's pictures shows its names, and its › opens the editor on that tab. A treasure slot
+  shows its first treasure and `+N` for its alternatives until pressed, and evolved and
+  blessed treasures carry an E or B ring.
+- The editor shows the 10 characters large with a summary and the full code (tapping part
+  of the code jumps to its control), and five tabs: Main, Cookies, Treasures, Boosts and
+  Run log, each field with a `?` help. Copy, Share, Save or Update and a ⋯ menu (Type a
+  code, Reset, Save as new, Delete) sit top right. At 1400px and up it docks beside the
+  list; below that it is a pop-up, and a bottom sheet on phones.
+- A Share pop-up gives the share link and the full code, each with its own Copy, and Share
+  to app where the browser offers it.
+- Pasting a code anywhere on the page opens it, and old share links
+  (`/combi-name/#CODE?note=…&money=…`) open with their note and stats.
+- Home shows the latest three saved codes, with Copy and See all.
+- Pop-ups stack (Share over the editor), lock the page behind them, and can dock.
+
+### Improvements
+
+- The combi page is up to 1100px wide from 700px screens.
+- The code reader's warnings and errors are ids worded from the Thai and English
+  catalogues; the English wording and the code format are unchanged.
+- Notices show above pop-ups and are announced to screen readers.
+- In Thai, an episode is ด่าน.
+
+### Bug fixes
+
+- Images keep their size while they load, since the reset's `img { height: auto }` had
+  overridden their `width` and `height`, and every form field has a `name`; Chrome's issue
+  report is empty on every page.
+
+### Decisions
+
+- Unsaved edits are never replaced without asking: paste, another row, New code or a link
+  is refused with a notice.
+- Picks an episode cannot use are kept in the editor and come back when the episode does;
+  the code carries only what the episode allows.
+- Until rounds arrive (piece 4), the Run log tab keeps the five stat boxes and "average
+  money" is the middle of the saved money range. Back up and restore come with piece 5.
+- Delete asks for a second press and has no undo, as on the old page.
+
 ## 2026-11-20: Thai and English, Thai by default
 
 ### Features
