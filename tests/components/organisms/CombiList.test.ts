@@ -8,7 +8,7 @@ import CombiList from "#components/organisms/CombiList.svelte"
 import { nameFor } from "#lib/combi/catalog"
 import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
 import { LIST_SORT_KEY } from "#lib/combi/list"
-import { emptyLoadout, type Loadout } from "#lib/combi/loadout"
+import { emptyLoadout, type Loadout, treasurePick } from "#lib/combi/loadout"
 import { en } from "#lib/i18n/en"
 import { th } from "#lib/i18n/th"
 
@@ -69,8 +69,8 @@ test("a collapsed row shows the 10 characters, each goal with its saved stat, th
 	expect(money.textContent).toContain(en.combi.goals.money)
 	expect(money.textContent).toContain("12,000–15,000")
 	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("false")
-	// The loadout and the actions wait for the row to open.
-	expect(within(score).queryByRole("img", { name: nameFor("cookies", "01") })).toBeNull()
+	// The head carries the cookie's picture; the actions wait for the row to open.
+	expect(within(toggleOf(score)).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
 })
 
@@ -89,8 +89,9 @@ test("a row expands to its loadout, its run and its actions, and several rows st
 	const details = document.getElementById(toggleOf(score).getAttribute("aria-controls") ?? "") as HTMLElement
 	expect(score.contains(details)).toBe(true)
 	expect(within(details).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
+	expect(details.textContent).toContain(en.combi.list.team)
 	expect(details.textContent).toContain(en.combi.describe.fields.cookie)
-	expect(details.textContent).toContain(en.combi.describe.fields.mode)
+	expect(details.textContent).toContain(en.combi.list.run)
 	// Only what the code sets: no pet, no "None".
 	expect(details.textContent).not.toContain(en.combi.describe.fields.pet)
 	expect(details.textContent).not.toContain(en.combi.describe.none)
@@ -192,7 +193,7 @@ test("the empty state and the no-match state", async () => {
 	expect(screen.getByText(en.combi.list.noMatch)).toBeTruthy()
 })
 
-test("two entries with the same 10 characters show different icons", async () => {
+test("two entries with the same 10 characters show different icons", () => {
 	const a = full({ cookie: "01" })
 	const b = full({ cookie: "06" })
 	expect(combiSectionOf(a)).toBe(combiSectionOf(b))
@@ -200,7 +201,6 @@ test("two entries with the same 10 characters show different icons", async () =>
 		{ code: a, description: "", savedAt: 1 },
 		{ code: b, description: "", savedAt: 2 },
 	])
-	for (const row of rows()) await fireEvent.click(toggleOf(row))
 	expect(screen.getAllByRole("img", { name: nameFor("cookies", "01") })).toHaveLength(1)
 	expect(screen.getAllByRole("img", { name: nameFor("cookies", "06") })).toHaveLength(1)
 })
@@ -208,6 +208,16 @@ test("two entries with the same 10 characters show different icons", async () =>
 test("an unreadable code still lists its code and note", () => {
 	setup([{ code: "ZZZZZZZZZZZZ", description: "Old one", savedAt: 1 }])
 	expect(rows()[0]?.textContent).toContain("Old one")
+})
+
+test("an open row shows a treasure slot's every treasure: icons in one chip, the others' names after “or”", async () => {
+	const code = full({ cookie: "01", treasures: [[treasurePick("001"), treasurePick("002", [0, 1, 2])]] })
+	setup([{ code, description: "", savedAt: 1 }])
+	await expand(code)
+	const row = rowOf(code)
+	expect(within(row).getByRole("img", { name: nameFor("treasures", "001") })).toBeTruthy()
+	expect(within(row).getByRole("img", { name: nameFor("treasures", "002") })).toBeTruthy()
+	expect(row.textContent).toMatch(new RegExp(`or\\s+${nameFor("treasures", "002")}\\s+\\+0-2`))
 })
 
 test("Thai by default", () => {

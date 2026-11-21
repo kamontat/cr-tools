@@ -18,6 +18,7 @@ import {
 	rowEpisode,
 	rowFull,
 	rowGoals,
+	rowLoadout,
 	rowTeam,
 	sortList,
 	type TeamPiece,
@@ -169,8 +170,10 @@ const pickSort = (value: string) => {
 				{@const note = descriptionTitle(entry.description)}
 				{@const targets = goalTargets(entry)}
 				{@const episode = rowEpisode(entry.code)}
+				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
 				{@const id = `entry-details-${index}`}
+				{@const subline = [note, episode === null ? "" : episodeText(episode, m)].filter(Boolean).join(" · ")}
 				<li class="entry" class:open aria-current={entry.code === current ? "true" : undefined}>
 					<button
 						type="button"
@@ -178,89 +181,132 @@ const pickSort = (value: string) => {
 						aria-expanded={open}
 						aria-controls={open ? id : undefined}
 						onclick={() => toggle(entry.code)}>
-						<span class="code">{game}</span>
-						<span class="tags">
-							{#each rowGoals(entry.code) ?? [] as goal (goal)}
-								{@const target = targetOf(goal, targets)}
-								<span class="tag goal">
-									{m.combi.goals[goal]}
-									{#if target !== null}
-										<strong>{target}</strong>
-									{/if}
+						<span class="face" class:empty={!icons?.cookie}>
+							{#if icons?.cookie}
+								<EntryIcon src={icons.cookie.src} name={icons.cookie.name} size={44} />
+							{/if}
+							{#if icons?.pet}
+								<span class="face-pet">
+									<EntryIcon src={icons.pet.src} name={icons.pet.name} round size={26} />
 								</span>
-							{/each}
-							{#if episode !== null}
-								<span class="episode">{episodeText(episode, m)}</span>
+							{/if}
+						</span>
+						<span class="summary">
+							<span class="line">
+								<span class="code">{game}</span>
+								<span class="goals">
+									{#each rowGoals(entry.code) ?? [] as goal (goal)}
+										{@const target = targetOf(goal, targets)}
+										<span class="goal">
+											{m.combi.goals[goal]}
+											{#if target !== null}
+												<strong>{target}</strong>
+											{/if}
+										</span>
+									{/each}
+								</span>
+							</span>
+							{#if subline}
+								<span class="note">{subline}</span>
 							{/if}
 						</span>
 						<span class="chevron" aria-hidden="true"></span>
-						{#if note}
-							<span class="note">{note}</span>
-						{/if}
 					</button>
 					{#if open}
 						{@const team = rowTeam(entry.code) ?? []}
+						{@const members = team.filter((piece) => piece.role !== "treasure")}
+						{@const slots = team.filter((piece) => piece.role === "treasure")}
 						{@const stats = statsOf(entry)}
 						{@const settings = settingsOf(entry.code)}
 						<div {id} class="details">
-							{#if team.length > 0}
-								<ul class="team">
-									{#each team as piece, index (index)}
-										{@const [first, ...others] = piece.picks}
-										<li class="piece">
-											{#if first}
-												<EntryIcon
-													src={first.icon.src}
-													name={first.icon.name}
-													round={first.icon.round ?? false}
-													size={40} />
-												<span class="piece-text">
-													<span class="role">{roleText(piece)}</span>
-													<span class="name">
-														{first.icon.name}
-														{#if first.level}
-															<span class="level">{first.level}</span>
-														{/if}
+							<dl class="facts">
+								{#if members.length > 0}
+									<dt>{m.combi.list.team}</dt>
+									<dd class="pieces">
+										{#each members as piece, at (at)}
+											{@const pick = piece.picks[0]}
+											{#if pick}
+												<span class="piece">
+													<span class="chip" class:round={pick.icon.round}>
+														<EntryIcon
+															src={pick.icon.src}
+															name={pick.icon.name}
+															round={pick.icon.round ?? false}
+															size={30} />
 													</span>
-													{#each others as other, at (at)}
-														<span class="or">
-															{m.combi.describe.orTreasure.trim()}
-															{other.icon.name}
-															{#if other.level}
-																<span class="level">{other.level}</span>
+													<span class="piece-text">
+														<span class="name">{pick.icon.name}</span>
+														<span class="role">{roleText(piece)}</span>
+													</span>
+												</span>
+											{/if}
+										{/each}
+									</dd>
+								{/if}
+								{#if slots.length > 0}
+									<dt>{m.combi.describe.fields.treasures}</dt>
+									<dd class="pieces">
+										{#each slots as piece, at (at)}
+											<span class="piece">
+												{#if piece.position !== undefined}
+													<span class="position">{piece.position}</span>
+												{/if}
+												<span class="chip slot" class:many={piece.picks.length > 1}>
+													{#each piece.picks as pick, n (n)}
+														{#if n > 0}
+															<span class="slash" aria-hidden="true">/</span>
+														{/if}
+														<EntryIcon
+															src={pick.icon.src}
+															name={pick.icon.name}
+															round
+															size={piece.picks.length > 1 ? 26 : 30} />
+													{/each}
+												</span>
+												<span class="piece-text">
+													{#each piece.picks as pick, n (n)}
+														<span class={n === 0 ? "name" : "or"}>
+															{#if n > 0}
+																{m.combi.describe.orTreasure.trim()}
+															{/if}
+															{pick.icon.name}
+															{#if pick.level}
+																<span class="level">{pick.level}</span>
 															{/if}
 														</span>
 													{/each}
 												</span>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-							{/if}
-							{#if stats.length > 0 || settings.length > 0}
-								<div class="run">
-									{#if stats.length > 0}
-										<dl class="stats">
-											{#each stats as stat (stat.field)}
-												<div class="stat" class:aimed={stat.aimed}>
-													<dt>{stat.label}</dt>
-													<dd>{stat.value}</dd>
-												</div>
-											{/each}
-										</dl>
-									{/if}
-									{#if settings.length > 0}
-										<dl class="settings">
-											{#each settings as row (row.field)}
-												<div>
-													<dt>{row.field}</dt>
-													<dd>{row.value}</dd>
-												</div>
-											{/each}
-										</dl>
-									{/if}
-								</div>
-							{/if}
+											</span>
+										{/each}
+									</dd>
+								{/if}
+								{#if stats.length > 0}
+									<dt>{m.combi.list.results}</dt>
+									<dd class="inline">
+										{#each stats as stat (stat.field)}
+											<span>
+												{stat.label}
+												<strong class:aimed={stat.aimed}>{stat.value}</strong>
+											</span>
+										{/each}
+									</dd>
+								{/if}
+								{#if settings.length > 0}
+									<dt>{m.combi.list.run}</dt>
+									<dd class="inline">
+										{#each settings as row (row.field)}
+											<span>
+												{#if row.field === m.combi.describe.fields.mode}
+													<strong>{row.value}</strong>
+												{:else}
+													{row.field}
+													<strong>{row.value}</strong>
+												{/if}
+											</span>
+										{/each}
+									</dd>
+								{/if}
+							</dl>
 							<div class="foot">
 								<span class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</span>
 								<div class="actions">
@@ -428,15 +474,13 @@ select {
 	box-shadow: inset 3px 0 0 var(--accent);
 }
 
-/* The head: the code, its goals and episode, the chevron, and the note under them. */
+/* The head: the cookie with its pet on the corner, the code and goals, the note and episode, the chevron. */
 .head {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto;
-	column-gap: 12px;
-	row-gap: 6px;
+	display: flex;
+	gap: 14px;
 	align-items: center;
 	width: 100%;
-	padding: 12px 14px;
+	padding: 12px 16px;
 	border: 0;
 	background: none;
 	color: var(--text);
@@ -454,44 +498,81 @@ select {
 	outline-offset: -2px;
 }
 
-.code {
-	color: var(--code);
-	font-family: var(--mono);
-	font-size: 1.0625rem;
-	font-weight: 600;
-	letter-spacing: 0.08em;
+.face {
+	position: relative;
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 52px;
+	height: 52px;
+	border-radius: 12px;
+	background: var(--hover);
 }
 
-.tags {
+/* No cookie set: an empty slot, as the game draws one. */
+.face.empty {
+	border: 2px dashed var(--line);
+	background: none;
+}
+
+.face-pet {
+	position: absolute;
+	right: -6px;
+	bottom: -6px;
 	display: flex;
-	flex-flow: row wrap;
-	gap: 6px;
+	border-radius: 50%;
+	background: var(--surface);
+	box-shadow: 0 0 0 2px var(--surface);
+}
+
+.summary {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 4px;
 	min-width: 0;
 }
 
-.tag {
-	padding: 2px 9px;
-	border-radius: 999px;
-	background: var(--hover);
+.line {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 4px 14px;
+	align-items: baseline;
+}
+
+.code {
+	color: var(--code);
+	font-family: var(--mono);
+	font-size: 1.125rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+}
+
+.goals {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 4px 12px;
 	color: var(--muted);
 	font-size: 0.8125rem;
 	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
 }
 
-.tag strong {
+.goal strong {
 	color: var(--text);
 	font-weight: 600;
 }
 
-.episode {
-	align-self: center;
+.note {
+	overflow: hidden;
 	color: var(--muted);
 	font-size: 0.8125rem;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
 .chevron {
+	flex: none;
 	width: 8px;
 	height: 8px;
 	margin-inline: 4px;
@@ -505,155 +586,147 @@ select {
 	transform: translateY(2px) rotate(225deg);
 }
 
-.note {
-	grid-column: 1 / -1;
-	overflow: hidden;
-	color: var(--muted);
-	font-size: 0.8125rem;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-/* A narrow list puts the goals and episode on their own line under the code. */
-@container list (max-width: 480px) {
-	.head {
-		grid-template-columns: minmax(0, 1fr) auto;
-	}
-
-	.tags {
-		grid-column: 1 / -1;
-		grid-row: 2;
-	}
-}
-
-/*
- * An open row: the team on the left, what the runs reached and how they ran
- * on the right, and the date and the actions along the bottom.
- */
+/* An open row: labelled lines (team, treasures, results, run), each shown with its icons, then the date and actions. */
 .details {
-	display: grid;
-	grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-	gap: 16px 24px;
-	padding: 16px 14px 14px;
-	border-top: 1px solid var(--line);
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0 16px 14px;
+	padding: 14px;
+	border-radius: var(--radius-lg);
+	background: var(--bg);
+	font-size: 0.8125rem;
 }
 
-.team {
+.facts {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-	gap: 12px 16px;
-	align-content: start;
+	grid-template-columns: 76px minmax(0, 1fr);
+	gap: 14px 12px;
+	align-items: start;
 	margin: 0;
-	padding: 0;
-	list-style: none;
+}
+
+.facts dt {
+	color: var(--muted);
+}
+
+.facts dd {
+	min-width: 0;
+	margin: 0;
+}
+
+.facts dt:has(+ .pieces) {
+	padding-top: 9px;
+}
+
+.pieces {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 10px 18px;
 }
 
 .piece {
 	display: flex;
-	gap: 10px;
+	gap: 8px;
 	align-items: flex-start;
 	min-width: 0;
+}
+
+.chip {
+	display: flex;
+	flex: none;
+	gap: 1px;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	border-radius: 10px;
+	background: var(--surface);
+}
+
+.chip.round {
+	border-radius: 50%;
+}
+
+.chip.slot {
+	padding: 0 3px;
+	border-radius: 18px;
+}
+
+.chip.slot.many {
+	padding: 0 8px;
+}
+
+.slash {
+	margin: 0 1px;
+	color: var(--muted);
+	font-size: 0.625rem;
+}
+
+.position {
+	padding-top: 10px;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
 }
 
 .piece-text {
 	display: flex;
 	flex-direction: column;
-	gap: 1px;
 	min-width: 0;
+	padding-top: 1px;
+	line-height: 1.3;
 }
 
-.role {
-	color: var(--muted);
-	font-size: 0.6875rem;
+.name {
 	font-weight: 600;
-}
-
-.name,
-.or {
-	font-size: 0.875rem;
 	overflow-wrap: anywhere;
 }
 
+.role,
 .or {
 	color: var(--muted);
-	font-size: 0.8125rem;
+	font-size: 0.75rem;
+	overflow-wrap: anywhere;
 }
 
 .level {
 	margin-inline-start: 4px;
 	color: var(--muted);
-	font-size: 0.75rem;
+	font-weight: 400;
 	font-variant-numeric: tabular-nums;
 }
 
-.run {
+.inline {
 	display: flex;
-	flex-direction: column;
-	gap: 14px;
-	min-width: 0;
-}
-
-dl {
-	margin: 0;
-}
-
-dd {
-	margin: 0;
-}
-
-.stats {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-	gap: 8px;
-}
-
-.stat {
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-}
-
-.stat.aimed {
-	border-color: var(--accent);
-}
-
-.stat dt,
-.settings dt {
+	flex-flow: row wrap;
+	gap: 4px 16px;
 	color: var(--muted);
-	font-size: 0.75rem;
 }
 
-.stat dd {
-	font-size: 0.9375rem;
+.inline strong {
+	color: var(--text);
 	font-weight: 600;
 	font-variant-numeric: tabular-nums;
 }
 
-.settings {
-	display: grid;
-	grid-template-columns: auto minmax(0, 1fr);
-	gap: 4px 12px;
-	font-size: 0.875rem;
-}
-
-.settings div {
-	display: contents;
+.inline strong.aimed {
+	color: var(--accent);
 }
 
 .foot {
 	display: flex;
 	flex-flow: row wrap;
-	grid-column: 1 / -1;
 	gap: 8px 12px;
 	align-items: center;
 	justify-content: space-between;
-	padding-top: 12px;
-	border-top: 1px dashed var(--line);
+	padding-top: 10px;
+	border-top: 1px solid var(--line);
 }
 
 .saved {
 	color: var(--muted);
-	font-size: 0.8125rem;
+	font-size: 0.75rem;
 }
 
 .actions {
@@ -665,7 +738,7 @@ dd {
 .btn.small {
 	min-height: 32px;
 	padding: 4px 12px;
-	font-size: 0.875rem;
+	font-size: 0.8125rem;
 }
 
 .btn.danger {
@@ -684,14 +757,27 @@ dd {
 	color: #fff;
 }
 
-/* A narrow list stacks the team over the run. */
-@container list (max-width: 560px) {
-	.details {
-		grid-template-columns: minmax(0, 1fr);
+/* A narrow list puts each label over its line. */
+@container list (max-width: 480px) {
+	.head {
+		padding-inline: 12px;
 	}
 
-	.team {
-		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	.details {
+		margin-inline: 10px;
+	}
+
+	.facts {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 4px;
+	}
+
+	.facts dd + dt {
+		margin-top: 10px;
+	}
+
+	.facts dt:has(+ .pieces) {
+		padding-top: 0;
 	}
 }
 </style>
