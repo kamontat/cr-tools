@@ -272,7 +272,7 @@ const pickSort = (value: string) => {
 										<span class="sep" aria-hidden="true">·</span>
 										<span class="with-art">
 											{#if run.art}
-												<img class="art" src={run.art} alt="" width="24" height="24" loading="lazy">
+												<img class="art" src={run.art} alt="" width="28" height="28" loading="lazy">
 											{/if}
 											{run.episode}
 										</span>
@@ -321,7 +321,7 @@ const pickSort = (value: string) => {
 															src={pick.icon.src}
 															name={pick.icon.name}
 															round={pick.icon.round ?? false}
-															size={32} />
+															size={38} />
 														{#if namesOn(entry.code, m.combi.list.team)}
 															<span class="caption">{pick.icon.name}</span>
 														{/if}
@@ -358,7 +358,7 @@ const pickSort = (value: string) => {
 																		? `${pick.icon.name}, ${m.combi.list.kinds[pick.mark]}`
 																		: pick.icon.name}
 																	round
-																	size={28} />
+																	size={36} />
 																{#if pick.mark}
 																	<span class="mark" aria-hidden="true">
 																		{pick.mark === "evolved" ? "E" : "B"}
@@ -395,7 +395,7 @@ const pickSort = (value: string) => {
 									{#snippet icons()}
 										{#each boosts?.boosts ?? [] as boost (boost.id)}
 											<span class="cell">
-												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={28} />
+												<EntryIcon src={boost.src} name={BOOST_LABELS[boost.id]} size={36} />
 												{#if namesOn(entry.code, m.combi.editor.tabs.boosts)}
 													<span class="caption">{BOOST_LABELS[boost.id]}</span>
 												{/if}
@@ -429,7 +429,7 @@ const pickSort = (value: string) => {
 													aria-label={COOKIE_POWER_LABELS[power.id]}
 													title={COOKIE_POWER_LABELS[power.id]}>
 													{#each power.srcs.slice(0, 2) as src (src)}
-														<img {src} alt="" width="26" height="26" loading="lazy">
+														<img {src} alt="" width="30" height="30" loading="lazy">
 													{/each}
 												</span>
 												{#if namesOn(entry.code, fields.cookiePower)}
@@ -755,7 +755,7 @@ select {
 	grid-template-columns: 96px minmax(0, 1fr) auto;
 	gap: 12px;
 	align-items: center;
-	min-height: 48px;
+	min-height: 54px;
 	padding: 8px 0;
 }
 
@@ -806,8 +806,8 @@ select {
 }
 
 .art {
-	width: 24px;
-	height: 24px;
+	width: 28px;
+	height: 28px;
 	object-fit: contain;
 }
 
@@ -891,7 +891,7 @@ select {
 .names .pics .sep,
 .names .pics .slash,
 .names .pics .position {
-	line-height: 32px;
+	line-height: 38px;
 }
 
 /* An evolved or blessed treasure: a ring in its colour and its letter on the corner, as the picker draws them. */
@@ -955,13 +955,13 @@ select {
 }
 
 .faces img {
-	width: 26px;
-	height: 26px;
+	width: 30px;
+	height: 30px;
 	object-fit: contain;
 }
 
 .faces img + img {
-	margin-inline-start: -10px;
+	margin-inline-start: -12px;
 }
 
 .stat {
