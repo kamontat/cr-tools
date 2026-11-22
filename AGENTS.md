@@ -8,7 +8,7 @@ This file is the always-loaded core: what the project is, how to run it, and whe
 
 A Cookie Run combi name is 10 characters, and the game stores only the cookie, relay, pet, and treasure in it. This project packs the rest of a run's configuration — goal, mode, episode (and the tower's floor), boosts, random boost, cookie power+ selections, and starting action — into those 10 characters, plus a browser site for building, saving and reading codes. `README.md` documents the slot format for humans.
 
-The site is being redesigned on [ktemplates/astro](https://github.com/ktemplates/astro). The design is `docs/superpowers/specs/2026-11-19-site-redesign-design.md`; the plans for each piece are in `docs/superpowers/plans/`. The work lands as pull requests into a long-lived `redesign` branch, which merges into `main` once the combi page is complete; until then `main` serves the previous site. On `redesign`, the stack, the combi logic, the deploy and the frame (top bar, sidebar, pop-up panel) are in place, Home and Settings are built, and the combi page has its saved list, editor and Share. Thai is the default language, English the alternative (`src/lib/lang.ts`, catalogues in `src/lib/i18n/`). Describe and change the code as it is; read the spec for where it is going.
+The site is being redesigned on [ktemplates/astro](https://github.com/ktemplates/astro). The design is `docs/superpowers/specs/2026-11-19-site-redesign-design.md`; the plans for each piece are in `docs/superpowers/plans/`. The first three pieces (template, language, combi page and Home) are on `main` and in production: the stack, the combi logic, the deploy and the frame (top bar, sidebar, pop-up panel) are in place, Home and Settings are built, and the combi page has its saved list, editor and Share. Rounds and back up and restore are still to come, as pull requests into `main`. Thai is the default language, English the alternative (`src/lib/lang.ts`, catalogues in `src/lib/i18n/`). Describe and change the code as it is; read the spec for where it is going.
 
 ## Runtime and stack
 
@@ -78,7 +78,7 @@ A Cloudflare Worker named `cr-tools` serving `dist/` as static assets. Productio
 
 ## Working here
 
-- Every change gets its own worktree, is built test-first, and ends in a pull request with a preview URL — see `project-shipping`. Redesign pull requests target `redesign` while it exists.
+- Every change gets its own worktree, is built test-first, and ends in a pull request with a preview URL — see `project-shipping`. Pull requests target `main`.
 - `gh` may have a work account active; run GitHub commands for this repository as `GH_TOKEN=$(gh auth token --user kamontat) gh …`.
 - Commits are conventional, lower case and scoped (`feat(frame): …`, `build: …`, `ci: …`, `test: …`).
 

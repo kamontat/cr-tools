@@ -11,8 +11,8 @@ Landing turns an approved pull request (opened by `project-shipping`) into a com
 base branch: changelog entry first, then merge, then cleanup, ending back on an up-to-date
 base. Only start after the user has approved this specific change.
 
-`<base>` is the PR's base branch: `redesign` for redesign work while that branch exists,
-`main` otherwise (see `project-shipping`). Read it from the PR rather than guessing:
+`<base>` is the PR's base branch, `main` (see `project-shipping`). Read it from the PR
+rather than guessing:
 `gh pr view <number> --json baseRefName --jq .baseRefName`.
 
 Every `gh` command here runs as the owner's personal account, since `gh` may have a work
@@ -54,19 +54,16 @@ account active: prefix it with `GH_TOKEN=$(gh auth token --user kamontat)`.
    merge didn't reach the base; find out why before forcing anything. Confirm with
    `git status` (on `<base>`, clean, up to date with `origin/<base>`) and
    `git worktree list`.
-7. **Report.** The merge commit, and:
-   - Base `main`: the production URL, `https://cr-tools.kc.in.th` (the `environment.url` in
-     `.github/workflows/deploy-production.yml`). It deploys from `main` via the Deploy
-     Production workflow; check it with `gh run list --workflow "Deploy Production" --limit 1`
-     and say whether it passed or is still running.
-   - Base `redesign`: nothing deploys from `redesign` itself. Say so, and that the change
-     reaches production when `redesign` merges into `main`.
+7. **Report.** The merge commit and the production URL, `https://cr-tools.kc.in.th` (the
+   `environment.url` in `.github/workflows/deploy-production.yml`). It deploys from `main`
+   via the Deploy Production workflow; check it with
+   `gh run list --workflow "Deploy Production" --limit 1` and say whether it passed or is
+   still running.
 
 ## Common mistakes
 
 - Writing the changelog on the base after merging — it belongs in the PR so it ships with
   the change.
 - Using a version number or `Unreleased` instead of the date.
-- Merging a redesign PR into `main` — it targets `redesign` until the redesign lands whole.
 - `ExitWorktree` with `remove` or `discard_changes: true` to skip the root steps — you lose
   the check that the merge really reached the base.

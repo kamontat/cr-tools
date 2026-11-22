@@ -9,7 +9,7 @@ description: Use when starting any code, style, config, docs or CI change in thi
 
 Every change in this repo lives in its own worktree and branch, is built test-first, and
 ends with a pull request whose preview deployment URL goes back to the user. Nothing is
-edited on `main` (or on `redesign`), and nothing is merged here — merging is
+edited on `main`, and nothing is merged here — merging is
 `project-landing`, and only after the user approves.
 
 **Violating the letter of these steps is violating their spirit.** The user set this
@@ -18,15 +18,9 @@ size or "just" are not permission. When they do skip one, say which in the PR te
 
 ## The base branch
 
-While the site redesign is in progress, its work lands as several pull requests into a
-long-lived `redesign` branch, and `redesign` merges into `main` in one go once the combi
-page is complete (see `docs/superpowers/specs/2026-11-19-site-redesign-design.md`). So:
-
-- **Redesign work** branches from `origin/redesign` and its PR targets `redesign`.
-- **Anything else**, and everything once `redesign` no longer exists, branches from
-  `origin/main` and targets `main`.
-
-Check with `git ls-remote --heads origin redesign`. Below, `<base>` is whichever applies.
+Every change branches from `origin/main` and its PR targets `main`. (The redesign's
+long-lived `redesign` branch merged into `main` on 2026-11-22 and is gone; the remaining
+redesign pieces target `main` too.) Below, `<base>` is `main`.
 
 ## GitHub account
 
@@ -43,16 +37,9 @@ The same prefix goes on `gh pr checks`, `gh pr view`, `gh run view` and `gh api`
 ## Steps
 
 1. **Worktree.** Every change gets one, named with a short kebab-case `<name>` describing
-   the change. `EnterWorktree` takes no base ref, so:
-   - **Redesign work** (base `redesign`): create the worktree yourself from
-     `origin/redesign`, then enter it by path:
-     ```sh
-     git fetch origin && git worktree add -b worktree-<name> .claude/worktrees/<name> origin/redesign
-     ```
-     then call `EnterWorktree` with `path: ".claude/worktrees/<name>"`.
-   - **Work based on `main`**: call `EnterWorktree` with `name: "<name>"` (no `worktree-`
-     prefix — the tool adds it). It creates `.claude/worktrees/<name>` on branch
-     `worktree-<name>`.
+   the change: call `EnterWorktree` with `name: "<name>"` (no `worktree-` prefix — the tool
+   adds it). It creates `.claude/worktrees/<name>` on branch `worktree-<name>` from
+   `origin/main`.
 
    Already inside a worktree for this change? Keep using it. Then run `pnpm install` — a new
    worktree has no `node_modules`. Never use bare `git stash` in a worktree: the stash stack
@@ -106,8 +93,7 @@ using `project-landing`.
 
 | Thought | Instead |
 |---|---|
-| "Tiny change, I'll edit on main" | Every change gets a worktree. `main` and `redesign` only move by merge. |
-| "Redesign PR, but `--base main` is the default" | Redesign work targets `redesign` while it exists. |
+| "Tiny change, I'll edit on main" | Every change gets a worktree. `main` only moves by merge. |
 | "`gh` said 404 / not found" | Probably the work account. Prefix `GH_TOKEN=$(gh auth token --user kamontat)`. |
 | "I'll add the test after" | Test first, and watch it fail. |
 | "CSS/copy change, nothing to test" | Test the rendered HTML with the Container API, or the Svelte component with Testing Library. Only layout and colour, which no test renders, go untested; list them as preview checks in the PR. |

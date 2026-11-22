@@ -8,9 +8,9 @@ description: Use when touching src/lib/combi/ — the codec, its character table
 The combi logic is framework-free TypeScript in `src/lib/combi/`, imported as
 `#lib/combi/<module>`, with its tests in `tests/lib/combi/`. None of it touches the DOM, and
 none of it imports from `src/components/`, `src/layouts/` or `src/pages/`. The combi page
-itself (`src/pages/combi-name/index.astro`) is a placeholder on this branch; the redesign
-spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) describes the page that
-will use these modules. The wire format does not change in the redesign: `codec.ts`,
+(`src/pages/combi-name/index.astro`, with `CombiApp` and the organisms around it) uses these
+modules; the redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
+describes what is still to come. The wire format does not change in the redesign: `codec.ts`,
 `catalog.ts`, `loadout.ts` and `full-code.ts` moved here without behaviour changes.
 
 ## The character tables are the source of truth
