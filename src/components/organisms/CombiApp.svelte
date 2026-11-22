@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { Draft } from "#lib/combi/draft"
 import type { Issue } from "#lib/combi/issues"
-import type { RunStats } from "#lib/combi/stats"
+import type { Round } from "#lib/combi/rounds"
 
 import { onDestroy, onMount, tick } from "svelte"
 
@@ -10,7 +10,7 @@ import CombiEditor from "#components/organisms/CombiEditor.svelte"
 import CombiList from "#components/organisms/CombiList.svelte"
 import ShareDialog from "#components/organisms/ShareDialog.svelte"
 import { copyText } from "#lib/clipboard"
-import { codeOf, draftFrom, draftFromCode, isDirty, newDraft } from "#lib/combi/draft"
+import { codeOf, draftFrom, draftFromCode, isDirty, keptRounds, newDraft } from "#lib/combi/draft"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { CodeError, issueText } from "#lib/combi/issues"
 import {
@@ -22,8 +22,7 @@ import {
 	saveCode,
 	updateSaved,
 } from "#lib/combi/saved"
-import { codeInHash, hashFor, noteInHash, shareHashFor, statsInHash, type TabName } from "#lib/combi/state"
-import { isEmptyStats } from "#lib/combi/stats"
+import { codeInHash, hashFor, noteInHash, roundsInHash, shareHashFor, type TabName } from "#lib/combi/state"
 import { DOCK_MIN_WIDTH } from "#lib/frame"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, onLangChange } from "#lib/lang"
@@ -56,7 +55,7 @@ const store = persistent ?? memoryStore()
 let entries = $state<SavedCode[]>(readSaved(store))
 /** The build in the editor; the editor is open while there is one. */
 let draft = $state.raw<Draft | null>(null)
-let share = $state<{ code: string; note: string; stats: RunStats } | null>(null)
+let share = $state<{ code: string; note: string; rounds: readonly Round[] } | null>(null)
 /** The tab a row last asked the editor to show. */
 let tabRequest = $state.raw<{ tab: TabName } | null>(null)
 
@@ -90,7 +89,7 @@ $effect(() => {
  * never replaces edits nobody has kept.
  */
 let baseline = $state.raw<Draft | null>(null)
-/** A link's draft whose note or stats are offered and not yet kept; the address bar keeps carrying them. */
+/** A link's draft whose note or rounds are offered and not yet kept; the address bar keeps carrying them. */
 let offered = $state.raw<Draft | null>(null)
 
 /** The entry the draft was opened from, while it is still in the list. */
@@ -146,7 +145,7 @@ const hasEdits = () => {
 	const kept: SavedCode = saved ?? {
 		code: codeOf(baseline),
 		description: cleanDescription(baseline.note),
-		...(isEmptyStats(baseline.stats) ? {} : { stats: baseline.stats }),
+		...(keptRounds(baseline).length === 0 ? {} : { rounds: keptRounds(baseline) }),
 		savedAt: 0,
 	}
 	return isDirty(draft, kept)
@@ -190,7 +189,7 @@ const openEntry = (entry: SavedCode, sentence?: string) => {
 }
 
 /**
- * A link may carry a note and run stats. They are offered, not saved: they go
+ * A link may carry a note and rounds. They are offered, not saved: they go
  * into the editor, and keeping them is one press of Save. A code already saved
  * opens that entry instead, so Save cannot list it twice.
  */
@@ -198,8 +197,8 @@ const openLink = (hash: string) => {
 	const code = codeInHash(hash)
 	if (code === null) return
 	const note = noteInHash(hash)
-	const stats = statsInHash(hash)
-	const carried = note !== null || !isEmptyStats(stats)
+	const rounds = roundsInHash(hash)
+	const carried = note !== null || rounds.length > 0
 	if (draft !== null && !carried && codeOf(draft) === code) return
 	if (keepsEdits()) {
 		// The address bar goes back to the code still in the editor.
@@ -209,7 +208,7 @@ const openLink = (hash: string) => {
 
 	let read: ReturnType<typeof draftFromCode>
 	try {
-		read = draftFromCode(code, note ?? "", stats)
+		read = draftFromCode(code, note ?? "", rounds)
 	} catch (error) {
 		say(m.combi.notices.linkUnreadable(code, why(error)), "error")
 		return
@@ -217,12 +216,12 @@ const openLink = (hash: string) => {
 
 	const entry = savedAs(codeOf(read.draft))
 	if (entry !== undefined) {
-		// Only a note or stats the entry would not take are worth a word.
+		// Only a note or rounds the entry would not take are worth a word.
 		openEntry(entry, carried ? m.combi.notices.linkSaved(nameOf(entry)) : undefined)
 		return
 	}
 	const t = m.combi.notices
-	const sentence = !carried ? undefined : note === null ? t.linkStats : isEmptyStats(stats) ? t.linkNote : t.linkBoth
+	const sentence = !carried ? undefined : note === null ? t.linkRounds : rounds.length === 0 ? t.linkNote : t.linkBoth
 	openDraft(read.draft, read.warnings, sentence)
 	if (carried) offered = read.draft
 }
@@ -238,7 +237,7 @@ const onhashchange = () => {
 onMount(() => openLink(location.hash))
 
 // The address bar names the code in the editor, so a reload or a copied URL
-// opens it again; closing the editor clears it. A link's note and stats stay
+// opens it again; closing the editor clears it. A link's note and rounds stay
 // in it until they are saved or edited, so a reload before Save keeps the offer.
 let wasOpen = false
 /** The hash last asked for, as given: the browser may spell what it keeps differently. */
@@ -266,7 +265,7 @@ $effect(() => {
 	if (draft !== null) {
 		writeHash(
 			offered !== null && draft === offered
-				? shareHashFor(codeOf(draft), draft.note, draft.stats)
+				? shareHashFor(codeOf(draft), draft.note, keptRounds(draft))
 				: hashFor(codeOf(draft)),
 		)
 		wasOpen = true
@@ -325,8 +324,8 @@ const close = () => {
 	void focusList()
 }
 
-/** The note and stats as an entry keeps them. */
-const noteOf = (from: Draft) => ({ description: from.note, stats: from.stats })
+/** The note and rounds as an entry keeps them. */
+const noteOf = (from: Draft) => ({ description: from.note, rounds: keptRounds(from) })
 
 /** Refuses to save over another entry, whose note would be lost. */
 const takenBy = (code: string, from: string | null) => {
@@ -396,20 +395,20 @@ const deleteCode = (code: string) => {
 	else say(m.combi.notices.refusedDelete, "error")
 }
 
-/** Back to the opening build; the note, the stats and the entry it edits stay. */
+/** Back to the opening build; the note, the rounds and the entry it edits stay. */
 const onreset = () => {
 	if (draft === null) return
-	draft = { ...newDraft(), note: draft.note, stats: draft.stats, from: draft.from }
+	draft = { ...newDraft(), note: draft.note, rounds: draft.rounds, from: draft.from }
 }
 
-/** A typed code replaces the build; the note, the stats and the entry it edits stay. */
+/** A typed code replaces the build; the note, the rounds and the entry it edits stay. */
 const ontypecode = (code: string) => {
 	if (draft === null) return
 	const current = draft
 	try {
 		const { draft: next, warnings } = draftFromCode(code)
 		// An edit like any other: the baseline a paste checks against stays.
-		draft = { ...next, note: current.note, stats: current.stats, from: current.from }
+		draft = { ...next, note: current.note, rounds: current.rounds, from: current.from }
 		if (warnings.length > 0) sayChanges(warnings)
 	} catch (error) {
 		say(m.combi.notices.codeUnreadable(code, why(error)), "error")
@@ -424,11 +423,11 @@ const copy = async (code: string) => {
 }
 
 const shareDraft = () => {
-	if (draft !== null) share = { code: codeOf(draft), note: draft.note, stats: draft.stats }
+	if (draft !== null) share = { code: codeOf(draft), note: draft.note, rounds: keptRounds(draft) }
 }
 
 const shareEntry = (entry: SavedCode) => {
-	share = { code: entry.code, note: entry.description, stats: entry.stats ?? {} }
+	share = { code: entry.code, note: entry.description, rounds: entry.rounds ?? [] }
 }
 </script>
 

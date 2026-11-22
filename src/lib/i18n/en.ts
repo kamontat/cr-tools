@@ -86,6 +86,7 @@ const issues = {
 	statFormat: (field: StatField) => statTakes[field],
 	roundValue: (field: StatField) => roundTakes[field],
 	unreadableLine: "this line names no code",
+	roundLine: "this round does not read; write it as round: money=12000 time=245",
 }
 
 export const en = {
@@ -243,15 +244,11 @@ export const en = {
 			level: (n: number) => `Level +${n}`,
 			floorInput: "Floor, 1 to 100, empty for any",
 			notePlaceholder: "What is this build for? Ctrl+Enter saves.",
-			stats: "Run stats",
+			rounds: "Rounds",
+			addRound: "Add round",
+			removeRound: (n: number) => `Remove round ${n}`,
+			roundCell: (n: number, label: string) => `Round ${n}, ${label}`,
 			statLabels: { score: "Score", money: "Money", exp: "Exp", boxes: "Boxes", time: "Time (seconds)" },
-			statPlaceholders: {
-				score: "1200000-1500000",
-				money: "12000-15000",
-				exp: "300-450",
-				boxes: "0-5",
-				time: "Seconds",
-			},
 		},
 		share: {
 			title: "Share code",
@@ -271,8 +268,8 @@ export const en = {
 			noLongerReads: (code: string, why: string) => `${code} no longer reads: ${why}`,
 			linkUnreadable: (code: string, why: string) => `The link's code ${code} does not read: ${why}`,
 			linkNote: "This link came with a note. Save keeps it.",
-			linkStats: "This link came with run stats. Save keeps them.",
-			linkBoth: "This link came with a note and run stats. Save keeps them.",
+			linkRounds: "This link came with rounds. Save keeps them.",
+			linkBoth: "This link came with a note and rounds. Save keeps them.",
 			linkSaved: (name: string) => `This link's code is already saved as ${name}.`,
 			pasted: "Code pasted.",
 			pastedSaved: (name: string) => `Code pasted. It is already saved, so ${name} is open.`,
@@ -309,11 +306,9 @@ export const en = {
 			randomBoost: "Slots 6-7. The random boost the run wants, or none.",
 			cookiePower: "Slots 8-10. The cookie power+ selections, one slot per group, or none of a group.",
 			rounds:
-				"The money each round earned, so the list can show the average. It travels in the share link, not in the code.",
+				"What each run brought home: score, money, exp, boxes (0 to 5) and the time in seconds, each one number and each optional. The list shows the average of what was filled in. Saved with the code and sent in the share link, never in the code.",
 			treasureOrder: "Whether the treasure slots must be filled in this order, or the treasures fit in any order.",
 			note: "A note for yourself: what the build is for. It is saved with the code and travels in the share link, never in the code.",
-			stats:
-				"What the run brought home: score, money, exp and boxes as a number or a range like 12000-15000, and the time in seconds. Saved with the code, not part of it.",
 		},
 	},
 }

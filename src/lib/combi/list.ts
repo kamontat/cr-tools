@@ -10,7 +10,7 @@
 import type { Boost, CookiePower, Episode, Goal, RandomBoost } from "./codec"
 import type { FullCode } from "./full-code"
 import type { SavedCode } from "./saved"
-import type { StatField, StatRange } from "./stats"
+import type { StatField } from "./stats"
 
 import { readKey, writeKey } from "#lib/storage"
 import { boostArt, cookiePowerArt } from "./art"
@@ -18,6 +18,7 @@ import { type EntryKind, imageFor, isAnyId, kindFor, labelFor, nameFor } from ".
 import { limitsOf } from "./codec"
 import { levelText } from "./describe"
 import { combiSectionOf, decodeFull } from "./full-code"
+import { averageOf } from "./rounds"
 
 export const LIST_SORTS = ["newest", "oldest", "money", "code"] as const
 export type ListSort = (typeof LIST_SORTS)[number]
@@ -33,10 +34,14 @@ export function writeListSort(sort: ListSort, store: Storage | null): void {
 	writeKey(LIST_SORT_KEY, sort, store)
 }
 
-/** The midpoint of the money range an entry earned, or null when it has none. */
+/** The money an entry's rounds earned on average, or null when no round noted any. */
 export function averageMoney(entry: SavedCode): number | null {
-	const money = entry.stats?.money
-	return money === undefined ? null : (money.min + money.max) / 2
+	return averageOf(entry.rounds ?? []).money ?? null
+}
+
+/** How many rounds an entry keeps. */
+export function roundCount(entry: SavedCode): number {
+	return entry.rounds?.length ?? 0
 }
 
 function compareText(a: string, b: string): number {
@@ -187,14 +192,15 @@ const GOAL_STATS: Readonly<Record<Goal, Exclude<StatField, "time">>> = {
 	box: "boxes",
 }
 
-export type GoalTarget = { goal: Goal; field: Exclude<StatField, "time">; range: StatRange }
+export type GoalTarget = { goal: Goal; field: Exclude<StatField, "time">; value: number }
 
-/** What the entry's saved runs reached for each goal its code aims for, in the code's goal order; goals with no saved stat are left out. */
+/** The average the entry's rounds reached for each goal its code aims for, in the code's goal order; goals no round noted are left out. */
 export function goalTargets(entry: SavedCode): GoalTarget[] {
+	const average = averageOf(entry.rounds ?? [])
 	return (rowGoals(entry.code) ?? []).flatMap((goal) => {
 		const field = GOAL_STATS[goal]
-		const range = entry.stats?.[field]
-		return range === undefined ? [] : [{ goal, field, range }]
+		const value = average[field]
+		return value === undefined ? [] : [{ goal, field, value }]
 	})
 }
 

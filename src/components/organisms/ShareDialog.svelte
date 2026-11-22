@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { RunStats } from "#lib/combi/stats"
+import type { Round } from "#lib/combi/rounds"
 
 import { onDestroy } from "svelte"
 
@@ -14,7 +14,7 @@ import { currentLang, type Lang, onLangChange } from "#lib/lang"
 
 interface Props {
 	/** What to share; null keeps the dialog closed. */
-	entry: { code: string; note: string; stats: RunStats } | null
+	entry: { code: string; note: string; rounds: readonly Round[] } | null
 	onclose: () => void
 }
 
@@ -26,7 +26,7 @@ const m = $derived(messagesFor(lang))
 $effect(() => onLangChange(document, (next) => (lang = next)))
 
 const link = $derived(
-	entry === null ? "" : `${location.origin}${location.pathname}${shareHashFor(entry.code, entry.note, entry.stats)}`,
+	entry === null ? "" : `${location.origin}${location.pathname}${shareHashFor(entry.code, entry.note, entry.rounds)}`,
 )
 const canShare = typeof navigator.share === "function"
 

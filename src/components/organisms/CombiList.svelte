@@ -17,6 +17,7 @@ import {
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
+	roundCount,
 	rowBoosts,
 	rowFull,
 	rowLoadout,
@@ -24,8 +25,9 @@ import {
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
+import { averageOf } from "#lib/combi/rounds"
 import { descriptionTitle } from "#lib/combi/saved"
-import { STAT_FIELDS, type StatField, type StatRange } from "#lib/combi/stats"
+import { STAT_FIELDS, type StatField } from "#lib/combi/stats"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
 import { localStore } from "#lib/storage"
@@ -83,9 +85,6 @@ const toggle = (code: string) => {
 	} else expanded.add(code)
 }
 
-const rangeText = (range: StatRange): string =>
-	range.min === range.max ? money.format(range.min) : `${money.format(range.min)}–${money.format(range.max)}`
-
 /** What an open row's Run line says beyond the mode: the goals, the floor and a starting action. */
 const runOf = (code: string) => {
 	const full = rowFull(code)
@@ -101,14 +100,14 @@ const runOf = (code: string) => {
 	}
 }
 
-/** The saved stats, the ones the code's goals aim for marked. */
+/** Each value's average over the saved rounds, the ones the code's goals aim for marked. */
 const statsOf = (entry: SavedCode) => {
 	const aimed = new Set<StatField>(goalTargets(entry).map((target) => target.field))
+	const average = averageOf(entry.rounds ?? [])
 	return STAT_FIELDS.flatMap((field) => {
-		const value = entry.stats?.[field]
+		const value = average[field]
 		if (value === undefined) return []
-		const text = typeof value === "number" ? money.format(value) : rangeText(value)
-		return [{ field, label: m.combi.editor.statLabels[field], value: text, aimed: aimed.has(field) }]
+		return [{ field, label: m.combi.editor.statLabels[field], value: money.format(value), aimed: aimed.has(field) }]
 	})
 }
 
@@ -177,6 +176,7 @@ const pickSort = (value: string) => {
 				{@const game = combiSectionOf(entry.code)}
 				{@const run = runOf(entry.code)}
 				{@const stats = statsOf(entry)}
+				{@const rounds = roundCount(entry)}
 				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
 				{@const id = `entry-details-${index}`}
@@ -210,7 +210,7 @@ const pickSort = (value: string) => {
 								<!-- A code that no longer reads still says what it was for. -->
 								<span class="episode">{descriptionTitle(entry.description)}</span>
 							{/if}
-							{#if !open && stats.length > 0}
+							{#if !open && rounds > 0}
 								<span class="stats">
 									{#each stats as stat (stat.field)}
 										<span class="stat">
@@ -218,6 +218,7 @@ const pickSort = (value: string) => {
 											<strong class:aimed={stat.aimed}>{stat.value}</strong>
 										</span>
 									{/each}
+									<span class="muted">{m.combi.list.rounds(rounds)}</span>
 								</span>
 							{/if}
 						</span>
@@ -295,18 +296,17 @@ const pickSort = (value: string) => {
 								{@render line("main", m.combi.list.run, runBody)}
 
 								{#snippet resultsBody()}
-									{#if stats.length === 0}
+									{#if rounds === 0}
 										<span class="muted">{none}</span>
 									{:else}
-										{#each stats as stat, at (stat.field)}
-											{#if at > 0}
-												<span class="sep" aria-hidden="true">·</span>
-											{/if}
+										{#each stats as stat (stat.field)}
 											<span class="stat">
 												<span class="muted">{stat.label}</span>
 												<strong class:aimed={stat.aimed}>{stat.value}</strong>
 											</span>
+											<span class="sep" aria-hidden="true">·</span>
 										{/each}
+										<span class="muted">{m.combi.list.rounds(rounds)}</span>
 									{/if}
 								{/snippet}
 								{@render line("runLog", m.combi.list.results, resultsBody)}

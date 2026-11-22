@@ -300,13 +300,14 @@ test("in Safari, a menu item does what it says", async () => {
 	expect(screen.queryByRole("menu")).toBeNull()
 })
 
-test("an unreadable stat is marked invalid with its issue", async () => {
+test("an unreadable round value is marked invalid with its issue", async () => {
 	setup()
 	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
-	const money = screen.getByRole("textbox", { name: en.combi.editor.statLabels.money })
+	await fireEvent.click(screen.getByRole("button", { name: en.combi.editor.addRound }))
+	const money = screen.getByRole("textbox", { name: en.combi.editor.roundCell(1, en.combi.editor.statLabels.money) })
 	await fireEvent.input(money, { target: { value: "lots" } })
 	expect(money.getAttribute("aria-invalid")).toBe("true")
-	expect(screen.getByText(en.combi.issues.statFormat("money"))).toBeTruthy()
+	expect(screen.getByText(en.combi.issues.roundValue("money"))).toBeTruthy()
 })
 
 test("Thai is the default, and switching to English changes the labels", async () => {

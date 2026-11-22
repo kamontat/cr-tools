@@ -3,13 +3,16 @@ import type { SavedCode } from "#lib/combi/saved"
 import { expect, test } from "vitest"
 
 import {
+	addRound,
 	codeOf,
 	draftFrom,
 	draftFromCode,
 	goalOptions,
 	isDirty,
+	keptRounds,
 	limitsFor,
 	newDraft,
+	removeRound,
 	setAction,
 	setEpisode,
 	setFloor,
@@ -19,7 +22,7 @@ import {
 	setOrdered,
 	setRandomBoost,
 	setRole,
-	setStat,
+	setRoundValue,
 	setTreasureSlot,
 	tabBadges,
 	tabEnabled,
@@ -37,7 +40,7 @@ test("a new draft encodes to today's default code", () => {
 	expect(draft.full.combi.goals).toEqual(["score"])
 	expect(draft.full.combi.mode).toBe("manual")
 	expect(draft.full.combi.episode).toBe("any")
-	expect(draft).toMatchObject({ note: "", stats: {}, from: null })
+	expect(draft).toMatchObject({ note: "", rounds: [], from: null })
 })
 
 test("choosing Special Episode 1 drops the relay and boosts", () => {
@@ -214,30 +217,48 @@ test("treasure slots keep their picks, drop when emptied, and carry the order", 
 
 test("setters return a new draft and leave the old one alone", () => {
 	const draft = newDraft()
-	const next = setNote(setStat(draft, "money", { min: 1, max: 2 }), "farm")
+	const next = setNote(setRoundValue(addRound(draft), 0, "money", 1), "farm")
 
 	expect(next).not.toBe(draft)
 	expect(draft.note).toBe("")
-	expect(draft.stats).toEqual({})
+	expect(draft.rounds).toEqual([])
 	expect(next.note).toBe("farm")
-	expect(next.stats).toEqual({ money: { min: 1, max: 2 } })
-	expect(setStat(next, "money", null).stats).toEqual({})
+	expect(next.rounds).toEqual([{ money: 1 }])
+	expect(setRoundValue(next, 0, "money", null).rounds).toEqual([{}])
+})
+
+test("rounds are added at the end, set by index, and removed by index", () => {
+	let draft = addRound(addRound(addRound(newDraft())))
+	draft = setRoundValue(draft, 0, "money", 1)
+	draft = setRoundValue(draft, 2, "boxes", 0)
+	expect(draft.rounds).toEqual([{ money: 1 }, {}, { boxes: 0 }])
+	expect(removeRound(draft, 1).rounds).toEqual([{ money: 1 }, { boxes: 0 }])
+	expect(setRoundValue(draft, 5, "money", 1)).toBe(draft)
+	expect(removeRound(draft, 5)).toBe(draft)
+})
+
+test("the rounds kept are the ones with a value", () => {
+	const draft = setRoundValue(addRound(addRound(newDraft())), 1, "time", 30)
+	expect(keptRounds(draft)).toEqual([{ time: 30 }])
 })
 
 const entry: SavedCode = {
 	code: "1C01-MS0A000000",
 	description: "farm run",
-	stats: { money: { min: 12000, max: 15000 }, time: 245 },
+	rounds: [
+		{ money: 12000, time: 245 },
+		{ money: 15000, time: 245 },
+	],
 	savedAt: 1,
 }
 
-test("draftFrom a saved entry carries its note and stats, and from", () => {
+test("draftFrom a saved entry carries its note and rounds, and from", () => {
 	const { draft, warnings } = draftFrom(entry)
 
 	expect(warnings).toEqual([])
 	expect(draft.from).toBe("1C01-MS0A000000")
 	expect(draft.note).toBe("farm run")
-	expect(draft.stats).toEqual(entry.stats)
+	expect(draft.rounds).toEqual(entry.rounds)
 	expect(draft.full.loadout.cookie).toBe("01")
 	expect(codeOf(draft)).toBe(entry.code)
 })
@@ -247,12 +268,12 @@ test("draftFromCode reads a bare code, its warnings, and a semi-auto mode as aut
 	const combi = semi.slice(semi.indexOf("-") + 1)
 	expect(combi[0]).toBe("S")
 
-	const { draft, warnings } = draftFromCode(`A${combi.slice(1)}`, "note", { time: 3 })
+	const { draft, warnings } = draftFromCode(`A${combi.slice(1)}`, "note", [{ time: 3 }])
 	expect(draft.from).toBeNull()
 	expect(codeOf(draft)).toBe(semi)
 	expect(draft.full.combi.mode).toBe("auto")
 	expect(draft.note).toBe("note")
-	expect(draft.stats).toEqual({ time: 3 })
+	expect(draft.rounds).toEqual([{ time: 3 }])
 	expect(warnings.map((w) => w.id)).toContain("autoButSemi")
 })
 
@@ -266,7 +287,10 @@ test("isDirty is false for an unchanged entry and true after setNote", () => {
 	expect(isDirty(draft, entry)).toBe(false)
 	expect(isDirty(setNote(draft, "farm run\n"), entry)).toBe(false)
 	expect(isDirty(setNote(draft, "other"), entry)).toBe(true)
-	expect(isDirty(setStat(draft, "time", 300), entry)).toBe(true)
+	expect(isDirty(setRoundValue(draft, 0, "time", 300), entry)).toBe(true)
+	expect(isDirty(removeRound(draft, 1), entry)).toBe(true)
+	// A blank round added and not yet filled in says nothing new.
+	expect(isDirty(addRound(draft), entry)).toBe(false)
 	expect(isDirty(setRole(draft, "pet", "01"), entry)).toBe(true)
 	expect(isDirty(draft, null)).toBe(true)
 })

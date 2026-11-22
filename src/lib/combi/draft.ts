@@ -1,6 +1,6 @@
 /**
  * The build the editor holds while someone works on it: the full code, the note
- * and the run stats beside it, and which saved entry it came from. The editor
+ * and the rounds beside it, and which saved entry it came from. The editor
  * drives it through the setters below and draws whatever they return.
  *
  * A draft holds two builds. `picks` is what someone chose, kept whole: a pick
@@ -40,16 +40,9 @@ import {
 } from "./codec"
 import { carriesRelay, decodeFull, encodeFull, type FullCode, fitLoadout, isSemiAutoBuild } from "./full-code"
 import { emptyLoadout, type Loadout, MAX_TREASURE_SLOTS, type TreasurePick } from "./loadout"
+import { isEmptyRound, type Round, type RoundDraft } from "./rounds"
 import { cleanDescription } from "./saved"
-import {
-	formatStat,
-	putStat,
-	type RunStats,
-	STAT_FIELDS,
-	type StatField,
-	type StatsDraft,
-	type StatValue,
-} from "./stats"
+import { STAT_FIELDS, type StatField } from "./stats"
 
 export type Draft = {
 	/** What was chosen, including what the episode or mode cannot use, for held values in disabled controls. */
@@ -57,7 +50,8 @@ export type Draft = {
 	/** The build as its code says it, derived from `picks`. */
 	full: FullCode
 	note: string
-	stats: StatsDraft
+	/** Every round in the Run log, blank ones included; `keptRounds` is what a save keeps. */
+	rounds: RoundDraft[]
 	/** The saved code being edited, or null for a new one. */
 	from: string | null
 }
@@ -132,23 +126,27 @@ export function newDraft(): Draft {
 			loadout: emptyLoadout(),
 		},
 		note: "",
-		stats: {},
+		rounds: [],
 		from: null,
 	})
 }
 
-/** A draft of any code, with the note and stats a link brought. Throws `CodeError` when the code does not read. */
-export function draftFromCode(code: string, note = "", stats: RunStats = {}): { draft: Draft; warnings: Issue[] } {
+/** A draft of any code, with the note and rounds a link brought. Throws `CodeError` when the code does not read. */
+export function draftFromCode(
+	code: string,
+	note = "",
+	rounds: readonly Round[] = [],
+): { draft: Draft; warnings: Issue[] } {
 	const { full, warnings } = decodeFull(code)
 	// A semi-auto code lands on auto: semi-auto is what the build makes of an
 	// auto run, not a mode anyone picks.
 	const picks = { ...full, combi: { ...full.combi, mode: pickable(full.combi.mode) } }
-	return { draft: over({ picks, note, stats: { ...stats }, from: null }), warnings }
+	return { draft: over({ picks, note, rounds: rounds.map((round) => ({ ...round })), from: null }), warnings }
 }
 
 /** A draft of a saved entry, to edit it. Throws `CodeError` when its code no longer reads. */
 export function draftFrom(entry: SavedCode): { draft: Draft; warnings: Issue[] } {
-	const { draft, warnings } = draftFromCode(entry.code, entry.description, entry.stats)
+	const { draft, warnings } = draftFromCode(entry.code, entry.description, entry.rounds)
 	return { draft: { ...draft, from: entry.code }, warnings }
 }
 
@@ -289,25 +287,42 @@ export function setNote(draft: Draft, note: string): Draft {
 	return { ...draft, note }
 }
 
-/** One run stat, or null to clear it. */
-export function setStat<F extends StatField>(draft: Draft, field: F, value: StatValue<F> | null): Draft {
-	const stats: StatsDraft = { ...draft.stats }
-	putStat(stats, field, value)
-	return { ...draft, stats }
+/** A blank round at the end of the Run log. */
+export function addRound(draft: Draft): Draft {
+	return { ...draft, rounds: [...draft.rounds, {}] }
+}
+
+/** One value of one round, or null to clear it; an index with no round changes nothing. */
+export function setRoundValue(draft: Draft, index: number, field: StatField, value: number | null): Draft {
+	const round = draft.rounds[index]
+	if (round === undefined) return draft
+	const next: RoundDraft = { ...round }
+	if (value === null) delete next[field]
+	else next[field] = value
+	return { ...draft, rounds: draft.rounds.with(index, next) }
+}
+
+export function removeRound(draft: Draft, index: number): Draft {
+	if (draft.rounds[index] === undefined) return draft
+	return { ...draft, rounds: draft.rounds.filter((_, at) => at !== index) }
+}
+
+/** The rounds a save keeps: the ones with any value. */
+export function keptRounds(draft: Draft): Round[] {
+	return draft.rounds.filter((round) => !isEmptyRound(round))
 }
 
 /**
  * Whether the draft says something `saved` does not: its code, its note as it
- * would be kept, or a stat. With no entry, everything is unsaved.
+ * would be kept, or its rounds as they would be kept. With no entry,
+ * everything is unsaved.
  */
 export function isDirty(draft: Draft, saved: SavedCode | null): boolean {
 	if (saved === null) return true
 	if (codeOf(draft) !== saved.code) return true
 	if (cleanDescription(draft.note) !== saved.description) return true
-	return STAT_FIELDS.some((field) => {
-		const mine = draft.stats[field]
-		const theirs = saved.stats?.[field]
-		if (mine === undefined || theirs === undefined) return (mine === undefined) !== (theirs === undefined)
-		return formatStat(mine) !== formatStat(theirs)
-	})
+	const mine = keptRounds(draft)
+	const theirs = saved.rounds ?? []
+	if (mine.length !== theirs.length) return true
+	return mine.some((round, at) => STAT_FIELDS.some((field) => round[field] !== theirs[at]?.[field]))
 }

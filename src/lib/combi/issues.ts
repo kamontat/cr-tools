@@ -51,6 +51,7 @@ export type IssueValues = {
 	loadoutOrderFlag: { tag: string; flag: string }
 	statFormat: { field: StatField }
 	roundValue: { field: StatField }
+	roundLine: undefined
 	unreadableLine: undefined
 }
 
@@ -91,6 +92,7 @@ export const ISSUE_IDS = [
 	"loadoutOrderFlag",
 	"statFormat",
 	"roundValue",
+	"roundLine",
 	"unreadableLine",
 ] as const satisfies readonly IssueId[]
 
@@ -185,6 +187,7 @@ export function issueText(issue: Issue, m: Messages): string {
 		case "relayButAuto":
 		case "loadoutEmpty":
 		case "unreadableLine":
+		case "roundLine":
 			return t[issue.id]
 	}
 }

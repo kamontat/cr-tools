@@ -7,10 +7,10 @@ import {
 	rememberCode,
 	rememberFullCode,
 	rememberTab,
+	roundsInHash,
 	STORAGE_KEY,
 	shareHashFor,
 	startingCode,
-	statsInHash,
 	storedCode,
 	storedFullCode,
 	storedTab,
@@ -172,49 +172,36 @@ test("a storage that throws reads the full code as off and remembers nothing", (
 	expect(() => rememberFullCode(broken, true)).not.toThrow()
 })
 
-test("a shared link carries its run stats beside the note, readable by eye", () => {
-	const hash = shareHashFor("1-MM0A000000", "Coin farm", {
-		money: { min: 12000, max: 15000 },
-		boxes: { min: 3, max: 3 },
-		time: 245,
-	})
+test("a shared link carries its rounds beside the note, one parameter each", () => {
+	const hash = shareHashFor("1-MM0A000000", "Coin farm", [{ money: 12000, boxes: 3, time: 245 }, { money: 15000 }])
 
-	expect(hash).toMatch(/&money=12000-15000&boxes=3&time=245$/)
+	expect(hash).toMatch(/&round=:12000::3:245&round=:15000$/)
 	expect(codeInHash(hash)).toBe("1-MM0A000000")
 	expect(noteInHash(hash)).toBe("Coin farm")
-	expect(statsInHash(hash)).toEqual({
-		money: { min: 12000, max: 15000 },
-		boxes: { min: 3, max: 3 },
-		time: 245,
-	})
+	expect(roundsInHash(hash)).toEqual([{ money: 12000, boxes: 3, time: 245 }, { money: 15000 }])
 })
 
-test("a link with stats and no note carries the stats alone", () => {
-	const hash = shareHashFor("1-MM0A000000", "", {
-		exp: { min: 300, max: 450 },
-	})
-
-	expect(hash).toBe("#1-MM0A000000?exp=300-450")
-	expect(noteInHash(hash)).toBeNull()
-	expect(statsInHash(hash)).toEqual({ exp: { min: 300, max: 450 } })
+test("a link with rounds and no note carries the rounds alone, and empty rounds are left out", () => {
+	expect(shareHashFor("1-MM0A000000", "", [{}, { score: 5, time: 9 }])).toBe("#1-MM0A000000?round=5::::9")
+	expect(shareHashFor("1-MM0A000000", "", [{}])).toBe("#1-MM0A000000")
 })
 
-test("a stat in a link that does not read is left out", () => {
-	expect(statsInHash("#1-MM0A000000?money=lots&boxes=9&time=60")).toEqual({
-		time: 60,
-	})
-	expect(statsInHash("#1-MM0A000000")).toEqual({})
+test("a round in a link that does not read is left out, and the rest stay in order", () => {
+	expect(roundsInHash("#1-MM0A000000?round=:12000&round=bad&round=:13000::2")).toEqual([
+		{ money: 12000 },
+		{ money: 13000, boxes: 2 },
+	])
+	expect(roundsInHash("#1-MM0A000000")).toEqual([])
 })
 
-test("a shared link carries the score first among its stats", () => {
-	const hash = shareHashFor("1-MS0A000000", "", {
-		money: { min: 10, max: 10 },
-		score: { min: 1200000, max: 1500000 },
-	})
+test("a link made before rounds still reads, its ranges as two rounds", () => {
+	expect(roundsInHash("#1-MM0A000000?money=12000-15000&time=245")).toEqual([
+		{ money: 12000, time: 245 },
+		{ money: 15000, time: 245 },
+	])
+	expect(roundsInHash("#1-MM0A000000?money=lots&boxes=9&time=60")).toEqual([{ time: 60 }])
+})
 
-	expect(hash).toBe("#1-MS0A000000?score=1200000-1500000&money=10")
-	expect(statsInHash(hash)).toEqual({
-		score: { min: 1200000, max: 1500000 },
-		money: { min: 10, max: 10 },
-	})
+test("a link with rounds reads the rounds and not the old stats", () => {
+	expect(roundsInHash("#1-MM0A000000?round=:1&money=5-9")).toEqual([{ money: 1 }])
 })
