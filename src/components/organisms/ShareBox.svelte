@@ -4,7 +4,6 @@ import type { RunStats } from "#lib/combi/stats"
 import { onDestroy } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
-import Panel from "#components/molecules/Panel.svelte"
 import { copyText } from "#lib/clipboard"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { descriptionTitle } from "#lib/combi/saved"
@@ -13,21 +12,21 @@ import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, onLangChange } from "#lib/lang"
 
 interface Props {
-	/** What to share; null keeps the dialog closed. */
-	entry: { code: string; note: string; stats: RunStats } | null
-	onclose: () => void
+	/** What to share. */
+	entry: { code: string; note: string; stats: RunStats }
 }
 
-let { entry, onclose }: Props = $props()
+let { entry }: Props = $props()
+
+/** Unique per mount: a row's box and the editor's can be on the page together. */
+const uid = $props.id()
 
 let lang = $state<Lang>(currentLang(document))
 const m = $derived(messagesFor(lang))
 
 $effect(() => onLangChange(document, (next) => (lang = next)))
 
-const link = $derived(
-	entry === null ? "" : `${location.origin}${location.pathname}${shareHashFor(entry.code, entry.note, entry.stats)}`,
-)
+const link = $derived(`${location.origin}${location.pathname}${shareHashFor(entry.code, entry.note, entry.stats)}`)
 const canShare = typeof navigator.share === "function"
 
 let toast = $state<{ message: string; tone: "info" | "error" } | null>(null)
@@ -41,7 +40,7 @@ const say = (message: string, tone: "info" | "error") => {
 
 onDestroy(() => clearTimeout(timer))
 
-// A notice belongs to the entry it was about: another entry, or closing, drops it.
+// A notice belongs to the entry it was about: another entry drops it.
 $effect.pre(() => {
 	void entry
 	clearTimeout(timer)
@@ -65,7 +64,7 @@ const copy = async (text: string, element: HTMLElement | undefined) => {
 }
 
 const shareToApp = () => {
-	if (entry === null || typeof navigator.share !== "function") return
+	if (typeof navigator.share !== "function") return
 	const note = descriptionTitle(entry.note)
 	navigator
 		.share({ title: combiSectionOf(entry.code), ...(note === "" ? {} : { text: note }), url: link })
@@ -77,75 +76,64 @@ let linkValue = $state<HTMLElement>()
 let codeValue = $state<HTMLElement>()
 </script>
 
-<Panel
-	id="share"
-	title={m.combi.share.title}
-	open={entry !== null}
-	{onclose}
-	closeLabel={m.frame.close}
-	resizeLabel={m.frame.resize}>
-	{#if entry !== null}
-		<div class="share">
-			<p class="share-code">{combiSectionOf(entry.code)}</p>
-			<section class="box" aria-labelledby="share-link">
-				<h3 id="share-link">{m.combi.share.link}</h3>
-				<p class="value" bind:this={linkValue}>{link}</p>
-				<div row class="acts">
-					<button
-						type="button"
-						class="btn primary"
-						aria-label={m.combi.share.copyLink}
-						onclick={() => copy(link, linkValue)}>
-						{m.combi.share.copy}
-					</button>
-					{#if canShare}
-						<button type="button" class="btn" onclick={shareToApp}>{m.combi.share.shareToApp}</button>
-					{/if}
-				</div>
-			</section>
-			<section class="box" aria-labelledby="share-full">
-				<h3 id="share-full">{m.combi.share.fullCode}</h3>
-				<p class="value code" bind:this={codeValue}>{entry.code}</p>
-				<div row class="acts">
-					<button
-						type="button"
-						class="btn primary"
-						aria-label={m.combi.share.copyFull(entry.code)}
-						onclick={() => copy(entry.code, codeValue)}>
-						{m.combi.share.copy}
-					</button>
-				</div>
-			</section>
+<!-- In place, where Share was pressed: the editor's header, or a saved row. Never a pop-up. -->
+<section class="share" aria-labelledby="{uid}-title">
+	<h3 id="{uid}-title" class="title">{m.combi.share.title}</h3>
+	<section class="box" aria-labelledby="{uid}-link">
+		<h4 id="{uid}-link">{m.combi.share.link}</h4>
+		<p class="value" bind:this={linkValue}>{link}</p>
+		<div row class="acts">
+			<button
+				type="button"
+				class="btn primary"
+				aria-label={m.combi.share.copyLink}
+				onclick={() => copy(link, linkValue)}>
+				{m.combi.share.copy}
+			</button>
+			{#if canShare}
+				<button type="button" class="btn" onclick={shareToApp}>{m.combi.share.shareToApp}</button>
+			{/if}
 		</div>
-		<Toast message={toast?.message ?? null} tone={toast?.tone ?? "info"} ondismiss={() => (toast = null)} />
-	{/if}
-</Panel>
+	</section>
+	<section class="box" aria-labelledby="{uid}-full">
+		<h4 id="{uid}-full">{m.combi.share.fullCode}</h4>
+		<p class="value code" bind:this={codeValue}>{entry.code}</p>
+		<div row class="acts">
+			<button
+				type="button"
+				class="btn primary"
+				aria-label={m.combi.share.copyFull(entry.code)}
+				onclick={() => copy(entry.code, codeValue)}>
+				{m.combi.share.copy}
+			</button>
+		</div>
+	</section>
+	<Toast message={toast?.message ?? null} tone={toast?.tone ?? "info"} ondismiss={() => (toast = null)} />
+</section>
 
 <style>
 .share {
-	gap: 14px;
-	padding: 16px 20px 24px;
+	gap: 16px;
+	padding: 14px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	background: var(--surface);
 }
 
-.share-code {
+.title {
 	margin: 0;
-	color: var(--code);
-	font-family: var(--mono);
-	font-size: 1.375rem;
-	font-weight: 600;
-	letter-spacing: 0.1em;
+	font-size: 0.9375rem;
 }
 
 .box {
 	gap: 8px;
-	padding: 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
 }
 
-h3 {
+h4 {
 	margin: 0;
-	font-size: 0.875rem;
+	color: var(--muted);
+	font-size: 0.8125rem;
+	font-weight: 600;
 }
 
 .value {

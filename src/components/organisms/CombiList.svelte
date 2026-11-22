@@ -5,6 +5,7 @@ import type { TabName } from "#lib/combi/state"
 import { SvelteSet } from "svelte/reactivity"
 
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
+import ShareBox from "#components/organisms/ShareBox.svelte"
 import { episodeArt } from "#lib/combi/art"
 import { ALL_GOALS } from "#lib/combi/codec"
 import { episodeText, floorText, goalsText } from "#lib/combi/describe"
@@ -38,11 +39,13 @@ interface Props {
 	/** Opens the entry in the editor, on `tab` when a line of its row asks for one. */
 	onopen: (entry: SavedCode, tab?: TabName) => void
 	oncopy: (entry: SavedCode) => void
-	onshare: (entry: SavedCode) => void
 	ondelete: (entry: SavedCode) => void
 }
 
-let { entries, current, onnew, onopen, oncopy, onshare, ondelete }: Props = $props()
+let { entries, current, onnew, onopen, oncopy, ondelete }: Props = $props()
+
+/** The rows whose Share is open, in place under their actions. */
+const sharing = new SvelteSet<string>()
 
 let lang = $state<Lang>(currentLang(document))
 const m = $derived(messagesFor(lang))
@@ -120,6 +123,7 @@ const remove = (entry: SavedCode) => {
 	}
 	arming = null
 	expanded.delete(entry.code)
+	sharing.delete(entry.code)
 	for (const key of [...named]) if (key.startsWith(`${entry.code}\n`)) named.delete(key)
 	ondelete(entry)
 }
@@ -485,7 +489,8 @@ const pickSort = (value: string) => {
 										type="button"
 										class="btn small"
 										aria-label={m.combi.list.shareCode(game)}
-										onclick={() => onshare(entry)}>
+										aria-expanded={sharing.has(entry.code)}
+										onclick={() => (sharing.has(entry.code) ? sharing.delete(entry.code) : sharing.add(entry.code))}>
 										{m.combi.list.share}
 									</button>
 									<button
@@ -504,6 +509,9 @@ const pickSort = (value: string) => {
 									</button>
 								</div>
 							</div>
+							{#if sharing.has(entry.code)}
+								<ShareBox entry={{ code: entry.code, note: entry.description, stats: entry.stats ?? {} }} />
+							{/if}
 						</div>
 					{/if}
 				</li>

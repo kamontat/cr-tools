@@ -2,7 +2,7 @@ import type { Window as HappyWindow } from "happy-dom"
 import type { Combi } from "#lib/combi/codec"
 import type { SavedCode } from "#lib/combi/saved"
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte"
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/svelte"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
 import CombiApp from "#components/organisms/CombiApp.svelte"
@@ -76,7 +76,10 @@ const openEntry = async (code: string) => {
 	await expandRow(code)
 	await fireEvent.click(button(en.combi.list.editCode(combiSectionOf(code))))
 }
-const editor = () => screen.queryByRole("dialog")
+/** The editor, wherever it sits: beside the list, or in its place. */
+const editor = () => document.querySelector<HTMLElement>('[data-layout="docked"], [data-layout="view"]')
+/** Nothing ever opens over the page. */
+const noPopup = () => expect(screen.queryByRole("dialog")).toBeNull()
 const notice = () => document.querySelector('[role="status"] button, [role="alert"] button')?.textContent ?? ""
 const button = (name: string) => screen.getByRole("button", { name })
 const tab = (name: string) => screen.getByRole("tab", { name: new RegExp(`^${name}`) })
@@ -116,14 +119,51 @@ test("Save adds a third entry, and Copy copies the 10 characters", async () => {
 	await waitFor(() => expect(notice()).toBe(en.combi.notices.copied(combiSectionOf(code))))
 })
 
-test("a notice shown over the pop-up editor is inside it, so it is seen and heard", async () => {
+test("below 1100px the editor takes the list's place, and its back arrow brings the list back", async () => {
 	viewport(1000)
 	render(CombiApp)
+	await openEntry(scoreCode)
+	expect(editor()?.getAttribute("data-layout")).toBe("view")
+	noPopup()
+	expect(screen.queryByRole("button", { name: en.combi.list.newCode })).toBeNull()
+	await fireEvent.click(button(en.combi.editor.back))
+	await waitFor(() => expect(editor()).toBeNull())
+	expect(button(en.combi.list.newCode)).toBeTruthy()
+})
+
+test("opening the editor adds a step to the browser's history, and going Back closes it", async () => {
+	viewport(1000)
+	render(CombiApp)
+	const push = vi.spyOn(history, "pushState")
 	await fireEvent.click(button(en.combi.list.newCode))
-	await fireEvent.click(button(en.combi.editor.save))
-	await Promise.resolve()
-	const shown = screen.getByRole("button", { name: en.combi.notices.saved(combiSectionOf(stored()[0]?.code ?? "")) })
-	expect(editor()?.contains(shown)).toBe(true)
+	expect(push).toHaveBeenCalledTimes(1)
+	history.replaceState(null, "", "/combi-name/")
+	window.dispatchEvent(new HashChangeEvent("hashchange"))
+	await waitFor(() => expect(editor()).toBeNull())
+	expect(button(en.combi.list.newCode)).toBeTruthy()
+})
+
+test("Share opens inside the editor, and a second press folds it away", async () => {
+	render(CombiApp)
+	await openEntry(moneyCode)
+	const share = button(en.combi.editor.share)
+	expect(share.getAttribute("aria-expanded")).toBe("false")
+	await fireEvent.click(share)
+	noPopup()
+	expect(share.getAttribute("aria-expanded")).toBe("true")
+	const box = within(editor() as HTMLElement).getByRole("region", { name: en.combi.share.title })
+	expect(box.textContent).toContain(`#${moneyCode}`)
+	await fireEvent.click(share)
+	expect(within(editor() as HTMLElement).queryByRole("region", { name: en.combi.share.title })).toBeNull()
+})
+
+test("a row's Share opens inside the row", async () => {
+	render(CombiApp)
+	const row = await expandRow(moneyCode)
+	await fireEvent.click(button(en.combi.list.shareCode(combiSectionOf(moneyCode))))
+	noPopup()
+	const box = within(row).getByRole("region", { name: en.combi.share.title })
+	expect(box.textContent).toContain(moneyCode)
 })
 
 test("a row's Copy copies that row's 10 characters", async () => {
@@ -230,19 +270,13 @@ test("Update rewrites the open entry, and Delete removes it and closes the edito
 	expect(notice()).toBe(en.combi.notices.deleted(combiSectionOf(scoreCode)))
 })
 
-test("at 1440px the editor docks beside the list; at 1000px it pops up", async () => {
-	viewport(1440)
-	const { unmount } = render(CombiApp)
-	await fireEvent.click(button(en.combi.list.newCode))
-	expect(editor()).toBeNull()
-	expect(document.querySelector('[data-layout="docked"]')).not.toBeNull()
-	unmount()
-
-	viewport(1000)
+test("from 1100px the editor sits beside the list, and the list stays in use", async () => {
+	viewport(1100)
 	render(CombiApp)
 	await fireEvent.click(button(en.combi.list.newCode))
-	expect(editor()).not.toBeNull()
-	expect(document.querySelector('[data-layout="docked"]')).toBeNull()
+	expect(editor()?.getAttribute("data-layout")).toBe("docked")
+	noPopup()
+	expect(button(en.combi.list.newCode)).toBeTruthy()
 })
 
 const noteBox = () => screen.getByRole("textbox", { name: en.combi.editor.note }) as HTMLTextAreaElement

@@ -30,7 +30,6 @@ afterEach(() => {
 
 type Handlers = {
 	oncopy: () => void
-	onshare: () => void
 	onsave: () => void
 	onupdate: () => void
 	onsaveasnew: () => void
@@ -44,7 +43,6 @@ type Handlers = {
 function setup(draft: Draft = newDraft(), saved: SavedCode | null = null) {
 	const handlers: Handlers = {
 		oncopy: vi.fn(),
-		onshare: vi.fn(),
 		onsave: vi.fn(),
 		onupdate: vi.fn(),
 		onsaveasnew: vi.fn(),
@@ -59,7 +57,7 @@ function setup(draft: Draft = newDraft(), saved: SavedCode | null = null) {
 		void result.rerender({ draft: next })
 	})
 	const result = render(CombiEditor, {
-		props: { draft, saved, open: true, docked: false, onchange, ...handlers },
+		props: { draft, saved, open: true, view: false, onchange, ...handlers },
 	})
 	return { ...result, ...handlers, onchange, current: () => held }
 }

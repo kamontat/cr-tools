@@ -179,6 +179,7 @@ export const th: Messages = {
 		},
 		editor: {
 			newTitle: "โค้ดใหม่",
+			back: "กลับไปที่รายการโค้ด",
 			editTitle: "แก้ไขโค้ด",
 			tabs: { main: "หลัก", cookies: "คุกกี้", treasures: "สมบัติ", boosts: "บูสต์", runLog: "บันทึกการวิ่ง" },
 			save: "บันทึก",

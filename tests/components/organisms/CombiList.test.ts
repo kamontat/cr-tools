@@ -46,7 +46,7 @@ afterEach(() => {
 })
 
 function setup(list: SavedCode[] = entries, current: string | null = null) {
-	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), onshare: vi.fn(), ondelete: vi.fn() }
+	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), ondelete: vi.fn() }
 	const result = render(CombiList, { props: { entries: list, current, ...handlers } })
 	return { ...result, ...handlers }
 }
@@ -147,8 +147,8 @@ test("the sort orders the rows and persists", async () => {
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(scoreCode))
 })
 
-test("expanding a row opens nothing; Edit, Copy and Share act on its entry", async () => {
-	const { onopen, oncopy, onshare } = setup()
+test("expanding a row opens nothing; Edit and Copy act on its entry, and Share opens in the row", async () => {
+	const { onopen, oncopy } = setup()
 	const game = combiSectionOf(scoreCode)
 	const score = entries[0]
 
@@ -157,8 +157,12 @@ test("expanding a row opens nothing; Edit, Copy and Share act on its entry", asy
 	const row = rowOf(scoreCode)
 	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.copyCode(game) }))
 	expect(oncopy).toHaveBeenCalledWith(score)
-	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.shareCode(game) }))
-	expect(onshare).toHaveBeenCalledWith(score)
+	const share = within(row).getByRole("button", { name: en.combi.list.shareCode(game) })
+	await fireEvent.click(share)
+	expect(share.getAttribute("aria-expanded")).toBe("true")
+	expect(within(row).getByRole("region", { name: en.combi.share.title })).toBeTruthy()
+	await fireEvent.click(share)
+	expect(within(row).queryByRole("region", { name: en.combi.share.title })).toBeNull()
 	expect(onopen).not.toHaveBeenCalled()
 	await fireEvent.click(within(row).getByRole("button", { name: en.combi.list.editCode(game) }))
 	expect(onopen).toHaveBeenCalledWith(score)

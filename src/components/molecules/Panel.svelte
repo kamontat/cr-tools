@@ -26,9 +26,27 @@ interface Props {
 	 * editor on wide screens); Escape inside still closes it.
 	 */
 	docked?: boolean
+	/**
+	 * Docked as the page's own view, in place of what it opened from: the close
+	 * button is a back arrow leading the header, and the width is the page's,
+	 * so nothing resizes.
+	 */
+	back?: boolean
 }
 
-let { id, title, open, onclose, children, footer, actions, closeLabel, resizeLabel, docked = false }: Props = $props()
+let {
+	id,
+	title,
+	open,
+	onclose,
+	children,
+	footer,
+	actions,
+	closeLabel,
+	resizeLabel,
+	docked = false,
+	back = false,
+}: Props = $props()
 
 const store = localStore()
 
@@ -141,17 +159,22 @@ const ondblclick = () => {
 		<div class="panel-grab" aria-hidden="true"></div>
 	{/if}
 	<header class="panel-head">
+		{#if back}
+			<button type="button" class="panel-close panel-back" aria-label={closeLabel} onclick={onclose}>←</button>
+		{/if}
 		<h2 id={titleId}>{title}</h2>
 		{#if actions}
 			<div row class="panel-actions">{@render actions()}</div>
 		{/if}
-		<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
+		{#if !back}
+			<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
+		{/if}
 	</header>
 	<div class="panel-body">{@render children()}</div>
 	{#if footer}
 		<footer class="panel-foot">{@render footer()}</footer>
 	{/if}
-	{#if !sheet}
+	{#if !sheet && !back}
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 		<!-- biome-ignore lint/a11y/useSemanticElements: a focusable splitter is a widget; <hr> cannot take focus or keys -->
 		<div
@@ -179,8 +202,8 @@ const ondblclick = () => {
 			class="panel docked"
 			class:resizing={dragging}
 			aria-labelledby={titleId}
-			data-layout="docked"
-			style:--panel-width={`${width}px`}
+			data-layout={back ? "view" : "docked"}
+			style:--panel-width={back ? undefined : `${width}px`}
 			{@attach dock}>
 			{@render inside(false)}
 		</section>
@@ -330,6 +353,15 @@ const ondblclick = () => {
 }
 
 /* Docked: a column beside the page, not over it. */
+/* A view takes the page's width; its arrow sits at the header's start. */
+[data-layout="view"] {
+	width: 100%;
+}
+
+.panel-back {
+	margin: 0 4px 0 -6px;
+}
+
 .docked {
 	flex: none;
 	width: min(var(--panel-width, 640px), 100%);

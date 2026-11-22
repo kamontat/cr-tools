@@ -26,6 +26,12 @@ test("the docked editor stays in view and keeps its footer on screen", () => {
 	expect(docked).toMatch(/max-height:\s*calc\(100dvh/)
 })
 
+test("beside the editor, the list keeps room for its rows however wide the editor is dragged", () => {
+	const app = read("src/components/organisms/CombiApp.svelte")
+	expect(rule(app, ".docked :global(.panel.docked)")).toMatch(/max-width:\s*calc\(100% - var\(--list-min\)/)
+	expect(rule(app, ".docked .list")).toMatch(/min-width:\s*var\(--list-min\)/)
+})
+
 test("the saved list lays its rows out by its own width, not the window's", () => {
 	const list = read("src/components/organisms/CombiList.svelte")
 	expect(rule(list, ".list")).toMatch(/container(?:-type)?:\s*(?:list\s*\/\s*)?inline-size/)

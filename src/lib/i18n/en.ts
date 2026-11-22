@@ -192,6 +192,7 @@ export const en = {
 		},
 		editor: {
 			newTitle: "New code",
+			back: "Back to saved codes",
 			editTitle: "Edit code",
 			tabs: { main: "Main", cookies: "Cookies", treasures: "Treasures", boosts: "Boosts", runLog: "Run log" },
 			save: "Save",

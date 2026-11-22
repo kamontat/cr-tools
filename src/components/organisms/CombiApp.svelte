@@ -1,14 +1,12 @@
 <script lang="ts">
 import type { Draft } from "#lib/combi/draft"
 import type { Issue } from "#lib/combi/issues"
-import type { RunStats } from "#lib/combi/stats"
 
 import { onDestroy, onMount, tick } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
 import CombiEditor from "#components/organisms/CombiEditor.svelte"
 import CombiList from "#components/organisms/CombiList.svelte"
-import ShareDialog from "#components/organisms/ShareDialog.svelte"
 import { copyText } from "#lib/clipboard"
 import { codeOf, draftFrom, draftFromCode, isDirty, newDraft } from "#lib/combi/draft"
 import { combiSectionOf } from "#lib/combi/full-code"
@@ -56,13 +54,30 @@ const store = persistent ?? memoryStore()
 let entries = $state<SavedCode[]>(readSaved(store))
 /** The build in the editor; the editor is open while there is one. */
 let draft = $state.raw<Draft | null>(null)
-let share = $state<{ code: string; note: string; stats: RunStats } | null>(null)
 /** The tab a row last asked the editor to show. */
 let tabRequest = $state.raw<{ tab: TabName } | null>(null)
 
 let width = $state(window.innerWidth)
+/** Wide enough for the editor beside the list; narrower, the editor takes the list's place. */
 const docked = $derived(width >= DOCK_MIN_WIDTH)
 const dockedOpen = $derived(docked && draft !== null)
+const viewing = $derived(!docked && draft !== null)
+
+/**
+ * Where the list was scrolled when the editor took its place, so coming back
+ * lands on the same rows; the editor itself starts at the top.
+ */
+let listScroll = 0
+let wasViewing = false
+$effect(() => {
+	const now = viewing
+	if (now === wasViewing) return
+	wasViewing = now
+	if (now) {
+		listScroll = window.scrollY
+		window.scrollTo(0, 0)
+	} else void tick().then(() => window.scrollTo(0, listScroll))
+})
 
 /** The sticky top bar's 52px, and 16px under it: where the docked editor sticks. */
 const DOCK_TOP = 52 + 16
@@ -232,6 +247,14 @@ let written = ""
 
 const onhashchange = () => {
 	if (location.hash === written) return
+	// Back past the step opening the editor added: the address bar names no code, so the editor closes.
+	if (codeInHash(location.hash) === null && draft !== null) {
+		pushed = false
+		written = location.hash
+		draft = null
+		void focusList()
+		return
+	}
 	openLink(location.hash)
 }
 
@@ -243,17 +266,26 @@ onMount(() => openLink(location.hash))
 let wasOpen = false
 /** The hash last asked for, as given: the browser may spell what it keeps differently. */
 let asked = ""
+/**
+ * Whether opening the editor added a step to the browser's history, so Back
+ * closes it as it would close a page. A link already names its code, so
+ * opening from one adds none.
+ */
+let pushed = false
 
 /**
  * Points the address bar at `hash` (empty for none), only when it changes:
  * every note keystroke changes the draft, and Safari throws after 100 rewrites
  * in 10 seconds. A refused rewrite only leaves the address bar behind.
  */
-const writeHash = (hash: string) => {
+const writeHash = (hash: string, push = false) => {
 	const same = location.hash === hash || (hash === asked && location.hash === written)
 	if (!same) {
 		try {
-			history.replaceState(null, "", hash === "" ? location.pathname : hash)
+			if (push) {
+				history.pushState(null, "", hash)
+				pushed = true
+			} else history.replaceState(null, "", hash === "" ? location.pathname : hash)
 		} catch {
 			// The editor works the same; a reload just opens what the address bar still says.
 		}
@@ -268,10 +300,11 @@ $effect(() => {
 			offered !== null && draft === offered
 				? shareHashFor(codeOf(draft), draft.note, draft.stats)
 				: hashFor(codeOf(draft)),
+			!wasOpen && codeInHash(location.hash) === null,
 		)
 		wasOpen = true
 	} else if (wasOpen) {
-		writeHash("")
+		if (!pushed) writeHash("")
 		wasOpen = false
 	}
 })
@@ -323,6 +356,11 @@ const focusList = async () => {
 const close = () => {
 	draft = null
 	void focusList()
+	// The editor's own step in the browser's history goes too, so Back leaves the page as it would have.
+	if (pushed) {
+		pushed = false
+		history.back()
+	}
 }
 
 /** The note and stats as an entry keeps them. */
@@ -422,14 +460,6 @@ const copy = async (code: string) => {
 	if (await copyText(game)) say(m.combi.notices.copied(game))
 	else say(m.combi.notices.copyBlocked(game), "error")
 }
-
-const shareDraft = () => {
-	if (draft !== null) share = { code: codeOf(draft), note: draft.note, stats: draft.stats }
-}
-
-const shareEntry = (entry: SavedCode) => {
-	share = { code: entry.code, note: entry.description, stats: entry.stats ?? {} }
-}
 </script>
 
 <svelte:window bind:innerWidth={width} {onhashchange} />
@@ -438,16 +468,16 @@ const shareEntry = (entry: SavedCode) => {
 <div
 	class="combi"
 	class:docked={dockedOpen}
+	class:viewing
 	bind:this={combiBox}
 	style:--dock-top={dockedOpen ? `${dockTop}px` : undefined}>
-	<div class="list" bind:this={listBox}>
+	<div class="list" bind:this={listBox} hidden={viewing}>
 		<CombiList
 			{entries}
 			current={draft?.from ?? null}
 			onnew={openNew}
 			onopen={openRow}
 			oncopy={(entry) => copy(entry.code)}
-			onshare={shareEntry}
 			ondelete={(entry) => deleteCode(entry.code)} />
 	</div>
 	{#if draft !== null}
@@ -455,11 +485,10 @@ const shareEntry = (entry: SavedCode) => {
 			{draft}
 			{saved}
 			open={true}
-			{docked}
+			view={!docked}
 			onclose={close}
 			onchange={(next) => (draft = next)}
 			oncopy={() => draft !== null && copy(codeOf(draft))}
-			onshare={shareDraft}
 			onsave={saveNew}
 			{onupdate}
 			onsaveasnew={saveNew}
@@ -470,12 +499,12 @@ const shareEntry = (entry: SavedCode) => {
 	{/if}
 </div>
 
-<ShareDialog entry={share} onclose={() => (share = null)} />
 <Toast message={notice?.message ?? null} tone={notice?.tone ?? "info"} ondismiss={dismiss} />
 
 <style>
 /* The reset makes every div a column; the list and the docked editor sit in a row. */
 .combi {
+	--list-min: 360px;
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
@@ -486,6 +515,17 @@ const shareEntry = (entry: SavedCode) => {
 .list {
 	flex: 1;
 	min-width: 0;
+}
+
+/* Beside the editor, the list keeps room for its rows however wide the editor is dragged. */
+.docked .list {
+	min-width: var(--list-min);
+}
+
+/* Below the dock breakpoint the editor takes the list's place, the page's whole width. */
+.viewing :global(.panel[data-layout="view"]) {
+	border: 1px solid var(--line);
+	border-radius: 10px;
 }
 
 /*
@@ -500,6 +540,7 @@ const shareEntry = (entry: SavedCode) => {
 	align-self: flex-start;
 	height: calc(100dvh - var(--dock-top, 68px) - 16px);
 	max-height: calc(100dvh - var(--dock-top, 68px) - 16px);
+	max-width: calc(100% - var(--list-min) - 24px);
 	border: 1px solid var(--line);
 	border-radius: 10px;
 }
