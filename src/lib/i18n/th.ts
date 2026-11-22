@@ -18,6 +18,13 @@ const statTakes: Record<StatField, string> = {
 	boxes: "กล่องต้องเป็น 0 ถึง 5 หรือช่วง เช่น 2-4",
 	time: "เวลาต้องเป็นจำนวนวินาที เป็นจำนวนเต็มบวก",
 }
+const roundTakes: Record<StatField, string> = {
+	score: "คะแนนต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	money: "เหรียญต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	exp: "Exp ต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	boxes: "กล่องต้องเป็นตัวเลขหนึ่งจำนวน ตั้งแต่ 0 ถึง 5",
+	time: "เวลาต้องเป็นจำนวนวินาที เป็นจำนวนเต็มบวกหนึ่งจำนวน",
+}
 const group = (tag: string) => `กลุ่ม "${tag}" ของการจัดทีม`
 const issues: Messages["combi"]["issues"] = {
 	codeLength: (length: number, got: number, code: string) =>
@@ -58,6 +65,7 @@ const issues: Messages["combi"]["issues"] = {
 	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: ไม่มีตัวบอกลำดับ`,
 	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: ตัวบอกลำดับ "${flag}" ไม่ใช่ "U" หรือ "O"`,
 	statFormat: (field: StatField) => statTakes[field],
+	roundValue: (field: StatField) => roundTakes[field],
 	unreadableLine: "บรรทัดนี้ไม่มีโค้ด",
 }
 

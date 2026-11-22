@@ -1,7 +1,7 @@
 import { expect, test } from "vitest"
 
 import { issueText } from "#lib/combi/issues"
-import { formatStat, isEmptyStats, parseStat, readStats, STAT_FIELDS, statsSentence } from "#lib/combi/stats"
+import { formatStat, isEmptyStats, parseStat, readStats, STAT_FIELDS } from "#lib/combi/stats"
 import { en } from "#lib/i18n/en"
 
 test("a stat is a whole number or a range of them", () => {
@@ -92,17 +92,6 @@ test("no stats is empty", () => {
 	expect(isEmptyStats({ time: 3 })).toBe(false)
 })
 
-test("stats read as one line, in a fixed order", () => {
-	expect(
-		statsSentence({
-			time: 245,
-			boxes: { min: 2, max: 3 },
-			money: { min: 12000, max: 15000 },
-		}),
-	).toBe("Money 12,000–15,000 · Boxes 2–3 · Time 245s")
-	expect(statsSentence({})).toBe("")
-})
-
 test("score is a positive whole number or a range, and comes first", () => {
 	expect(STAT_FIELDS[0]).toBe("score")
 	expect(parseStat("score", "1,200,000 - 1,500,000")).toEqual({
@@ -113,10 +102,4 @@ test("score is a positive whole number or a range, and comes first", () => {
 	expect(readStats({ score: { min: 5, max: 9 } })).toEqual({
 		score: { min: 5, max: 9 },
 	})
-	expect(
-		statsSentence({
-			money: { min: 12000, max: 12000 },
-			score: { min: 1200000, max: 1500000 },
-		}),
-	).toBe("Score 1,200,000–1,500,000 · Money 12,000")
 })

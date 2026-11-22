@@ -50,6 +50,7 @@ export type IssueValues = {
 	loadoutNoOrderFlag: { tag: string }
 	loadoutOrderFlag: { tag: string; flag: string }
 	statFormat: { field: StatField }
+	roundValue: { field: StatField }
 	unreadableLine: undefined
 }
 
@@ -89,6 +90,7 @@ export const ISSUE_IDS = [
 	"loadoutNoOrderFlag",
 	"loadoutOrderFlag",
 	"statFormat",
+	"roundValue",
 	"unreadableLine",
 ] as const satisfies readonly IssueId[]
 
@@ -172,6 +174,8 @@ export function issueText(issue: Issue, m: Messages): string {
 			return t.loadoutOrderFlag(str("tag"), str("flag"))
 		case "statFormat":
 			return t.statFormat(str("field") as StatField)
+		case "roundValue":
+			return t.roundValue(str("field") as StatField)
 		case "episodeNoBoosts":
 		case "autoScore":
 		case "autoButSemi":

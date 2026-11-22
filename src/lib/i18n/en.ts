@@ -35,6 +35,13 @@ const statTakes: Record<StatField, string> = {
 	boxes: "Boxes takes 0 to 5, or a range like 2-4.",
 	time: "Time takes seconds, as a positive whole number.",
 }
+const roundTakes: Record<StatField, string> = {
+	score: "Score takes one positive whole number.",
+	money: "Money takes one positive whole number.",
+	exp: "Exp takes one positive whole number.",
+	boxes: "Boxes takes one number from 0 to 5.",
+	time: "Time takes seconds, as one positive whole number.",
+}
 const group = (tag: string) => `loadout group "${tag}"`
 const issues = {
 	codeLength: (length: number, got: number, code: string) =>
@@ -77,6 +84,7 @@ const issues = {
 	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: missing the order flag`,
 	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: order flag "${flag}" is neither "U" nor "O"`,
 	statFormat: (field: StatField) => statTakes[field],
+	roundValue: (field: StatField) => roundTakes[field],
 	unreadableLine: "this line names no code",
 }
 
