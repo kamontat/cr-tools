@@ -1,0 +1,98 @@
+---
+import type { Pick } from "#lib/i18n/messages"
+
+import Text from "#components/atoms/Text.astro"
+import { type BuildEnv, readBuildInfo } from "#lib/build-info"
+import { l10nAttr } from "#lib/i18n/messages"
+
+interface Props {
+	title: Pick
+	/** The build's own environment unless a test passes another. */
+	env?: BuildEnv
+}
+
+const { title, env } = Astro.props
+const info = readBuildInfo(env)
+const badge = info.environment === "preview" && info.pr !== null ? `pr-${info.pr}` : null
+---
+
+<header class="top-bar">
+	<button
+		id="menu-toggle"
+		type="button"
+		{...l10nAttr("aria-label", (m) => m.frame.menu)}
+		aria-controls="sidebar"
+		aria-expanded="false">
+		☰
+	</button>
+	<span class="title"><Text pick={title} /></span>
+	{badge && <span class="badge">{badge}</span>}
+</header>
+
+<style>
+.top-bar {
+	position: sticky;
+	top: 0;
+	z-index: var(--z-topbar);
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+	height: 52px;
+	padding: 0 14px 0 8px;
+	background: var(--bg);
+	border-bottom: 1px solid var(--line);
+}
+
+/* The environment line: transparent in production (see tokens.css). */
+.top-bar::after {
+	content: "";
+	position: absolute;
+	right: 0;
+	bottom: -1px;
+	left: 0;
+	height: 3px;
+	background: var(--env);
+	pointer-events: none;
+}
+
+#menu-toggle {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: var(--tap);
+	height: var(--tap);
+	border-radius: var(--radius);
+	color: var(--muted);
+	font-size: 17px;
+	cursor: pointer;
+}
+
+#menu-toggle:hover {
+	background: var(--hover);
+	color: var(--text);
+}
+
+#menu-toggle:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
+}
+
+.title {
+	overflow: hidden;
+	font-weight: 650;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.badge {
+	flex: none;
+	padding: 3px 8px;
+	border: 1px solid color-mix(in srgb, var(--env) 45%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--env) 18%, transparent);
+	color: color-mix(in srgb, var(--env) 70%, var(--text));
+	font: 600 11px var(--mono);
+	white-space: nowrap;
+}
+</style>

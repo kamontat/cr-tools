@@ -1,0 +1,140 @@
+---
+import type { FramePage } from "#lib/frame"
+
+import NavItem from "#components/atoms/NavItem.astro"
+import { both, l10nAttr } from "#lib/i18n/messages"
+import { TOOLS } from "#lib/tools"
+
+interface Props {
+	current: FramePage
+}
+
+const { current } = Astro.props
+---
+
+<nav id="sidebar" {...l10nAttr("aria-label", (m) => m.frame.nav)}>
+	<NavItem href="/" icon="⌂" label={both((m) => m.frame.home)} current={current === "home"} />
+	{TOOLS.map(({ slug, icon }) => (
+		<NavItem href={`/${slug}/`} icon={icon} label={both((m) => m.tools[slug].name)} current={current === slug} />
+	))}
+	<div class="bottom">
+		<NavItem href="/settings/" icon="⚙" label={both((m) => m.frame.settings)} current={current === "settings"} />
+	</div>
+</nav>
+
+<style>
+/*
+ * The shape follows sidebarMode in #lib/frame (keep the breakpoints in step)
+ * and the state follows <body data-sidebar>, which initFrame sets:
+ * - full (1100px and up): open is 210px, closed the 60px rail, both in the
+ *   page's flow. Before any data-sidebar is set it shows open.
+ * - rail (700-1099px): the 60px rail; open lays 210px over the page.
+ * - drawer (under 700px): off screen; open slides 250px in over the page.
+ *
+ * Shape rules come first and state rules after, so each later rule is at
+ * least as specific as the ones it overrides.
+ */
+nav {
+	position: sticky;
+	top: 52px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: 210px;
+	height: calc(100dvh - 52px);
+	padding: 10px 8px;
+	overflow: hidden auto;
+	background: var(--bg);
+	border-right: 1px solid var(--line);
+	transition: width 0.2s;
+}
+
+.bottom {
+	margin-top: auto;
+}
+
+@media (width < 1100px) {
+	nav {
+		width: 60px;
+	}
+}
+
+@media (width < 700px) {
+	nav {
+		position: fixed;
+		top: 52px;
+		bottom: 0;
+		left: 0;
+		z-index: var(--z-sidebar);
+		width: 250px;
+		height: auto;
+		visibility: hidden;
+		transform: translateX(-105%);
+		box-shadow: 8px 0 24px rgb(0 0 0 / 35%);
+		transition:
+			transform 0.2s,
+			visibility 0s 0.2s;
+	}
+}
+
+@media (width < 1100px) and (width >= 700px) {
+	nav :global(.label) {
+		opacity: 0;
+	}
+}
+
+:global(body[data-sidebar="closed"]) nav {
+	width: 60px;
+}
+
+:global(body[data-sidebar="closed"]) nav :global(.label) {
+	opacity: 0;
+}
+
+@media (width < 1100px) {
+	:global(body[data-sidebar="open"]) nav {
+		position: fixed;
+		top: 52px;
+		bottom: 0;
+		left: 0;
+		z-index: var(--z-sidebar);
+		width: 210px;
+		height: auto;
+		box-shadow: 8px 0 24px rgb(0 0 0 / 30%);
+	}
+
+	:global(body[data-sidebar="open"]) nav :global(.label) {
+		opacity: 1;
+	}
+}
+
+@media (width < 700px) {
+	:global(body[data-sidebar]) nav :global(.label) {
+		opacity: 1;
+	}
+
+	:global(body[data-sidebar="closed"]) nav {
+		width: 250px;
+	}
+
+	:global(body[data-sidebar="open"]) nav {
+		width: 250px;
+		visibility: visible;
+		transform: none;
+		box-shadow: 8px 0 24px rgb(0 0 0 / 35%);
+		transition: transform 0.2s;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	nav,
+	:global(body[data-sidebar]) nav {
+		transition: none;
+	}
+}
+
+:global(body[data-resizing]) nav,
+:global(body[data-resizing][data-sidebar]) nav {
+	transition: none;
+}
+</style>

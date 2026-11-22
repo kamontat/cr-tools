@@ -1,0 +1,50 @@
+---
+import "../styles/global.css"
+import type { Pick } from "#lib/i18n/messages"
+
+import { readBuildInfo } from "#lib/build-info"
+import { both } from "#lib/i18n/messages"
+import { LANG_KEY } from "#lib/lang"
+
+interface Props {
+	title: Pick
+}
+
+const title = both(Astro.props.title)
+---
+
+<!doctype html>
+<html lang="th" data-title-th={title.th} data-title-en={title.en} data-env={readBuildInfo().environment}>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="icon" href="/assets/cookies/fairy_cookie.png">
+		<meta name="generator" content={Astro.generator}>
+		<title>{title.th}</title>
+		<script is:inline>
+		try {
+			const theme = localStorage.getItem("theme")
+			if (theme === "dark" || theme === "light") document.documentElement.setAttribute("data-theme", theme)
+		} catch {}
+		</script>
+		<script define:vars={{ LANG_KEY }}>
+		// The HTML is Thai; only English needs switching before first paint.
+		try {
+			if (localStorage.getItem(LANG_KEY) === "en") {
+				const root = document.documentElement
+				root.lang = "en"
+				document.title = root.dataset.titleEn
+			}
+		} catch {}
+		</script>
+		<script>
+		import { loadGtm } from "#lib/gtm"
+
+		// Inlined at build time; unset (dev, previews, local builds) leaves GTM off.
+		loadGtm(import.meta.env.PUBLIC_GTM_ID, document)
+		</script>
+	</head>
+	<body>
+		<slot />
+	</body>
+</html>

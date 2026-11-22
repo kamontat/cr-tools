@@ -1,0 +1,14 @@
+---
+import type { Pick } from "#lib/i18n/messages"
+
+import { both } from "#lib/i18n/messages"
+
+interface Props {
+	pick: Pick
+}
+
+// Both languages ship in the HTML; lang.css hides the one not chosen.
+const text = both(Astro.props.pick)
+---
+
+<span data-lang="th">{text.th}</span><span data-lang="en">{text.en}</span>

@@ -2,6 +2,156 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-21: The combi page as a saved list, with an editor pop-up
+
+### Features
+
+- The combi page is the saved list. New code, a search (full code, cookie and pet names,
+  note), a goal filter and a sort (newest, oldest, highest average money, code A–Z), with
+  the filter and sort remembered in this browser.
+- A closed row shows the cookie with its pet, the 10 characters, the mode and goals, the
+  episode and the saved stats (score, money, exp, boxes, time).
+- Pressing a row opens it, and several can be open at once. An open row lists Run, Results,
+  Team, Treasures, Boosts, Random boost, Cookie power+ and Note as icon lines; pressing a
+  line's pictures shows its names, and its › opens the editor on that tab. A treasure slot
+  shows its first treasure and `+N` for its alternatives until pressed, and evolved and
+  blessed treasures carry an E or B ring.
+- The editor shows the 10 characters large with a summary and the full code (tapping part
+  of the code jumps to its control), and five tabs: Main, Cookies, Treasures, Boosts and
+  Run log, each field with a `?` help. Copy, Share, Save or Update and a ⋯ menu (Type a
+  code, Reset, Save as new, Delete) sit top right. At 1400px and up it docks beside the
+  list; below that it is a pop-up, and a bottom sheet on phones.
+- A Share pop-up gives the share link and the full code, each with its own Copy, and Share
+  to app where the browser offers it.
+- Pasting a code anywhere on the page opens it, and old share links
+  (`/combi-name/#CODE?note=…&money=…`) open with their note and stats.
+- Home shows the latest three saved codes, with Copy and See all.
+- Pop-ups stack (Share over the editor), lock the page behind them, and can dock.
+
+### Improvements
+
+- The combi page is up to 1100px wide from 700px screens.
+- The code reader's warnings and errors are ids worded from the Thai and English
+  catalogues; the English wording and the code format are unchanged.
+- Notices show above pop-ups and are announced to screen readers.
+- In Thai, an episode is ด่าน.
+
+### Bug fixes
+
+- Images keep their size while they load, since the reset's `img { height: auto }` had
+  overridden their `width` and `height`, and every form field has a `name`; Chrome's issue
+  report is empty on every page.
+
+### Decisions
+
+- Unsaved edits are never replaced without asking: paste, another row, New code or a link
+  is refused with a notice.
+- Picks an episode cannot use are kept in the editor and come back when the episode does;
+  the code carries only what the episode allows.
+- Until rounds arrive (piece 4), the Run log tab keeps the five stat boxes and "average
+  money" is the middle of the saved money range. Back up and restore come with piece 5.
+- Delete asks for a second press and has no undo, as on the old page.
+
+## 2026-11-20: Thai and English, Thai by default
+
+### Features
+
+- The site speaks Thai and English. Thai is the default; Settings → Appearance has a
+  ไทย / English switch that changes the page in place and is remembered in this browser.
+  The page title, the ☰ button's name and the About panel follow it, and so does going
+  Back to a page seen before the switch.
+- Settings' About shows its build time in the chosen language, with Thai months and the
+  Gregorian year (2026).
+- The combi reader's interface words — goals, modes, actions, field names, "None", "Any
+  goal" — come in both languages, ready for the combi page, along with that page's list,
+  editor and share labels and a short help text for each field.
+
+### Improvements
+
+- Every interface string lives in one typed catalogue per language
+  (`src/lib/i18n/en.ts` and `th.ts`); a key missing from either fails `astro check` and a
+  test.
+- An English visitor never sees Thai first: a script in `<head>` picks the language before
+  the page paints, and the hidden language is removed from screen readers and copy-paste.
+- The language buttons carry their own `lang`, so a screen reader says each in its own
+  voice.
+- A code set to any episode now reads "Any episode" rather than "Any", matching "Any goal"
+  and "Any floor".
+
+### Decisions
+
+- Item names stay English in both languages (cookies, pets, treasures, boosts, cookie
+  powers, episodes), as cookierunhub.com names them.
+- Static pages ship both languages and CSS hides one, rather than swapping text in script,
+  so nothing flashes and pages work before JavaScript runs.
+- The combi reader's warning and error sentences, and the saved list's sort and filter
+  words, stay English until the combi page is rebuilt; nothing shows them yet.
+
+## 2026-11-20: The new frame, Home and Settings
+
+### Features
+
+- Every page sits in one frame: a top bar with ☰ and the page title, and a left sidebar
+  linking Home, each tool and Settings. On wide screens (1100px and up) the sidebar is open
+  beside the page and remembers being closed; from 700 to 1099px it is an icon rail that
+  opens over the page; on phones it is a drawer that slides in with a dimmed backdrop.
+- Previews mark themselves: an amber line under the top bar and a `pr-<number>` badge.
+- A pop-up panel for details and editors: it opens from the right on larger screens, where
+  its left edge drags (or arrow-keys) to resize and the width is remembered per panel, and
+  slides up from the bottom on phones. Escape, the close button or the backdrop close it.
+- Settings has a theme switch (System, Dark, Light), applied before the page paints, and an
+  About row that opens the build details: environment, build time with its time zone, the
+  source (a preview links its pull request) and the commit.
+- Home shows the site's title, a one-line intro and a card for each tool.
+
+### Decisions
+
+- Dark is the default look; light follows the system or the Settings choice.
+- Labels are sentence case with no letter spacing, so Thai text keeps its marks in place; a
+  test refuses spaced capitals in any stylesheet.
+- While the window is being resized the sidebar does not animate, so it never slides across
+  the page as the width crosses a breakpoint.
+
+## 2026-11-20: Redesign groundwork on the Astro template
+
+### BREAKING CHANGES
+
+- The project no longer runs on Bun. Install with `pnpm install` and run every script with
+  `pnpm run <script>`; `package.json`'s `devEngines` pins Node.js 24.22.3 and pnpm 12.22.0,
+  and `mise` reads them from there.
+- The Lit components and `src/routes/` are gone. Pages live in `src/pages/` as Astro files,
+  and interactive parts are Svelte. On the `redesign` branch the three pages are
+  placeholders until the next pieces fill them in.
+- The combi logic moved from `src/routes/combi-name/` to `src/lib/combi/`, imported as
+  `#lib/combi/<module>`.
+
+### Features
+
+- Every build records its environment (Development, Local, Preview or Production), commit,
+  build time, and on previews the pull request number and branch, for the coming Settings
+  About list.
+
+### Improvements
+
+- The site is built on [ktemplates/astro](https://github.com/ktemplates/astro): Astro 7 with
+  static output, Svelte 5, Vitest, `astro check` and Biome. Pages build to folders
+  (`/combi-name/`), and `/combi-name` redirects there, so links already shared keep opening.
+- Icons ship from `public/assets/` and are served at `/assets/...`, not inlined into the
+  page. The favicon is Fairy Cookie again.
+- CI installs with the pinned Node.js and pnpm and refuses a lockfile that does not match
+  `package.json`.
+- Agent docs and skills (`project-*`) describe the new layout.
+
+### Decisions
+
+- The combi wire format did not change: the codec, catalog, loadout and full-code modules
+  moved as pure renames, and the exhaustive round-trip test over every combi still passes.
+- Node.js and pnpm replace Bun to follow the template, because Astro, Vitest and Wrangler
+  target Node.js and a second runtime only added friction.
+- The asset scripts import each other through a new `#scripts/*` alias, because plain Node.js
+  does not resolve extensionless relative imports and imports never carry `.ts`. A test keeps
+  `src/` from importing it, so scraper code never reaches the site.
+
 ## 2026-11-20: Ube Ice Cookie and new treasures in the loadout picker
 
 ### Features

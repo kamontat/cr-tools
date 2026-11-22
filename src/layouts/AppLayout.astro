@@ -1,0 +1,130 @@
+---
+import type { FramePage } from "#lib/frame"
+import type { Pick } from "#lib/i18n/messages"
+
+import Sidebar from "#components/organisms/Sidebar.astro"
+import TopBar from "#components/organisms/TopBar.astro"
+import BaseLayout from "#layouts/BaseLayout.astro"
+import { FULL_MIN_WIDTH, SIDEBAR_KEY } from "#lib/frame"
+
+interface Props {
+	title: Pick
+	current: FramePage
+	/**
+	 * From the dock breakpoint (DOCK_MIN_WIDTH in #lib/frame) the wrapper fills
+	 * the width, for a page that sets a docked panel beside its content.
+	 */
+	wide?: boolean
+}
+
+const { title, current, wide = false } = Astro.props
+---
+
+<BaseLayout title={title}>
+	<script define:vars={{ SIDEBAR_KEY, FULL_MIN_WIDTH }}>
+	// Before first paint, so a sidebar closed on a wide screen does not flash open.
+	// define:vars ships it inline; initFrame takes over after.
+	try {
+		if (window.innerWidth >= FULL_MIN_WIDTH && localStorage.getItem(SIDEBAR_KEY) === "closed")
+			document.body.dataset.sidebar = "closed"
+	} catch {}
+	</script>
+	<TopBar title={title} />
+	<div class="frame">
+		<Sidebar current={current} />
+		<div id="sidebar-scrim" class="scrim" aria-hidden="true"></div>
+		<main id="content">
+			<div class="wrap" data-wide={wide ? "" : undefined}>
+				<slot />
+			</div>
+		</main>
+	</div>
+	<script>
+	import { initFrame } from "#lib/frame"
+	import { currentLang, localizeAttrs, syncFromStorage, syncOnRestore } from "#lib/lang"
+	import { localStore } from "#lib/storage"
+
+	const store = localStore()
+	// The head's boot set <html lang>; bring the frame's labels and tooltips in line with it.
+	localizeAttrs(document, currentLang(document))
+	// Correct a boot that did not run, and a page the back-forward cache restores
+	// after the visitor chose another language or theme elsewhere.
+	syncFromStorage(document, store)
+	syncOnRestore(window, document, store)
+	initFrame(document, store)
+	</script>
+</BaseLayout>
+
+<style>
+/*
+ * Breakpoints follow sidebarMode in #lib/frame. The sidebar takes the first
+ * column while it is in the page's flow; over the page it is fixed, so main
+ * names its column rather than flowing into the sidebar's.
+ */
+.frame {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	min-height: calc(100dvh - 52px);
+}
+
+main {
+	grid-column: 2;
+	min-width: 0;
+}
+
+/* The one page gutter, so no page pads itself and every page lines up. */
+.wrap {
+	max-width: 640px;
+	padding: 28px 24px;
+}
+
+.scrim {
+	display: none;
+}
+
+@media (width < 1100px) {
+	.frame {
+		grid-template-columns: 60px minmax(0, 1fr);
+	}
+
+	:global(body[data-sidebar="open"]) .scrim {
+		display: block;
+		position: fixed;
+		inset: 52px 0 0;
+		z-index: var(--z-scrim);
+		background: rgb(0 0 0 / 50%);
+	}
+}
+
+@media (width < 700px) {
+	.frame {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	main {
+		grid-column: 1;
+	}
+
+	.wrap {
+		padding: 20px 16px;
+	}
+}
+
+/* A wide page (the combi list) takes up to 1100px before the dock breakpoint, room for its table. */
+@media (width >= 700px) {
+	.wrap[data-wide] {
+		max-width: 1100px;
+	}
+}
+
+@media (width >= 1400px) {
+	.wrap {
+		max-width: 1100px;
+		padding: 32px 40px;
+	}
+
+	.wrap[data-wide] {
+		max-width: none;
+	}
+}
+</style>

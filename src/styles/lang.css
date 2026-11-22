@@ -1,0 +1,9 @@
+/*
+ * Every visible string ships in both languages as sibling spans; the one not
+ * chosen is hidden. Thai is the default, so anything but lang="en" shows Thai.
+ */
+:root:not([lang="en"]) [data-lang="en"],
+:root[lang="en"] [data-lang="th"] {
+	/* biome-ignore lint/complexity/noImportantStyles: a component's own display rule on the span must not show the other language */
+	display: none !important;
+}
