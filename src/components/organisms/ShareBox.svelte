@@ -112,8 +112,11 @@ let codeValue = $state<HTMLElement>()
 </section>
 
 <style>
+/* Sections, not divs: the reset lays out only divs as columns, so these say it themselves. */
 .share {
-	gap: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
 	padding: 14px;
 	border: 1px solid var(--line);
 	border-radius: var(--radius-lg);
@@ -126,7 +129,9 @@ let codeValue = $state<HTMLElement>()
 }
 
 .box {
-	gap: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 h4 {
