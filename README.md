@@ -189,9 +189,9 @@ isSemiAuto(combi) // true
 
 ## Web app
 
-The site is built on Astro and Svelte: Home at `/` with the latest saved codes, the combi tool at `/combi-name/` with saved codes as its main content and an editor pop-up, and Settings at `/settings/`, in Thai and English with a left sidebar. The design is [`docs/superpowers/specs/2026-11-19-site-redesign-design.md`](docs/superpowers/specs/2026-11-19-site-redesign-design.md); rounds and backup and restore for saved data are still to come.
+The site is built on Astro and Svelte: Home at `/` with the latest saved codes, the combi tool at `/combi-name/` with saved codes as its main content and an editor pop-up, and Settings at `/settings/`, in Thai and English with a left sidebar. The design is [`docs/superpowers/specs/2026-11-19-site-redesign-design.md`](docs/superpowers/specs/2026-11-19-site-redesign-design.md). Each saved code keeps the rounds it was played, with their averages on the list; backup and restore for saved data are still to come.
 
-The format did not change in the redesign. Links already shared, such as `/combi-name/#CODE?note=…`, keep working: the combi page opens the code with its note and stats.
+The format did not change in the redesign. Links already shared, such as `/combi-name/#CODE?note=…`, keep working: the combi page opens the code with its note, and a link's old stat ranges come in as rounds.
 
 ## Development
 
