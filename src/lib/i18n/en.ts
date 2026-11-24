@@ -201,6 +201,7 @@ export const en = {
 		},
 		editor: {
 			newTitle: "New code",
+			back: "Back to saved codes",
 			editTitle: "Edit code",
 			tabs: { main: "Main", cookies: "Cookies", treasures: "Treasures", boosts: "Boosts", runLog: "Run log" },
 			save: "Save",
@@ -229,8 +230,6 @@ export const en = {
 			clear: "Clear",
 			done: "Done",
 			autoOnlyAction: "Only an auto run starts with an action.",
-			order: "Order",
-			anyOrder: "Any order",
 			exactOrder: "Exact order",
 			anySlot: "Any slot",
 			slot: (n: number) => `Slot ${n}`,

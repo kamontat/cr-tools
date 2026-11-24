@@ -11,9 +11,10 @@ import EditorMainTab from "#components/organisms/EditorMainTab.svelte"
 import EditorRolesTab from "#components/organisms/EditorRolesTab.svelte"
 import EditorRunLogTab from "#components/organisms/EditorRunLogTab.svelte"
 import EditorTreasuresTab from "#components/organisms/EditorTreasuresTab.svelte"
+import ShareBox from "#components/organisms/ShareBox.svelte"
 import { CODE_LENGTH } from "#lib/combi/codec"
 import { describeRun } from "#lib/combi/describe"
-import { codeOf, type Draft, draftFromCode, isDirty, tabBadges, tabEnabled } from "#lib/combi/draft"
+import { codeOf, type Draft, draftFromCode, isDirty, keptRounds, tabBadges, tabEnabled } from "#lib/combi/draft"
 import { canJump, jumpTab, ROLES, type Role } from "#lib/combi/editor"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { hintsFor } from "#lib/combi/hints"
@@ -28,12 +29,14 @@ interface Props {
 	/** The saved entry the draft was opened from, or null for a new code. */
 	saved: SavedCode | null
 	open: boolean
-	/** Beside the list on a wide screen rather than a pop-up over it. */
-	docked: boolean
+	/**
+	 * In the list's place on the page, with a back arrow, rather than beside it.
+	 * The editor is never a pop-up either way.
+	 */
+	view: boolean
 	onclose: () => void
 	onchange: (draft: Draft) => void
 	oncopy: () => void
-	onshare: () => void
 	onsave: () => void
 	onupdate: () => void
 	onsaveasnew: () => void
@@ -49,11 +52,10 @@ let {
 	draft,
 	saved,
 	open,
-	docked,
+	view,
 	onclose,
 	onchange,
 	oncopy,
-	onshare,
 	onsave,
 	onupdate,
 	onsaveasnew,
@@ -77,6 +79,13 @@ let chosen = $state<TabName>(store === null ? "main" : storedTab(store))
 const tab = $derived(tabEnabled(draft, chosen) ? chosen : "main")
 
 const code = $derived(codeOf(draft))
+
+/** Share opens in place, under the code; another entry opening folds it away. */
+let sharing = $state(false)
+$effect.pre(() => {
+	void draft.from
+	sharing = false
+})
 const hints = $derived(hintsFor(code, m))
 const summary = $derived(describeRun(draft.full, m).join(" · "))
 const badges = $derived(tabBadges(draft))
@@ -312,9 +321,10 @@ function onclick(event: MouseEvent) {
 	id="editor"
 	title={draft.from === null ? m.combi.editor.newTitle : m.combi.editor.editTitle}
 	{open}
-	{docked}
+	docked={true}
+	back={view}
 	{onclose}
-	closeLabel={m.frame.close}
+	closeLabel={view ? m.combi.editor.back : m.frame.close}
 	resizeLabel={m.frame.resize}>
 	<div class="editor" bind:this={body}>
 		<div class="head">
@@ -342,6 +352,9 @@ function onclick(event: MouseEvent) {
 				<p class="type-status" class:error={reading.kind === "error"} id="{uid}-type-status" aria-live="polite">
 					{reading.text}
 				</p>
+			{/if}
+			{#if sharing}
+				<ShareBox entry={{ code, note: draft.note, rounds: keptRounds(draft) }} />
 			{/if}
 		</div>
 
@@ -371,7 +384,9 @@ function onclick(event: MouseEvent) {
 	{#snippet actions()}
 		<div row class="foot" bind:this={foot}>
 			<button type="button" class="btn primary" onclick={oncopy}>{m.combi.editor.copy}</button>
-			<button type="button" class="btn" onclick={onshare}>{m.combi.editor.share}</button>
+			<button type="button" class="btn" aria-expanded={sharing} onclick={() => (sharing = !sharing)}>
+				{m.combi.editor.share}
+			</button>
 			{#if saved === null}
 				<button type="button" class="btn" onclick={onsave}>{m.combi.editor.save}</button>
 			{:else if canUpdate}

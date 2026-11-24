@@ -26,6 +26,26 @@ test("the docked editor stays in view and keeps its footer on screen", () => {
 	expect(docked).toMatch(/max-height:\s*calc\(100dvh/)
 })
 
+test("an open row's details stand apart from its head, whose hover colour reaches its bottom edge", () => {
+	const details = rule(read("src/components/organisms/CombiList.svelte"), ".details")
+	expect(details).toMatch(/margin:\s*1\dpx 16px 14px/)
+})
+
+test("the Share box spaces its parts: its sections are columns, since the reset makes only divs one", () => {
+	const share = read("src/components/organisms/ShareBox.svelte")
+	for (const selector of [".share", ".box"]) {
+		expect(rule(share, selector), selector).toMatch(/display:\s*flex/)
+		expect(rule(share, selector), selector).toMatch(/flex-direction:\s*column/)
+		expect(rule(share, selector), selector).toMatch(/gap:\s*\d+px/)
+	}
+})
+
+test("beside the editor, the list keeps room for its rows however wide the editor is dragged", () => {
+	const app = read("src/components/organisms/CombiApp.svelte")
+	expect(rule(app, ".docked :global(.panel.docked)")).toMatch(/max-width:\s*calc\(100% - var\(--list-min\)/)
+	expect(rule(app, ".docked .list")).toMatch(/min-width:\s*var\(--list-min\)/)
+})
+
 test("the saved list lays its rows out by its own width, not the window's", () => {
 	const list = read("src/components/organisms/CombiList.svelte")
 	expect(rule(list, ".list")).toMatch(/container(?:-type)?:\s*(?:list\s*\/\s*)?inline-size/)

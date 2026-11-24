@@ -195,9 +195,15 @@ The page is the **saved list**:
   "Code A–Z" sorts by the 10 characters, then the full code. Filtering and
   sorting are the builder's to extend (episode, for one) without asking.
 
-**The editor** opens from New code or a row, in the pop-up:
+**The editor** opens from New code or a row, never as a pop-up (owner's
+change, 2026-11-22: no sheet or panel stacked over the list):
 
-- Header: "New code" or "Edit code", and ✕.
+- **Below 1100px** it takes the list's place on the page, with a ← back to the
+  list in its header; opening it adds a step to the browser's history, so Back
+  returns to the list too, scrolled where it was.
+- **From 1100px** it sits beside the list, which stays usable. It keeps its
+  resizable width, and the list always keeps at least 360px.
+- Header: "New code" or "Edit code", and ✕ (← when it is in the list's place).
 - The 10-character code, large, with a one-line summary and the full code in
   small type under it.
 - Tabs: **Main** (mode, goal, episode, floor for the tower, starting action),
@@ -209,12 +215,10 @@ The page is the **saved list**:
   Starting action, Cookie, Treasures, Boosts, rounds, and any other field)
   toggles a short explanation under the label, in the current language. It
   replaces today's help drawer. The slot numbers live in these explanations.
-- Footer, always visible: **Copy** (the 10 characters), **Share** (the same
-  pop-up as a row's), **Save** (or **Update**), and **⋯** with Type a code and
-  Reset.
-- **Wide screens (1400px and up):** the editor docks beside the list instead of
-  covering it, so the list stays usable while it is open. It keeps its
-  resizable width.
+- Header actions, always visible: **Copy** (the 10 characters), **Share**,
+  **Save** (or **Update**), and **⋯** with Type a code and Reset.
+- **Share** opens in place, under the editor's code (or inside a row, from the
+  row's Share), and folds away on a second press. It is never a pop-up.
 
 ### Settings
 
