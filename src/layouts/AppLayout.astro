@@ -110,10 +110,16 @@ main {
 	}
 }
 
-/* A wide page (the combi list) takes up to 1100px before the dock breakpoint, room for its table. */
+/* A wide page (the combi list) takes up to 1100px, room for its table, and the whole width from the dock breakpoint. */
 @media (width >= 700px) {
 	.wrap[data-wide] {
 		max-width: 1100px;
+	}
+}
+
+@media (width >= 1100px) {
+	.wrap[data-wide] {
+		max-width: none;
 	}
 }
 
@@ -121,10 +127,6 @@ main {
 	.wrap {
 		max-width: 1100px;
 		padding: 32px 40px;
-	}
-
-	.wrap[data-wide] {
-		max-width: none;
 	}
 }
 </style>

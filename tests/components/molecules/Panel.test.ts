@@ -32,7 +32,14 @@ afterEach(() => {
 })
 
 const open = (
-	props: Partial<{ id: string; onclose: () => void; withFooter: boolean; withActions: boolean; docked: boolean }> = {},
+	props: Partial<{
+		id: string
+		onclose: () => void
+		withFooter: boolean
+		withActions: boolean
+		docked: boolean
+		back: boolean
+	}> = {},
 ) => {
 	const onclose = props.onclose ?? vi.fn()
 	const result = render(Panel, {
@@ -46,6 +53,7 @@ const open = (
 			...(props.withFooter ? { footer } : {}),
 			...(props.withActions ? { actions } : {}),
 			...(props.docked ? { docked: true } : {}),
+			...(props.back ? { back: true } : {}),
 		},
 	})
 	return { ...result, onclose }
@@ -330,4 +338,17 @@ test("actions sit in the header, before the close button", () => {
 	)
 	expect(buttons).toEqual(["Act", "Shut"])
 	expect(document.querySelector(".panel-foot")).toBeNull()
+})
+
+test("as a page's view: the close button is a back arrow before the title, and nothing resizes", async () => {
+	const { onclose } = open({ docked: true, back: true })
+	const section = document.querySelector('[data-layout="view"]') as HTMLElement
+	expect(section).not.toBeNull()
+	const back = screen.getByRole("button", { name: "Shut" })
+	expect(back.textContent?.trim()).toBe("←")
+	// The arrow leads the header, before the title.
+	expect(section.querySelector(".panel-head")?.firstElementChild).toBe(back)
+	expect(screen.queryByRole("separator")).toBeNull()
+	await fireEvent.click(back)
+	expect(onclose).toHaveBeenCalledTimes(1)
 })

@@ -29,12 +29,12 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
 | `SettingsApp` | organism | `.svelte` | The Settings page island: Language, Appearance (theme) and About (a `Panel` of `aboutRows`). Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
 | `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
-| `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and docks the editor from `DOCK_MIN_WIDTH` (1400px) or pops it up below. |
+| `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. Nothing on the page opens over it. |
 | `CombiList` | organism | `.svelte` | The saved list: search, goal filter, sort, rows with `LoadoutIcons`, and the New, Open, Copy and Share actions. |
 | `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (`docked` or pop-up): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
 | `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
 | `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
-| `ShareDialog` | organism | `.svelte` | The Share panel over the editor: the link with its note, the full code, Copy and Share to app. |
+| `ShareBox` | organism | `.svelte` | Share, in place where it was pressed (under the editor's code, or in a saved row): the link with its note, the full code, Copy and Share to app. Never a pop-up. |
 
 The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
 components still to come and their tiers; the rules below are what every one follows.
@@ -42,7 +42,7 @@ components still to come and their tiers; the rules below are what every one fol
 ### Panel
 
 `Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
-snippet, an optional `docked` flag, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
+snippet, optional `docked` and `back` flags, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
 handle's names, which the caller passes in the page's language (`m.frame.close`,
 `m.frame.resize`); there is no English default. It renders nothing while
 `open` is false.
@@ -51,16 +51,19 @@ handle's names, which the caller passes in the page's language (`m.frame.close`,
   and the title's id. `id="editor"` gets the editor's wider default (640px) and share (70%
   of the window, 60% for the others); every width is clamped to at least 360px.
 - `docked` draws it as a `<section>` in the page's flow (the combi editor beside the saved
-  list from 1400px, `DOCK_MIN_WIDTH`): not modal, no scrim, no focus trap, and Escape from
+  list from 1100px, `DOCK_MIN_WIDTH`): not modal, no scrim, no focus trap, and Escape from
   inside it calls `onclose` unless a control handled the key or a pop-up is open. Its left
   edge resizes the same way and measures from the section's right edge.
+- `back`, with `docked`, makes it the page's own view (`data-layout="view"`, the combi
+  editor below 1100px in the list's place): the close button is a ← leading the header,
+  the width is the page's, and nothing resizes.
 - On a wide screen the left edge is a `role="separator"` handle: drag, or ←/→ in 16px
   steps; double-click resets to the default. Under 700px (`RAIL_MIN_WIDTH`) it is a bottom
   sheet with no handle.
 - A pop-up is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
   `#lib/modal`: focus moves in when it opens, Tab wraps inside it, Escape and the scrim
   call `onclose`, and focus returns on close to what held it before.
-- Panels stack (Share over the editor): only the topmost handles Tab, focus and Escape,
+- Panels stack (the combi page no longer does; Settings' pop-ups still may): only the topmost handles Tab, focus and Escape,
   and the frame's Escape stands aside while any is open. Render a second panel as a
   sibling of the first, not inside its body: the slide-in animation transforms `.panel`,
   which makes it the containing block of a `position: fixed` layer opened inside it.
@@ -112,7 +115,7 @@ A component reaches for these rather than re-implementing them:
   `isModalOpen(doc)`, and `focusables(root)`. One module-level stack, which the build emits
   once, so every modal on a page shares it.
 - **`#lib/frame`** — `FramePage`, `SIDEBAR_KEY`, the breakpoints `RAIL_MIN_WIDTH` (700),
-  `FULL_MIN_WIDTH` (1100) and `DOCK_MIN_WIDTH` (1400), `sidebarMode(width)`, and `initFrame(doc, store)`, which
+  `FULL_MIN_WIDTH` (1100) and `DOCK_MIN_WIDTH` (1100), `sidebarMode(width)`, and `initFrame(doc, store)`, which
   `AppLayout` calls once per page. Use the constants rather than writing 700 or 1100 in a
   script; CSS cannot read them, so a stylesheet's breakpoint carries a comment pointing
   here.

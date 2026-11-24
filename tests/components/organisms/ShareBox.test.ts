@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/svelte"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
-import ShareDialog from "#components/organisms/ShareDialog.svelte"
+import ShareBox from "#components/organisms/ShareBox.svelte"
 import { shareHashFor } from "#lib/combi/state"
 import { en } from "#lib/i18n/en"
 
@@ -32,15 +32,12 @@ afterEach(() => {
 	vi.restoreAllMocks()
 })
 
-const open = () => {
-	const onclose = vi.fn()
-	render(ShareDialog, { props: { entry, onclose } })
-	return { onclose }
-}
+const open = () => render(ShareBox, { props: { entry } })
 
-test("the link carries the code and its note", () => {
+test("a section in place, never a pop-up, with the link carrying the code and its note", () => {
 	open()
-	const dialog = screen.getByRole("dialog", { name: en.combi.share.title })
+	expect(screen.queryByRole("dialog")).toBeNull()
+	const dialog = screen.getByRole("region", { name: en.combi.share.title })
 	const link = `${location.origin}${location.pathname}${shareHashFor(code, entry.note, entry.stats)}`
 	expect(link).toContain(`#${code}?note=`)
 	expect(dialog.textContent).toContain(link)
@@ -50,11 +47,6 @@ test("the full code shows", () => {
 	open()
 	expect(screen.getAllByText(code).length).toBeGreaterThan(0)
 	expect(screen.getByRole("button", { name: en.combi.share.copyFull(code) })).toBeTruthy()
-})
-
-test("nothing renders without an entry", () => {
-	render(ShareDialog, { props: { entry: null, onclose: vi.fn() } })
-	expect(screen.queryByRole("dialog")).toBeNull()
 })
 
 test("Share to app is hidden without navigator.share", () => {
@@ -99,19 +91,12 @@ test("no clipboard API shows the error toast too", async () => {
 	expect(await screen.findByText(en.combi.share.copyFailed)).toBeTruthy()
 })
 
-test("a notice from one share does not carry over to the next, or to a reopened one", async () => {
+test("a notice from one share does not carry over to the next", async () => {
 	setNavigator("clipboard", { writeText: vi.fn(() => Promise.resolve()) })
-	const onclose = vi.fn()
-	const { rerender } = render(ShareDialog, { props: { entry, onclose } })
+	const { rerender } = render(ShareBox, { props: { entry } })
 	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyFull(code) }))
 	expect(await screen.findByText(en.combi.share.copied)).toBeTruthy()
 
 	await rerender({ entry: { code: "1-AM0A000000", note: "", stats: {} } })
-	expect(screen.queryByText(en.combi.share.copied)).toBeNull()
-
-	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyLink }))
-	expect(await screen.findByText(en.combi.share.copied)).toBeTruthy()
-	await rerender({ entry: null })
-	await rerender({ entry })
 	expect(screen.queryByText(en.combi.share.copied)).toBeNull()
 })

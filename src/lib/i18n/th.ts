@@ -179,6 +179,7 @@ export const th: Messages = {
 		},
 		editor: {
 			newTitle: "โค้ดใหม่",
+			back: "กลับไปที่รายการโค้ด",
 			editTitle: "แก้ไขโค้ด",
 			tabs: { main: "หลัก", cookies: "คุกกี้", treasures: "สมบัติ", boosts: "บูสต์", runLog: "บันทึกการวิ่ง" },
 			save: "บันทึก",
@@ -207,8 +208,6 @@ export const th: Messages = {
 			clear: "ล้าง",
 			done: "เสร็จ",
 			autoOnlyAction: "เฉพาะการวิ่งแบบออโต้เท่านั้นที่เริ่มด้วยแอ็กชัน",
-			order: "ลำดับ",
-			anyOrder: "ลำดับใดก็ได้",
 			exactOrder: "ตามลำดับนี้",
 			anySlot: "ช่องใดก็ได้",
 			slot: (n: number) => `ช่อง ${n}`,

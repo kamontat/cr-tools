@@ -44,8 +44,9 @@ the GTM call and the favicon in the source text.
 (`tests/pages/pages.test.ts` fails a page that does not reach it). Its props are `title`
 (a `Pick`, forwarded to `BaseLayout` and shown in the top bar) and `current`, a `FramePage` from
 `#lib/frame` — `"home"`, `"settings"` or a tool slug — that marks the sidebar's current link —
-and an optional `wide`, which marks the wrapper `data-wide` so it fills the width from
-1400px (`DOCK_MIN_WIDTH`), for the combi page's list with its editor docked beside it.
+and an optional `wide`, which marks the wrapper `data-wide` so it takes up to 1100px from
+700px and the full width from 1100px (`DOCK_MIN_WIDTH`), for the combi page's list with its
+editor beside it.
 It renders:
 
 - a `define:vars` boot script, before the frame's markup, that sets

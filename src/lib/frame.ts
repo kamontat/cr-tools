@@ -18,8 +18,11 @@ export const SIDEBAR_KEY = "frame:sidebar"
 export const FULL_MIN_WIDTH = 1100
 export const RAIL_MIN_WIDTH = 700
 
-/** From this width the combi editor docks beside the saved list rather than popping up over it. */
-export const DOCK_MIN_WIDTH = 1400
+/**
+ * From this width the combi editor sits beside the saved list; below it, the
+ * editor takes the list's place on the page. Neither ever opens over the page.
+ */
+export const DOCK_MIN_WIDTH = 1100
 
 /** How long after the last resize event the sidebar animates again. */
 const RESIZE_SETTLE_MS = 200

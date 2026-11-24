@@ -16,10 +16,12 @@ interface Props {
 	helpLabel: string
 	/** A muted line under the label, such as what the episode leaves out. */
 	note?: string
+	/** A control that belongs in the heading, beside the label, such as a switch. */
+	action?: Snippet
 	children: Snippet
 }
 
-let { id, label, help, helpLabel, note, children }: Props = $props()
+let { id, label, help, helpLabel, note, action, children }: Props = $props()
 
 let open = $state(false)
 </script>
@@ -29,6 +31,9 @@ let open = $state(false)
 	<div row class="head">
 		<span class="label" id="{id}-label">{label}</span>
 		<HelpToggle label={helpLabel} controls="{id}-help" expanded={open} ontoggle={() => (open = !open)} />
+		{#if action}
+			<div row class="action">{@render action()}</div>
+		{/if}
 	</div>
 	<p class="help" id="{id}-help" hidden={!open}>{help}</p>
 	{#if note}
@@ -49,6 +54,11 @@ let open = $state(false)
 
 .label {
 	font-weight: 600;
+}
+
+.action {
+	margin-left: auto;
+	align-items: center;
 }
 
 .help,

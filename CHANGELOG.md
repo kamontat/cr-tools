@@ -2,6 +2,35 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-24: The combi editor as a view of the page, with Share in place
+
+### Features
+
+- Below 1100px the editor replaces the saved list instead of opening as a pop-up or a
+  bottom sheet, with a ← Back to saved codes; the browser's Back closes it too, and the
+  list comes back where it was scrolled. From 1100px it sits beside the list, which keeps
+  room for its rows however wide the editor is dragged.
+- Share opens in place: under the editor's header, or inside an open saved row. Each has
+  the share link and the full code with their own Copy, and Share to app where the browser
+  offers it. The combi page has no pop-ups.
+- The treasure order is one switch, Exact order, beside the Treasures label, instead of a
+  row of its own.
+
+### Improvements
+
+- The combi page uses the whole width from 1100px screens.
+- An open saved row's details start a step below its head, clear of its hover colour.
+
+### Bug fixes
+
+- The Share box's parts are spaced apart; they ran together.
+
+### Decisions
+
+- Nested pop-ups, sheets and side panels are gone from the combi page: the editor is a
+  view of the page and Share opens where it was pressed (the owner's change of
+  2026-11-22, recorded in the design).
+
 ## 2026-11-21: The combi page as a saved list, with an editor pop-up
 
 ### Features
