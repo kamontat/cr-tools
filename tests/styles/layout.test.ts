@@ -26,6 +26,11 @@ test("the docked editor stays in view and keeps its footer on screen", () => {
 	expect(docked).toMatch(/max-height:\s*calc\(100dvh/)
 })
 
+test("an open row's details stand apart from its head, whose hover colour reaches its bottom edge", () => {
+	const details = rule(read("src/components/organisms/CombiList.svelte"), ".details")
+	expect(details).toMatch(/margin:\s*1\dpx 16px 14px/)
+})
+
 test("the Share box spaces its parts: its sections are columns, since the reset makes only divs one", () => {
 	const share = read("src/components/organisms/ShareBox.svelte")
 	for (const selector of [".share", ".box"]) {

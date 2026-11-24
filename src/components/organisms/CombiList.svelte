@@ -753,7 +753,8 @@ select {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	margin: 0 16px 14px;
+	/* The head's hover colour fills it to its bottom edge, so the details start a step below. */
+	margin: 12px 16px 14px;
 	padding: 4px 14px 12px;
 	border-radius: var(--radius-lg);
 	background: var(--bg);
