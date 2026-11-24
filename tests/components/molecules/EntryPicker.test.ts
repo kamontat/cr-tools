@@ -75,3 +75,15 @@ test("a search that hides everything says so", async () => {
 	await fireEvent.input(search, { target: { value: "brave" } })
 	expect(screen.queryByText("Nothing matches")).toBeNull()
 })
+
+test("an option with a kind is framed by it, so an evolved and a blessed cell sharing a picture differ", () => {
+	const kinded = [
+		{ id: "E1", name: "Thing", src: "/assets/t.png", kind: "evolved" as const },
+		{ id: "B1", name: "Blessed Thing", src: "/assets/t.png", kind: "blessed" as const },
+	]
+	const { container } = render(EntryPicker, { props: { ...base, options: kinded, onpick: vi.fn() } })
+	expect([...container.querySelectorAll(".kind")].map((frame) => frame.getAttribute("data-kind"))).toEqual([
+		"evolved",
+		"blessed",
+	])
+})

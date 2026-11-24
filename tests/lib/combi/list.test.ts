@@ -189,9 +189,9 @@ test("row team: each set piece once, in play order, with every treasure a slot a
 	expect(rowTeam("not a code")).toBeNull()
 })
 
-test("row team: an evolved or blessed treasure carries its kind, a base one none", () => {
+test("row team: every treasure carries its kind, base included", () => {
 	const team = rowTeam(full({ treasures: [[treasurePick("098"), treasurePick("I98"), treasurePick("001")]] }))
-	expect(team?.[0]?.picks.map((pick) => pick.mark)).toEqual([undefined, "evolved", "blessed"])
+	expect(team?.[0]?.picks.map((pick) => pick.kind)).toEqual(["base", "evolved", "blessed"])
 })
 
 test("row boosts: each boost and cookie power+ with its pictures, the random boost, and whether the episode takes boosts", () => {

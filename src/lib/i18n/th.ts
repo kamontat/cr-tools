@@ -150,7 +150,7 @@ export const th: Messages = {
 			copy: "คัดลอก",
 			share: "แชร์",
 			edit: "แก้ไข",
-			kinds: { evolved: "วิวัฒน์", blessed: "ได้รับพร" },
+			kinds: { base: "พื้นฐาน", evolved: "วิวัฒน์", blessed: "ได้รับพร" },
 			team: "ทีม",
 			note: "โน้ต",
 			results: "ผลการวิ่ง",

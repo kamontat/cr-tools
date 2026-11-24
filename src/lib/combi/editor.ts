@@ -6,24 +6,30 @@
  */
 
 import type { Messages } from "#lib/i18n/messages"
-import type { CatalogSection } from "./catalog"
+import type { CatalogSection, EntryKind } from "./catalog"
 import type { Draft, ReasonId } from "./draft"
 import type { TreasurePick } from "./loadout"
 import type { TabName } from "./state"
 
-import { anyIdFor, imageFor, isAnyId, labelFor, optionsFor } from "./catalog"
+import { anyIdFor, imageFor, isAnyId, kindFor, labelFor, optionsFor } from "./catalog"
 import { limitsFor, tabEnabled, verdictOf } from "./draft"
 import { BOOST_LABELS, EPISODE_LABELS, RANDOM_BOOST_LABELS } from "./labels"
 
 /** Where `public/assets/` is served; every icon path the catalog gives is relative to it. */
 export const ASSET_BASE = "/assets/"
 
-/** One cell of a picker: an id, the name it shows, and its icon, if any. */
-export type EntryOption = { id: string; name: string; src: string | null }
+/** One cell of a picker: an id, the name it shows, its icon, if any, and for a treasure its kind. */
+export type EntryOption = { id: string; name: string; src: string | null; kind?: EntryKind }
+
+/** A treasure's kind as an option field; nothing for a cookie or a pet. */
+const kindField = (section: CatalogSection, id: string): { kind?: EntryKind } => {
+	const kind = kindFor(section, id)
+	return kind === null ? {} : { kind }
+}
 
 export function entryOf(section: CatalogSection, id: string): EntryOption {
 	const image = imageFor(section, id)
-	return { id, name: labelFor(section, id), src: image === null ? null : ASSET_BASE + image }
+	return { id, name: labelFor(section, id), src: image === null ? null : ASSET_BASE + image, ...kindField(section, id) }
 }
 
 const LIVE = new Map<CatalogSection, EntryOption[]>()
@@ -36,6 +42,7 @@ function live(section: CatalogSection): EntryOption[] {
 			id,
 			name,
 			src: image === null ? null : ASSET_BASE + image,
+			...kindField(section, id),
 		}))
 		LIVE.set(section, options)
 	}

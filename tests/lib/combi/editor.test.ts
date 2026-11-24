@@ -49,3 +49,12 @@ test("groups lead to their tab, and inert or switched-off groups lead nowhere", 
 	expect(canJump(special, "boosts")).toBe(false)
 	expect(canJump(special, "treasure1")).toBe(true)
 })
+
+test("a treasure option carries its kind; a cookie or a pet none", () => {
+	const treasures = entryOptions("treasures", [])
+	expect(treasures.find((option) => option.id === "001")?.kind).toBe("base")
+	expect(treasures.find((option) => option.id === "098")?.kind).toBe("evolved")
+	expect(treasures.find((option) => option.id === "I98")?.kind).toBe("blessed")
+	expect(entryOptions("pets", []).every((option) => option.kind === undefined)).toBe(true)
+	expect(entryOptions("cookies", []).every((option) => option.kind === undefined)).toBe(true)
+})
