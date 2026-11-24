@@ -221,8 +221,6 @@ export const en = {
 			clear: "Clear",
 			done: "Done",
 			autoOnlyAction: "Only an auto run starts with an action.",
-			order: "Order",
-			anyOrder: "Any order",
 			exactOrder: "Exact order",
 			anySlot: "Any slot",
 			slot: (n: number) => `Slot ${n}`,

@@ -208,8 +208,6 @@ export const th: Messages = {
 			clear: "ล้าง",
 			done: "เสร็จ",
 			autoOnlyAction: "เฉพาะการวิ่งแบบออโต้เท่านั้นที่เริ่มด้วยแอ็กชัน",
-			order: "ลำดับ",
-			anyOrder: "ลำดับใดก็ได้",
 			exactOrder: "ตามลำดับนี้",
 			anySlot: "ช่องใดก็ได้",
 			slot: (n: number) => `ช่อง ${n}`,
