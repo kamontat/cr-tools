@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte"
-import { afterEach, beforeEach, expect, test, vi } from "vitest"
+import { afterEach, beforeEach, expect, type Mock, test, vi } from "vitest"
 
 import RestoreBox from "#components/organisms/RestoreBox.svelte"
 import { writeBackup } from "#lib/backup"
@@ -19,12 +19,12 @@ const setClipboard = (value: unknown) =>
 	Object.defineProperty(navigator, "clipboard", { value, configurable: true, writable: true })
 const clipboardWith = (text: string) => setClipboard({ readText: () => Promise.resolve(text) })
 
-let onrestored: ReturnType<typeof vi.fn>
+let onrestored: Mock<(entries: SavedCode[]) => void>
 
 beforeEach(() => {
 	window.localStorage.clear()
 	document.documentElement.lang = "en"
-	onrestored = vi.fn()
+	onrestored = vi.fn<(entries: SavedCode[]) => void>()
 })
 
 afterEach(() => {
@@ -36,8 +36,7 @@ afterEach(() => {
 	else setClipboard(undefined)
 })
 
-const open = (store: Storage = window.localStorage) =>
-	render(RestoreBox, { props: { store, m: en, onrestored: (entries: SavedCode[]) => onrestored(entries) } })
+const open = (store: Storage = window.localStorage) => render(RestoreBox, { props: { store, m: en, onrestored } })
 
 const press = (name: string) => fireEvent.click(screen.getByRole("button", { name }))
 
