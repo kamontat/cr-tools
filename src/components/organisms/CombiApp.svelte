@@ -6,11 +6,13 @@ import { onDestroy, onMount, tick } from "svelte"
 
 import Toast from "#components/atoms/Toast.svelte"
 import CombiEditor from "#components/organisms/CombiEditor.svelte"
+import CombiFilter from "#components/organisms/CombiFilter.svelte"
 import CombiList from "#components/organisms/CombiList.svelte"
 import { copyText } from "#lib/clipboard"
 import { codeOf, draftFrom, draftFromCode, isDirty, keptRounds, newDraft } from "#lib/combi/draft"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { CodeError, issueText } from "#lib/combi/issues"
+import { filterList, type ListFilter, type ListSort, NO_FILTER, readListSort, writeListSort } from "#lib/combi/list"
 import {
 	cleanDescription,
 	descriptionTitle,
@@ -40,10 +42,43 @@ let draft = $state.raw<Draft | null>(null)
 /** The tab a row last asked the editor to show. */
 let tabRequest = $state.raw<{ tab: TabName } | null>(null)
 
+// --- The list's search, filter and sort ----------------------------------------
+
+let query = $state("")
+let filter = $state.raw<ListFilter>(NO_FILTER)
+let sort = $state.raw<ListSort>(readListSort(persistent))
+/** The filter panel's open tab, or null while it is shut. */
+let view = $state<"filter" | "sort" | null>(null)
+
+const shown = $derived(filterList(entries, query, filter).length)
+
+/** Filter or Sort: opens the panel on its tab, switches to it, or shuts the panel when it is the tab open. */
+const togglePanel = (tab: "filter" | "sort") => {
+	view = view === tab ? null : tab
+	if (view === null) void focusList()
+}
+
+const closePanel = () => {
+	view = null
+	void focusList()
+}
+
+const pickSort = (next: ListSort) => {
+	sort = next
+	writeListSort(next, persistent)
+}
+
 let width = $state(window.innerWidth)
 /** Wide enough for the editor beside the list; narrower, the editor takes the list's place. */
 const docked = $derived(width >= DOCK_MIN_WIDTH)
-const dockedOpen = $derived(docked && draft !== null)
+/**
+ * Beside the list there is room for one panel: the filter panel while it is
+ * open, else the editor. The editor's draft stays while the filter panel has
+ * its place, and comes back when the panel shuts.
+ */
+const filterDocked = $derived(docked && view !== null)
+const editorShown = $derived(draft !== null && !filterDocked)
+const dockedOpen = $derived(docked && (draft !== null || view !== null))
 const viewing = $derived(!docked && draft !== null)
 
 /**
@@ -126,6 +161,7 @@ const sayChanges = (warnings: readonly Issue[], after?: string) => {
 
 /** Opens a draft, saying what changed in reading it, or `sentence` when nothing did. */
 const openDraft = (next: Draft, warnings: readonly Issue[], sentence?: string) => {
+	view = null
 	draft = next
 	baseline = next
 	offered = null
@@ -171,6 +207,7 @@ const openNew = () => {
  * A row's line asks for its tab too, on the entry it opens or the one open.
  */
 const openRow = (entry: SavedCode, tab?: TabName) => {
+	if (draft !== null && draft.from === entry.code) view = null
 	if (draft === null || draft.from !== entry.code) {
 		if (keepsEdits()) return
 		openEntry(entry)
@@ -458,9 +495,28 @@ const copy = async (code: string) => {
 			onnew={openNew}
 			onopen={openRow}
 			oncopy={(entry) => copy(entry.code)}
-			ondelete={(entry) => deleteCode(entry.code)} />
+			ondelete={(entry) => deleteCode(entry.code)}
+			bind:query
+			bind:filter
+			{sort}
+			panel={view}
+			onpanel={togglePanel} />
 	</div>
-	{#if draft !== null}
+	{#if view !== null}
+		<CombiFilter
+			{entries}
+			{query}
+			{filter}
+			{sort}
+			tab={view}
+			sheet={!docked}
+			{shown}
+			onfilter={(next) => (filter = next)}
+			onsort={pickSort}
+			ontab={(next) => (view = next)}
+			onclose={closePanel} />
+	{/if}
+	{#if draft !== null && editorShown}
 		<CombiEditor
 			{draft}
 			{saved}

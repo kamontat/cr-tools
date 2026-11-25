@@ -7,16 +7,17 @@ import { SvelteSet } from "svelte/reactivity"
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
 import ShareBox from "#components/organisms/ShareBox.svelte"
 import { episodeArt } from "#lib/combi/art"
-import { ALL_GOALS } from "#lib/combi/codec"
+import { imageFor, labelFor } from "#lib/combi/catalog"
 import { episodeText, floorText, goalsText } from "#lib/combi/describe"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/combi/labels"
 import {
+	activeFilters,
+	DEFAULT_SORT,
 	filterList,
-	type GoalFilter,
-	LIST_SORTS,
+	type ListFilter,
 	type ListSort,
-	readListSort,
+	NO_FILTER,
 	roundCount,
 	rowBoosts,
 	rowFull,
@@ -24,12 +25,10 @@ import {
 	rowStats,
 	rowTeam,
 	sortList,
-	writeListSort,
 } from "#lib/combi/list"
 import { descriptionTitle } from "#lib/combi/saved"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
-import { localStore } from "#lib/storage"
 
 interface Props {
 	entries: SavedCode[]
@@ -40,9 +39,29 @@ interface Props {
 	onopen: (entry: SavedCode, tab?: TabName) => void
 	oncopy: (entry: SavedCode) => void
 	ondelete: (entry: SavedCode) => void
+	/** The search; the filter panel counts with it. */
+	query?: string
+	filter?: ListFilter
+	sort?: ListSort
+	/** The filter panel's open tab, or null while it is shut. */
+	panel?: "filter" | "sort" | null
+	/** Filter or Sort was pressed: the page opens, switches or shuts the panel. */
+	onpanel: (tab: "filter" | "sort") => void
 }
 
-let { entries, current, onnew, onopen, oncopy, ondelete }: Props = $props()
+let {
+	entries,
+	current,
+	onnew,
+	onopen,
+	oncopy,
+	ondelete,
+	query = $bindable(""),
+	filter = $bindable(NO_FILTER),
+	sort = DEFAULT_SORT,
+	panel = null,
+	onpanel,
+}: Props = $props()
 
 /** The rows whose Share is open, in place under their actions. */
 const sharing = new SvelteSet<string>()
@@ -52,13 +71,41 @@ const m = $derived(messagesFor(lang))
 
 $effect(() => onLangChange(document, (next) => (lang = next)))
 
-const store = localStore()
+const shown = $derived(sortList(filterList(entries, query, filter), sort))
+const active = $derived(activeFilters(filter))
 
-let query = $state("")
-let goal = $state<GoalFilter>("all")
-let sort = $state<ListSort>(readListSort(store))
-
-const shown = $derived(sortList(filterList(entries, query, goal), sort))
+/** Each pick of the filter as a tag that takes it away, in the panel's order. */
+const tags = $derived.by(() => {
+	const without = <K extends "goals" | "episodes" | "cookies">(key: K, value: string): ListFilter => ({
+		...filter,
+		[key]: (filter[key] as readonly string[]).filter((picked) => picked !== value),
+	})
+	return [
+		...filter.goals.map((goal) => ({ name: m.combi.goals[goal], icon: null, next: without("goals", goal) })),
+		...(filter.mode === "any"
+			? []
+			: [{ name: m.combi.modes[filter.mode], icon: null, next: { ...filter, mode: "any" as const } }]),
+		...filter.episodes.map((episode) => ({
+			name: episodeText(episode, m),
+			icon: episodeArt(episode, "/assets/"),
+			next: without("episodes", episode),
+		})),
+		...filter.cookies.map((cookie) => {
+			const image = imageFor("cookies", cookie)
+			const icon = image === null ? null : `/assets/${image}`
+			return { name: labelFor("cookies", cookie), icon, next: without("cookies", cookie) }
+		}),
+		...(filter.rounds === "any"
+			? []
+			: [
+					{
+						name: filter.rounds === "with" ? m.combi.list.withRounds : m.combi.list.withoutRounds,
+						icon: null,
+						next: { ...filter, rounds: "any" as const },
+					},
+				]),
+	]
+})
 const money = $derived(new Intl.NumberFormat(LOCALES[lang], { maximumFractionDigits: 0 }))
 const date = $derived(new Intl.DateTimeFormat(LOCALES[lang], { day: "numeric", month: "short", year: "numeric" }))
 
@@ -133,15 +180,6 @@ const remove = (entry: SavedCode) => {
 	for (const key of [...named]) if (key.startsWith(`${entry.code}\n`)) named.delete(key)
 	ondelete(entry)
 }
-
-const pickGoal = (value: string) => {
-	goal = (ALL_GOALS as readonly string[]).includes(value) ? (value as GoalFilter) : "all"
-}
-
-const pickSort = (value: string) => {
-	sort = (LIST_SORTS as readonly string[]).includes(value) ? (value as ListSort) : "newest"
-	writeListSort(sort, store)
-}
 </script>
 
 <section class="list">
@@ -156,26 +194,56 @@ const pickSort = (value: string) => {
 			aria-label={m.combi.list.search}
 			placeholder={m.combi.list.search}
 			bind:value={query}>
-		<select
-			name="goal"
-			aria-label={m.combi.list.columns.goal}
-			value={goal}
-			onchange={(event) => pickGoal(event.currentTarget.value)}>
-			<option value="all">{m.combi.list.allGoals}</option>
-			{#each ALL_GOALS as id (id)}
-				<option value={id}>{m.combi.goals[id]}</option>
-			{/each}
-		</select>
-		<select
-			name="sort"
-			aria-label={m.combi.list.sortBy}
-			value={sort}
-			onchange={(event) => pickSort(event.currentTarget.value)}>
-			{#each LIST_SORTS as id (id)}
-				<option value={id}>{m.combi.list.sort[id]}</option>
-			{/each}
-		</select>
+		<button
+			type="button"
+			class="btn view"
+			class:on={panel === "filter"}
+			aria-expanded={panel === "filter"}
+			onclick={() => onpanel("filter")}>
+			<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M4 8h8M6.5 12h3" /></svg>
+			{m.combi.list.filter}
+			{#if active > 0}
+				<span class="count">{active}</span>
+			{/if}
+		</button>
+		<button
+			type="button"
+			class="btn view"
+			class:on={panel === "sort"}
+			aria-expanded={panel === "sort"}
+			onclick={() => onpanel("sort")}>
+			<svg viewBox="0 0 16 16" aria-hidden="true">
+				<path d="M5 2.5v11M2.5 11 5 13.5 7.5 11M11 13.5v-11M8.5 5 11 2.5 13.5 5" />
+			</svg>
+			{m.combi.list.sort}
+		</button>
 	</div>
+
+	{#if entries.length > 0}
+		<div row class="active">
+			<span>{m.combi.list.shown(shown.length, entries.length)}</span>
+			{#each tags as tag (tag.name)}
+				<button
+					type="button"
+					class="tag"
+					aria-label={m.combi.list.removeFilter(tag.name)}
+					onclick={() => (filter = tag.next)}>
+					{#if tag.icon}
+						<img width="16" height="16" src={tag.icon} alt="" loading="lazy">
+					{/if}
+					{tag.name}
+					<span class="x" aria-hidden="true">✕</span>
+				</button>
+			{/each}
+			{#if tags.length > 1}
+				<button type="button" class="link" onclick={() => (filter = NO_FILTER)}>{m.combi.list.clearAll}</button>
+			{/if}
+			<span class="sorted"
+				>{m.combi.list.sorts[sort.key]}
+				· {sort.reverse ? m.combi.list.orders[sort.key].reversed : m.combi.list.orders[sort.key].natural}</span
+			>
+		</div>
+	{/if}
 
 	{#if entries.length === 0}
 		<p class="empty">{m.combi.list.empty}</p>
@@ -545,7 +613,7 @@ const pickSort = (value: string) => {
 	container: list / inline-size;
 }
 
-/* A narrow list gives New code and search the width, and filter and sort share a row. */
+/* A narrow list gives New code and search the width, and Filter and Sort share a row. */
 .tools {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
@@ -570,8 +638,7 @@ const pickSort = (value: string) => {
 }
 
 .btn,
-.search,
-select {
+.search {
 	min-width: 0;
 	min-height: 38px;
 	padding: 7px 12px;
@@ -587,33 +654,116 @@ select {
 	cursor: pointer;
 }
 
-/* The browser's own arrow ignores the padding and sits on the border; draw it inside instead. */
-select {
-	appearance: none;
-	padding-inline-end: 34px;
-	background-image:
-		linear-gradient(45deg, transparent 50%, currentColor 50%),
-		linear-gradient(135deg, currentColor 50%, transparent 50%);
-	background-position:
-		right 17px center,
-		right 12px center;
-	background-size: 5px 5px;
-	background-repeat: no-repeat;
-	cursor: pointer;
-}
-
 .btn.primary {
 	border-color: var(--accent);
 	background: var(--accent);
 	color: var(--on-accent);
 }
 
+/* Filter and Sort: an icon, the word, and for Filter how many picks it holds. */
+.btn.view {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	white-space: nowrap;
+}
+
+.btn.view:hover {
+	background: var(--hover);
+}
+
+.btn.view.on {
+	border-color: var(--accent);
+	box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.btn.view svg {
+	width: 16px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.count {
+	min-width: 20px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--accent);
+	color: var(--on-accent);
+	font-size: 0.75rem;
+	line-height: 20px;
+	text-align: center;
+}
+
+/* Under the tools: how many show, a tag per pick, and the sort on the far side. */
+.active {
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+	color: var(--muted);
+	font-size: 0.8125rem;
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 4px 2px 10px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.tag img {
+	width: 16px;
+	height: 16px;
+	object-fit: contain;
+}
+
+.tag .x {
+	display: grid;
+	place-items: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	color: var(--muted);
+}
+
+.tag:hover .x {
+	background: var(--hover);
+	color: var(--text);
+}
+
+.link {
+	padding: 2px 0;
+	border: 0;
+	background: none;
+	color: var(--accent);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.sorted {
+	margin-inline-start: auto;
+}
+
 @media (pointer: coarse) {
 	.btn,
 	.search,
-	select,
 	.head {
 		min-height: var(--tap);
+	}
+
+	.tag {
+		min-height: 32px;
 	}
 }
 

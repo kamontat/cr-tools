@@ -6,9 +6,15 @@ import { expect, test } from "vitest"
 import { nameFor } from "#lib/combi/catalog"
 import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
 import {
+	activeFilters,
 	averageMoney,
+	DEFAULT_SORT,
+	facetCount,
 	filterList,
+	filterOptions,
 	LIST_SORT_KEY,
+	type ListFilter,
+	NO_FILTER,
 	readListSort,
 	roundCount,
 	rowBoosts,
@@ -18,6 +24,8 @@ import {
 	rowLoadout,
 	rowStats,
 	rowTeam,
+	SORT_KEYS,
+	type SortKey,
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
@@ -54,67 +62,155 @@ function storage(initial: string | null = null): Storage {
 	} as unknown as Storage
 }
 
-test("sorts by average money, empty last", () => {
+test("average money and round count", () => {
+	const a = entry("1-MS0A000000", { rounds: [{ money: 10 }, { money: 20 }, { time: 5 }] })
+	expect(averageMoney(a)).toBe(15)
+	expect(averageMoney(entry("1-MS0A000000", { rounds: [{ time: 9 }] }))).toBeNull()
+	expect(roundCount(a)).toBe(3)
+	expect(roundCount(entry("1-MS0A000000"))).toBe(0)
+})
+
+const sorted = (list: SavedCode[], key: SortKey, reverse = false) => sortList(list, { key, reverse })
+
+test("a stat sort puts the highest average first, and codes with no such round last either way", () => {
 	const a = entry("1-MS0A000000", { rounds: [{ money: 10 }, { money: 20 }, { time: 5 }] })
 	const b = entry("1-MS0A000000", { rounds: [{ money: 30 }], savedAt: 2 })
 	const c = entry("1-MS0A000000", { savedAt: 3, rounds: [{ time: 9 }] })
+	expect(sorted([c, a, b], "money")).toEqual([b, a, c])
+	expect(sorted([c, a, b], "money", true)).toEqual([a, b, c])
 
-	expect(averageMoney(a)).toBe(15)
-	expect(averageMoney(c)).toBeNull()
-	expect(roundCount(a)).toBe(3)
-	expect(roundCount(entry("1-MS0A000000"))).toBe(0)
-	expect(sortList([c, a, b], "money")).toEqual([b, a, c])
+	const s = entry("1-MS0A000000", { rounds: [{ score: 5, exp: 1, boxes: 2 }] })
+	const t = entry("1-MS0A000000", { rounds: [{ score: 9, exp: 3, boxes: 1 }] })
+	expect(sorted([s, t], "score")).toEqual([t, s])
+	expect(sorted([s, t], "exp")).toEqual([t, s])
+	expect(sorted([s, t], "boxes")).toEqual([s, t])
 })
 
-test("newest and oldest sort by save time", () => {
+test("run time puts the shortest first, reversed the longest", () => {
+	const quick = entry("1-MS0A000000", { rounds: [{ time: 100 }] })
+	const slow = entry("1-MS0A000000", { rounds: [{ time: 300 }] })
+	const none = entry("1-MS0A000000")
+	expect(sorted([slow, none, quick], "time")).toEqual([quick, slow, none])
+	expect(sorted([quick, none, slow], "time", true)).toEqual([slow, quick, none])
+})
+
+test("rounds logged puts the most first", () => {
+	const one = entry("1-MS0A000000", { rounds: [{ time: 1 }] })
+	const three = entry("1-MS0A000000", { rounds: [{ time: 1 }, { time: 2 }, { time: 3 }] })
+	const zero = entry("1-MS0A000000")
+	expect(sorted([one, zero, three], "rounds")).toEqual([three, one, zero])
+	expect(sorted([one, zero, three], "rounds", true)).toEqual([zero, one, three])
+})
+
+test("date saved puts the newest first, reversed the oldest", () => {
 	const a = entry("1-MS0A000000", { savedAt: 1 })
 	const b = entry("1-MS0A000000", { savedAt: 2 })
-	expect(sortList([a, b], "newest")).toEqual([b, a])
-	expect(sortList([b, a], "oldest")).toEqual([a, b])
+	expect(sorted([a, b], "saved")).toEqual([b, a])
+	expect(sorted([b, a], "saved", true)).toEqual([a, b])
 })
 
-test("Code A–Z sorts by the 10 characters, then the full code", () => {
+test("its goal groups codes by their first goal, in goal order, best average first", () => {
+	const score = entry(full({}, { goals: ["score"] }), { rounds: [{ score: 10 }] })
+	const bigMoney = entry(full({ cookie: "01" }, { goals: ["money"], mode: "auto" }), { rounds: [{ money: 900 }] })
+	const smallMoney = entry(full({ cookie: "06" }, { goals: ["money", "exp"], mode: "auto" }), {
+		rounds: [{ money: 100, exp: 99999 }],
+	})
+	const box = entry(full({}, { goals: ["box"], mode: "auto" }), { rounds: [{ boxes: 3 }] })
+	const bare = entry(full({}, { goals: ["money"], mode: "auto" }))
+	const bad = entry("not-a-code-at-all-x")
+	const list = [bad, box, bare, smallMoney, score, bigMoney]
+	expect(sorted(list, "goal")).toEqual([score, bigMoney, smallMoney, bare, box, bad])
+	expect(sorted(list, "goal", true)).toEqual([score, smallMoney, bigMoney, bare, box, bad])
+})
+
+test("code sorts by the 10 characters, then the full code; reversed Z–A", () => {
 	const x = entry(full({ cookie: "01" }))
 	const y = entry(full({ cookie: "06" }))
 	const small = entry("1-JX035RV000")
 	expect(x.code.split("-")[1]).toBe(y.code.split("-")[1])
 	expect(combiSectionOf(small.code) < combiSectionOf(x.code)).toBe(true)
 	const pair = [x, y].sort((p, q) => (p.code < q.code ? -1 : 1))
-	expect(sortList([y, x, small], "code")).toEqual([small, ...pair])
+	expect(sorted([y, x, small], "code")).toEqual([small, ...pair])
+	expect(sorted([y, x, small], "code", true)).toEqual([...pair].reverse().concat(small))
 })
+
+const only = (over: Partial<ListFilter>): ListFilter => ({ ...NO_FILTER, ...over })
 
 test("search matches the cookie name, the note and the code, every word", () => {
 	const code = full({ cookie: "01" })
 	const e = entry(code, { description: "Night farm" })
 	const cookie = nameFor("cookies", "01")
 
-	expect(filterList([e], cookie.toUpperCase(), "all")).toEqual([e])
-	expect(filterList([e], "night", "all")).toEqual([e])
-	expect(filterList([e], code.slice(0, 5), "all")).toEqual([e])
-	expect(filterList([e], `night ${cookie}`, "all")).toEqual([e])
-	expect(filterList([e], "night zzzznope", "all")).toEqual([])
+	expect(filterList([e], cookie.toUpperCase(), NO_FILTER)).toEqual([e])
+	expect(filterList([e], "night", NO_FILTER)).toEqual([e])
+	expect(filterList([e], code.slice(0, 5), NO_FILTER)).toEqual([e])
+	expect(filterList([e], `night ${cookie}`, NO_FILTER)).toEqual([e])
+	expect(filterList([e], "night zzzznope", NO_FILTER)).toEqual([])
 })
 
 test("search matches the pet name", () => {
 	const e = entry(full({ pet: "06" }))
-	expect(filterList([e], nameFor("pets", "06"), "all")).toEqual([e])
+	expect(filterList([e], nameFor("pets", "06"), NO_FILTER)).toEqual([e])
 })
 
-test("goal filter keeps runs aiming for it", () => {
+test("the goal filter keeps runs aiming for any goal picked", () => {
 	const e = entry(full({}, { goals: ["money", "exp"], mode: "auto" }))
+	expect(filterList([e], "", only({ goals: ["money"] }))).toEqual([e])
+	expect(filterList([e], "", only({ goals: ["score", "exp"] }))).toEqual([e])
+	expect(filterList([e], "", only({ goals: ["score"] }))).toEqual([])
+})
 
-	expect(filterList([e], "", "money")).toEqual([e])
-	expect(filterList([e], "", "exp")).toEqual([e])
-	expect(filterList([e], "", "score")).toEqual([])
-	expect(filterList([e], "", "all")).toEqual([e])
+test("the mode, episode, cookie and rounds filters each narrow, and together all must hold", () => {
+	const manual = entry(full({ cookie: "01" }, { episode: "episode3" }), { rounds: [{ score: 1 }] })
+	const auto = entry(full({ cookie: "06" }, { goals: ["money"], mode: "auto", episode: "episode5" }))
+	const list = [manual, auto]
+	expect(filterList(list, "", only({ mode: "auto" }))).toEqual([auto])
+	expect(filterList(list, "", only({ episodes: ["episode3", "episode7"] }))).toEqual([manual])
+	expect(filterList(list, "", only({ cookies: ["06"] }))).toEqual([auto])
+	expect(filterList(list, "", only({ rounds: "with" }))).toEqual([manual])
+	expect(filterList(list, "", only({ rounds: "without" }))).toEqual([auto])
+	expect(filterList(list, "", only({ mode: "auto", rounds: "with" }))).toEqual([])
+})
+
+test("active filters counts each pick", () => {
+	expect(activeFilters(NO_FILTER)).toBe(0)
+	const many = only({ goals: ["money", "exp"], mode: "auto", episodes: ["episode1"], cookies: ["01"], rounds: "with" })
+	expect(activeFilters(many)).toBe(6)
+})
+
+test("filter options: the episodes and cookies the saved codes use, episodes in table order, cookies most used first", () => {
+	const list = [
+		entry(full({ cookie: "06" }, { episode: "episode5" })),
+		entry(full({ cookie: "01" }, { episode: "episode3" })),
+		entry(full({ cookie: "06" }, { episode: "any" })),
+		entry(full({}, { episode: "episode3" })),
+		entry("not-a-code-at-all-x"),
+	]
+	const options = filterOptions(list)
+	expect(options.episodes).toEqual(["any", "episode3", "episode5"])
+	expect(options.cookies).toEqual(["06", "01"])
+})
+
+test("a facet count is how many codes a pick would show, given the search and every other filter", () => {
+	const a = entry(full({ cookie: "01" }, { episode: "episode3" }), { description: "night" })
+	const b = entry(full({ cookie: "06" }, { goals: ["money"], mode: "auto", episode: "episode3" }))
+	const c = entry(full({ cookie: "06" }, { goals: ["money"], mode: "auto", episode: "episode5" }))
+	const list = [a, b, c]
+	expect(facetCount(list, "", NO_FILTER, "episodes", "episode3")).toBe(2)
+	expect(facetCount(list, "", only({ mode: "auto" }), "episodes", "episode3")).toBe(1)
+	// The facet's own picks do not narrow its counts.
+	expect(facetCount(list, "", only({ episodes: ["episode5"] }), "episodes", "episode3")).toBe(2)
+	expect(facetCount(list, "night", NO_FILTER, "cookies", "06")).toBe(0)
+	expect(facetCount(list, "", NO_FILTER, "goals", "money")).toBe(2)
 })
 
 test("an entry that no longer reads still lists", () => {
 	const bad = entry("not-a-code-at-all-x", { description: "old" })
 
-	expect(filterList([bad], "", "all")).toEqual([bad])
-	expect(filterList([bad], "old", "all")).toEqual([bad])
-	expect(filterList([bad], "", "score")).toEqual([])
+	expect(filterList([bad], "", NO_FILTER)).toEqual([bad])
+	expect(filterList([bad], "old", NO_FILTER)).toEqual([bad])
+	expect(filterList([bad], "", only({ goals: ["score"] }))).toEqual([])
+	expect(filterList([bad], "", only({ rounds: "without" }))).toEqual([bad])
 	expect(rowLoadout(bad.code)).toBeNull()
 })
 
@@ -144,13 +240,21 @@ test("same 10 characters, different loadouts, different icons", () => {
 	expect(rowLoadout(full({ cookie: "01" }))).not.toEqual(rowLoadout(full({ cookie: "06" })))
 })
 
-test("list sort is remembered; anything else reads newest", () => {
+test("list sort is remembered with its order; the old sorts read as their new ones; anything else reads date saved", () => {
 	const held = storage()
-	expect(readListSort(held)).toBe("newest")
-	writeListSort("money", held)
-	expect(readListSort(held)).toBe("money")
-	expect(readListSort(storage("bogus"))).toBe("newest")
-	expect(readListSort(null)).toBe("newest")
+	expect(readListSort(held)).toEqual(DEFAULT_SORT)
+	expect(DEFAULT_SORT).toEqual({ key: "saved", reverse: false })
+	writeListSort({ key: "time", reverse: true }, held)
+	expect(readListSort(held)).toEqual({ key: "time", reverse: true })
+	writeListSort({ key: "money", reverse: false }, held)
+	expect(readListSort(held)).toEqual({ key: "money", reverse: false })
+	expect(readListSort(storage("newest"))).toEqual({ key: "saved", reverse: false })
+	expect(readListSort(storage("oldest"))).toEqual({ key: "saved", reverse: true })
+	expect(readListSort(storage("code"))).toEqual({ key: "code", reverse: false })
+	expect(readListSort(storage("bogus"))).toEqual(DEFAULT_SORT)
+	expect(readListSort(storage("money:bogus"))).toEqual(DEFAULT_SORT)
+	expect(readListSort(null)).toEqual(DEFAULT_SORT)
+	expect(SORT_KEYS).toEqual(["saved", "goal", "score", "money", "exp", "boxes", "time", "rounds", "code"])
 	expect(LIST_SORT_KEY).toBe("combi-name:list-sort")
 })
 

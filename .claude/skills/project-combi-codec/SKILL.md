@@ -277,8 +277,11 @@ its code can say it (`normalize`, `fitLoadout`), recomputed from `picks` by ever
 the only one the code, the verdict and `isDirty` read. Its `rounds` are every row of the
 Run log, blank ones included; `keptRounds` is what a save keeps. Setters return a new draft. `editor.ts`
 is what the editor draws from a draft (picker options, verdict and episode notes in words,
-where a click on the code display leads), and `list.ts` is the saved list's views (`sortList`,
-`filterList`, `LIST_SORTS` under `combi-name:list-sort`), `averageMoney`, `roundCount`,
+where a click on the code display leads), and `list.ts` is the saved list's views: `sortList` over a
+`ListSort` (`{ key, reverse }`, one of `SORT_KEYS`, stored under `combi-name:list-sort` as the
+key with `:reverse` after it; the old `newest` and `oldest` still read), `filterList` over a
+`ListFilter` (goals, mode, episodes, cookies, rounds; `NO_FILTER` narrows nothing),
+`facetCount` and `filterOptions` for the filter panel, `averageMoney`, `roundCount`,
 `goalTargets` (the average for each goal) and `rowLoadout(code)` for a row's icons. `issues.ts` holds `Issue` and `CodeError` as described above. None of them touch the
 DOM or the wire format.
 

@@ -1,6 +1,21 @@
 import type { LoadoutNoun, SlotField } from "#lib/combi/issues"
+import type { SortKey } from "#lib/combi/list"
 import type { StatField } from "#lib/combi/stats"
 import type { Messages } from "#lib/i18n/messages"
+
+// Each sort's natural order and its reverse, in the sort's own words.
+const mostFirst = { natural: "มากไปน้อย", reversed: "น้อยไปมาก" }
+const orders: Record<SortKey, { natural: string; reversed: string }> = {
+	saved: { natural: "ใหม่ก่อน", reversed: "เก่าก่อน" },
+	goal: mostFirst,
+	score: mostFirst,
+	money: mostFirst,
+	exp: mostFirst,
+	boxes: mostFirst,
+	time: { natural: "สั้นก่อน", reversed: "นานก่อน" },
+	rounds: mostFirst,
+	code: { natural: "A–Z", reversed: "Z–A" },
+}
 
 const slotFields: Record<SlotField, string> = {
 	mode: "โหมด",
@@ -219,9 +234,41 @@ export const th: Messages = {
 		list: {
 			newCode: "โค้ดใหม่",
 			search: "ค้นหา",
-			allGoals: "ทุกเป้าหมาย",
-			sort: { newest: "ใหม่สุด", oldest: "เก่าสุด", money: "เหรียญเฉลี่ยสูงสุด", code: "โค้ด A–Z" },
+			filter: "กรอง",
+			sort: "เรียง",
+			filterAndSort: "กรองและเรียง",
 			sortBy: "เรียงตาม",
+			sorts: {
+				saved: "วันที่บันทึก",
+				goal: "ตามเป้าหมาย",
+				score: "คะแนนเฉลี่ย",
+				money: "เหรียญเฉลี่ย",
+				exp: "Exp เฉลี่ย",
+				boxes: "กล่องเฉลี่ย",
+				time: "เวลาที่วิ่ง",
+				rounds: "จำนวนรอบ",
+				code: "โค้ด",
+			},
+			goalSortHint: "เรียงแต่ละโค้ดตามค่าเฉลี่ยของเป้าหมายแรก",
+			order: "ลำดับ",
+			orders,
+			goalFilter: "เป้าหมาย",
+			goalHint: "อย่างใดอย่างหนึ่ง",
+			mode: "โหมด",
+			any: "ทั้งหมด",
+			episode: "ด่าน",
+			cookie: "คุกกี้",
+			cookieHint: "ที่อยู่ในโค้ดที่บันทึกไว้",
+			roundsFilter: "รอบ",
+			withRounds: "มีรอบแล้ว",
+			withoutRounds: "ยังไม่มีรอบ",
+			shown: (n: number, total: number) => (n === total ? `${total} โค้ด` : `${n} จาก ${total} โค้ด`),
+			removeFilter: (name: string) => `เอา ${name} ออก`,
+			clearAll: "ล้างทั้งหมด",
+			clearFilters: "ล้างตัวกรอง",
+			clear: "ล้าง",
+			resetSort: "รีเซ็ตการเรียง",
+			showCodes: (n: number) => `แสดง ${n} โค้ด`,
 			copyCode: (code: string) => `คัดลอก ${code}`,
 			shareCode: (code: string) => `แชร์ ${code}`,
 			copy: "คัดลอก",
