@@ -18,9 +18,9 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `EntryIcon` | atom | `.svelte` | One catalogue icon from `/assets/`: `src`, `name`, `round`, `size`; a missing `src` draws a placeholder. |
 | `HelpToggle` | atom | `.svelte` | The `?` button that shows and hides a help line: `label`, `controls`, `expanded`, `ontoggle`. |
 | `Tabs` | atom | `.svelte` | A tab strip with roving focus: `label`, `tabs` (`{ value, label, badge?, disabled? }[]`), `value`, `onchange`. |
-| `Toast` | atom | `.svelte` | A dismissible message in a status or alert live region by `tone` (`info`, `warn`, `error`): `message`, `tone`, `ondismiss`. It moves itself inside the topmost open pop-up (`topModal` in `#lib/modal`), so `aria-modal` never hides it, and otherwise sits at the end of `<body>` on `--z-toast`, above every pop-up. |
+| `Toast` | atom | `.svelte` | A dismissible message in a status or alert live region by `tone` (`info`, `warn`, `error`): `message`, `tone`, `ondismiss`. It moves itself to the end of `<body>` and sits on `--z-toast`, above the frame. |
 | `ToolCard` | molecule | `.astro` | A Home card: `slug`, `icon` — a `TOOLS` entry spreads straight in. Name and tagline come from the catalogues' `tools[slug]` through `Text`. |
-| `Panel` | molecule | `.svelte` | The one panel: a pop-up side panel (bottom sheet under 700px), or docked beside the page. See below. |
+| `Panel` | molecule | `.svelte` | The one panel: a section in the page, beside the saved list or as the page's own view. See below. |
 | `CodeDisplay` | molecule | `.svelte` | The full code drawn character by character with the field each belongs to: `code`, `summary`, `hints`, `onjump`, `canJump`. |
 | `EntryPicker` | molecule | `.svelte` | A searchable grid of catalogue entries with icons: `label`, `searchLabel`, `options`, `value`, `onpick`, optional clear. |
 | `Field` | molecule | `.svelte` | A labelled editor field with its help line and optional note: `id`, `label`, `help`, `helpLabel`, `note`, and a `children` snippet. |
@@ -32,7 +32,7 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
 | `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. Nothing on the page opens over it. |
 | `CombiList` | organism | `.svelte` | The saved list: search, goal filter, sort, rows with `LoadoutIcons`, and the New, Open, Copy and Share actions. |
-| `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (`docked` or pop-up): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
+| `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (beside the list, or as the page's view): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
 | `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
 | `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
 | `ShareBox` | organism | `.svelte` | Share, in place where it was pressed (under the editor's code, or in a saved row): the link with its note, the full code, Copy and Share to app. Never a pop-up. |
@@ -44,7 +44,7 @@ components still to come and their tiers; the rules below are what every one fol
 ### Panel
 
 `Panel` takes `id`, `title`, `open`, `onclose`, a `children` snippet, an optional `footer`
-snippet, optional `docked` and `back` flags, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
+snippet, an optional `actions` snippet, an optional `back` flag, and the required `closeLabel` / `resizeLabel` — the close button's and the resize
 handle's names, which the caller passes in the page's language (`m.frame.close`,
 `m.frame.resize`); there is no English default. It renders nothing while
 `open` is false.
@@ -52,23 +52,15 @@ handle's names, which the caller passes in the page's language (`m.frame.close`,
 - `id` names the remembered width — `frame:panel-width:<id>` through `#lib/panel-width` —
   and the title's id. `id="editor"` gets the editor's wider default (640px) and share (70%
   of the window, 60% for the others); every width is clamped to at least 360px.
-- `docked` draws it as a `<section>` in the page's flow (the combi editor beside the saved
-  list from 1100px, `DOCK_MIN_WIDTH`): not modal, no scrim, no focus trap, and Escape from
-  inside it calls `onclose` unless a control handled the key or a pop-up is open. Its left
-  edge resizes the same way and measures from the section's right edge.
-- `back`, with `docked`, makes it the page's own view (`data-layout="view"`, the combi
+- It is a `<section>` in the page's flow (the combi editor beside the saved list from
+  1100px, `DOCK_MIN_WIDTH`), never a pop-up: no scrim, no focus trap, no scroll lock, and
+  Escape from inside it calls `onclose` unless a control handled the key. Its left edge
+  resizes and measures from the section's right edge.
+- `back` makes it the page's own view (`data-layout="view"`, the combi
   editor below 1100px in the list's place): the close button is a ← leading the header,
   the width is the page's, and nothing resizes.
-- On a wide screen the left edge is a `role="separator"` handle: drag, or ←/→ in 16px
-  steps; double-click resets to the default. Under 700px (`RAIL_MIN_WIDTH`) it is a bottom
-  sheet with no handle.
-- A pop-up is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
-  `#lib/modal`: focus moves in when it opens, Tab wraps inside it, Escape and the scrim
-  call `onclose`, and focus returns on close to what held it before.
-- Panels stack (no page opens two at once now; Settings has no pop-ups): only the topmost handles Tab, focus and Escape,
-  and the frame's Escape stands aside while any is open. Render a second panel as a
-  sibling of the first, not inside its body: the slide-in animation transforms `.panel`,
-  which makes it the containing block of a `position: fixed` layer opened inside it.
+- The left edge is a `role="separator"` handle: drag, or ←/→ in 16px steps; double-click
+  resets to the default. A view (`back`) has none.
 
 ## Text in two languages
 
@@ -113,9 +105,6 @@ A component reaches for these rather than re-implementing them:
 - **`#lib/theme`** — `Theme` (`system`, `dark`, `light`), `THEME_KEY` (`"theme"`),
   `readTheme`, `writeTheme`, and `applyTheme(theme, root)`, which sets or clears
   `data-theme`.
-- **`#lib/modal`** — `holdFocus(dialog, onescape?)` for any modal (returns the release),
-  `isModalOpen(doc)`, and `focusables(root)`. One module-level stack, which the build emits
-  once, so every modal on a page shares it.
 - **`#lib/frame`** — `FramePage`, `SIDEBAR_KEY`, the breakpoints `RAIL_MIN_WIDTH` (700),
   `FULL_MIN_WIDTH` (1100) and `DOCK_MIN_WIDTH` (1100), `sidebarMode(width)`, and `initFrame(doc, store)`, which
   `AppLayout` calls once per page. Use the constants rather than writing 700 or 1100 in a
@@ -236,8 +225,8 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
   blocked storage) gets the defaults and a working page for that visit. Take the `Storage`
   as an argument where possible, as `#lib/frame`, `#lib/theme` and
   `src/lib/combi/state.ts` do, so a test can hand in one that throws.
-- **Modals hold focus with `holdFocus`** from `#lib/modal` — or are a `Panel` — so they
-  stack with the others and the frame's Escape stands aside.
+- **Nothing opens as a pop-up.** Secondary content opens in place (a `Panel` section, a
+  `SettingsRow`, `ShareBox`), so there is no modal, focus trap or scroll lock to manage.
 - **Sets are written in table order.** A control that holds a set the codec encodes (goals,
   boosts, cookie powers, a treasure slot's alternatives) reports it filtered from its own
   options, never in click order — click order would give one build two codes. See the

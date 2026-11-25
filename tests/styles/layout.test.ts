@@ -59,16 +59,14 @@ const layer = (name: string): number => {
 	return value === undefined ? Number.NaN : Number(value)
 }
 
-test("notices stack above pop-ups, pop-ups above the top bar, the top bar above the sidebar", () => {
-	expect(layer("toast")).toBeGreaterThan(layer("panel"))
-	expect(layer("panel")).toBeGreaterThan(layer("topbar"))
+test("notices stack above the top bar, the top bar above the sidebar", () => {
+	expect(layer("toast")).toBeGreaterThan(layer("topbar"))
 	expect(layer("topbar")).toBeGreaterThan(layer("sidebar"))
 	expect(layer("sidebar")).toBeGreaterThan(layer("scrim"))
 })
 
 test("the frame's layers take their z-index from the tokens", () => {
 	expect(rule(read("src/components/atoms/Toast.svelte"), ".host")).toMatch(/z-index:\s*var\(--z-toast\)/)
-	expect(rule(read("src/components/molecules/Panel.svelte"), ".panel-layer")).toMatch(/z-index:\s*var\(--z-panel\)/)
 	expect(rule(read("src/components/organisms/TopBar.astro"), ".top-bar")).toMatch(/z-index:\s*var\(--z-topbar\)/)
 })
 

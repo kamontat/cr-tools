@@ -1,5 +1,5 @@
 /**
- * The pop-up panel's width on larger screens. Its left edge is a handle: drag
+ * The docked panel's width on larger screens. Its left edge is a handle: drag
  * it, or focus it and press the arrow keys, and the panel takes that width;
  * double-click it to go back to the default. Each panel remembers its own
  * width in `localStorage` under `frame:panel-width:<id>`, every access
