@@ -33,13 +33,15 @@ test("Home starts Thai and carries English too", () => {
 	expect(html).toContain("Cookie Run tools")
 })
 
-test("Home has the heading and one card per tool", () => {
+test("Home has its title in the top bar, the intro, and one card per tool", () => {
 	const html = readFileSync(`${root}/dist/index.html`, "utf8")
 	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
-	expect(doc.querySelector('main h1 [data-lang="th"]')?.textContent).toBe(th.site.name)
-	expect(doc.querySelector('main h1 [data-lang="en"]')?.textContent).toBe(en.site.name)
-	expect(doc.querySelector('main h1 + p.intro [data-lang="th"]')?.textContent).toBe(th.site.intro)
-	expect(doc.querySelector('main h1 + p.intro [data-lang="en"]')?.textContent).toBe(en.site.intro)
+	expect(doc.querySelector('header h1 [data-lang="th"]')?.textContent).toBe(th.site.name)
+	expect(doc.querySelector('header h1 [data-lang="en"]')?.textContent).toBe(en.site.name)
+	expect(doc.querySelector('main#content > .wrap > p.intro:first-child [data-lang="th"]')?.textContent).toBe(
+		th.site.intro,
+	)
+	expect(doc.querySelector('main p.intro [data-lang="en"]')?.textContent).toBe(en.site.intro)
 	const hrefs = [...doc.querySelectorAll("main a.tool-card")].map((a) => a.getAttribute("href"))
 	expect(hrefs).toEqual(TOOLS.map(({ slug }) => `/${slug}/`))
 })
@@ -47,14 +49,23 @@ test("Home has the heading and one card per tool", () => {
 // One gutter for every page: the frame wraps the page in main > .wrap, so no
 // page pads itself and Home, the tools and Settings line up.
 test.each([
-	["index.html", "h1"],
-	["combi-name/index.html", "h1"],
+	["index.html", "p.intro"],
+	["combi-name/index.html", "astro-island"],
 	["settings/index.html", "astro-island"],
 ])("%s renders inside the frame's one content wrapper", (page, content) => {
 	const html = readFileSync(`${root}/dist/${page}`, "utf8")
 	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
 	expect(doc.querySelectorAll("main#content > .wrap")).toHaveLength(1)
 	expect(doc.querySelector(`main#content > .wrap > ${content}`)).not.toBeNull()
+})
+
+// The top bar names the page; a heading in the page would only repeat it.
+test.each(["index.html", "combi-name/index.html", "settings/index.html"])("%s has one h1, the top bar's", (page) => {
+	const html = readFileSync(`${root}/dist/${page}`, "utf8")
+	const doc = new new Window().DOMParser().parseFromString(html, "text/html")
+	expect(doc.querySelectorAll("h1")).toHaveLength(1)
+	expect(doc.querySelector("header h1.title")).not.toBeNull()
+	expect(doc.querySelector("main h1")).toBeNull()
 })
 
 test("the combi page mounts the CombiApp island in the wide wrapper, client-only", () => {

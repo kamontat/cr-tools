@@ -55,8 +55,6 @@ const shown = (row: AboutRow) => {
 </script>
 
 <div class="settings">
-	<h1>{m.settings.title}</h1>
-
 	<section aria-labelledby="set-appearance">
 		<h2 id="set-appearance">{m.settings.appearance}</h2>
 		<div class="rows">
@@ -109,11 +107,6 @@ const shown = (row: AboutRow) => {
 .settings {
 	gap: 20px;
 	max-width: 640px;
-}
-
-h1 {
-	margin: 0;
-	font-size: 22px;
 }
 
 h2 {

@@ -251,6 +251,7 @@ const ondblclick = () => {
 }
 
 .panel {
+	container: panel / inline-size;
 	position: relative;
 	display: flex;
 	flex-direction: column;
@@ -372,6 +373,27 @@ const ondblclick = () => {
 .docked.resizing {
 	cursor: ew-resize;
 	user-select: none;
+}
+
+/* A narrow panel, such as the editor on a phone: the title keeps its line with ← or ✕, and the actions take the row under it. */
+@container panel (max-width: 560px) {
+	.panel-head {
+		flex-wrap: wrap;
+	}
+
+	.panel-close {
+		order: 2;
+	}
+
+	.panel-actions {
+		order: 3;
+		flex-basis: 100%;
+		justify-content: flex-end;
+	}
+
+	.panel-back {
+		order: 0;
+	}
 }
 
 /* Phones: a sheet up from the bottom, with a grab handle and no resize. */

@@ -71,3 +71,11 @@ test("the frame's layers take their z-index from the tokens", () => {
 	expect(rule(read("src/components/molecules/Panel.svelte"), ".panel-layer")).toMatch(/z-index:\s*var\(--z-panel\)/)
 	expect(rule(read("src/components/organisms/TopBar.astro"), ".top-bar")).toMatch(/z-index:\s*var\(--z-topbar\)/)
 })
+
+test("a narrow panel gives its title its own line and puts the actions under it", () => {
+	const panel = read("src/components/molecules/Panel.svelte")
+	expect(rule(panel, ".panel")).toMatch(/container(?:-type)?:\s*(?:panel\s*\/\s*)?inline-size/)
+	const narrow = /@container panel \(max-width: \d+px\)\s*\{([\s\S]*?)\n\}/.exec(panel)?.[1] ?? ""
+	expect(narrow).toMatch(/\.panel-head\s*\{[^}]*flex-wrap:\s*wrap/)
+	expect(narrow).toMatch(/\.panel-actions\s*\{[^}]*flex-basis:\s*100%/)
+})

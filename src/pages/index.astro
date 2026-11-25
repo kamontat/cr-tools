@@ -7,7 +7,6 @@ import { TOOLS } from "#lib/tools"
 ---
 
 <AppLayout title={(m) => m.site.name} current="home">
-	<h1><Text pick={(m) => m.site.name} /></h1>
 	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
 	<HomeSaved client:only="svelte" />
 	<div class="tools">
@@ -16,11 +15,6 @@ import { TOOLS } from "#lib/tools"
 </AppLayout>
 
 <style>
-h1 {
-	margin: 0 0 6px;
-	font-size: 1.5rem;
-}
-
 .intro {
 	margin: 0 0 20px;
 	color: var(--muted);

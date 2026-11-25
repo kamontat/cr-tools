@@ -2,6 +2,15 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-25: One page title, and room for the editor's title on a phone
+
+### Bug fixes
+
+- A page's title shows once, in the top bar, which is now the page's heading. Home, the
+  combi page and Settings repeated it under the bar.
+- On a phone the editor's title has its own line with ←, and Copy, Share, Save and ⋯ take
+  the row under it; the buttons had squeezed the title to one letter.
+
 ## 2026-11-25: Every treasure shows its kind
 
 ### Features
