@@ -1,6 +1,6 @@
 ---
 name: project-combi-codec
-description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, rounds.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
+description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, rounds.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts, or backup.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
 ---
 
 # The combi codec
@@ -10,7 +10,7 @@ The combi logic is framework-free TypeScript in `src/lib/combi/`, imported as
 none of it imports from `src/components/`, `src/layouts/` or `src/pages/`. The combi page
 (`src/pages/combi-name/index.astro`, with `CombiApp` and the organisms around it) uses these
 modules; the redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
-describes what is still to come. The wire format does not change in the redesign: `codec.ts`,
+describes the design. `backup.ts` is the combi page's part of the site backup, and never touches the wire format. The wire format does not change in the redesign: `codec.ts`,
 `catalog.ts`, `loadout.ts` and `full-code.ts` moved here without behaviour changes.
 
 ## The character tables are the source of truth

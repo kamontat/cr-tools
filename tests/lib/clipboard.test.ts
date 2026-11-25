@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest"
 
-import { copyText } from "#lib/clipboard"
+import { copyText, readClipboard } from "#lib/clipboard"
 
 const original = Object.getOwnPropertyDescriptor(navigator, "clipboard")
 const setClipboard = (value: unknown) =>
@@ -21,6 +21,23 @@ test("copies the text and says so", async () => {
 test("a browser with no clipboard gets false, not an error", async () => {
 	setClipboard(undefined)
 	expect(await copyText("MS0A000000")).toBe(false)
+})
+
+test("reading with no clipboard says missing", async () => {
+	setClipboard(undefined)
+	expect(await readClipboard()).toEqual({ ok: false, reason: "missing" })
+	setClipboard({})
+	expect(await readClipboard()).toEqual({ ok: false, reason: "missing" })
+})
+
+test("a refused read says refused, not a rejection", async () => {
+	setClipboard({ readText: vi.fn(() => Promise.reject(new DOMException("denied", "NotAllowedError"))) })
+	expect(await readClipboard()).toEqual({ ok: false, reason: "refused" })
+})
+
+test("a read gives the text", async () => {
+	setClipboard({ readText: vi.fn(() => Promise.resolve("1-MS0A000000")) })
+	expect(await readClipboard()).toEqual({ ok: true, text: "1-MS0A000000" })
 })
 
 test("a refused write gets false, not a rejection", async () => {

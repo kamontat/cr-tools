@@ -217,6 +217,8 @@ export function formatSaved(entries: readonly SavedCode[]): string {
 /** One entry read from text, before the list it joins gives it a time. */
 export interface ParsedCode extends SavedNote {
 	readonly code: string
+	/** When a backup says the entry was saved; text has no such time. */
+	readonly savedAt?: number
 }
 
 /** A line of text that named no code this page can read. */
@@ -233,6 +235,14 @@ const ROUND_LINE = /^round\s*:\s*(.*)$/i
 /** An old stat line, `money: 1200-1500`, as the list was written before rounds. */
 const STAT_LINE = /^(score|money|exp|boxes|time)\s*:\s*(.*)$/i
 
+/**
+ * A bare code in the form the page itself would write it. Throws `CodeError`
+ * when it cannot be read.
+ */
+export function canonicalCode(text: string): string {
+	return encodeFull(decodeFull(text.toUpperCase()).full)
+}
+
 /** The code a line names, written in the form the page itself would write it. */
 function codeOnLine(text: string): {
 	code: string
@@ -243,10 +253,8 @@ function codeOnLine(text: string): {
 	// A link, or a bare hash: the code is the fragment, and it may carry a note.
 	const at = text.indexOf("#")
 	const raw = at === -1 ? text : text.slice(at)
-	const code = at === -1 ? text.toUpperCase() : (codeInHash(raw) ?? "")
-	const { full } = decodeFull(code)
 	return {
-		code: encodeFull(full),
+		code: at === -1 ? canonicalCode(text) : encodeFull(decodeFull(codeInHash(raw) ?? "").full),
 		note: at === -1 ? null : noteInHash(raw),
 		rounds: at === -1 ? [] : roundsInHash(raw),
 		stats: at === -1 ? {} : oldStatsInHash(raw),
@@ -348,7 +356,7 @@ export function parseSaved(text: string): {
  * Adds what text brought in to the saved list. A code already saved keeps the
  * note it has: the note someone wrote for themselves outranks one that came
  * from somewhere else, and an import that could overwrite a list is one nobody
- * would dare run twice. New codes go to the top in the order the text had them.
+ * would dare run twice. New codes join the list in date order, newest first; ones with no date of their own are dated now and so go on top.
  */
 export function importSaved(
 	storage: Storage,
@@ -358,8 +366,9 @@ export function importSaved(
 	const existing = readSaved(storage)
 	const fresh = incoming
 		.filter((entry) => !existing.some((saved) => saved.code === entry.code))
-		.map((entry) => entryOf(entry.code, entry, now))
-	const entries = [...fresh, ...existing]
+		.map((entry) => entryOf(entry.code, entry, entry.savedAt ?? now))
+	// Newest first by the date each carries, so a year-old backup does not pose as the latest; ties keep fresh first.
+	const entries = [...fresh, ...existing].sort((one, other) => other.savedAt - one.savedAt)
 	return {
 		entries,
 		stored: fresh.length === 0 ? true : writeSaved(storage, entries),

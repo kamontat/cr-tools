@@ -30,3 +30,18 @@ export function writeKey(key: string, value: string | null, store: Storage | nul
 		return false
 	}
 }
+
+/** Stands in for a browser that keeps nothing, so a page still works for this visit. */
+export function memoryStore(): Storage {
+	const items = new Map<string, string>()
+	return {
+		get length() {
+			return items.size
+		},
+		clear: () => items.clear(),
+		getItem: (key) => items.get(key) ?? null,
+		key: (index) => [...items.keys()][index] ?? null,
+		removeItem: (key) => void items.delete(key),
+		setItem: (key, value) => void items.set(key, String(value)),
+	}
+}

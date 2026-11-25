@@ -25,27 +25,12 @@ import { DOCK_MIN_WIDTH } from "#lib/frame"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, onLangChange } from "#lib/lang"
 import { isModalOpen } from "#lib/modal"
-import { localStore } from "#lib/storage"
+import { localStore, memoryStore } from "#lib/storage"
 
 let lang = $state<Lang>(currentLang(document))
 const m = $derived(messagesFor(lang))
 
 $effect(() => onLangChange(document, (next) => (lang = next)))
-
-/** Stands in for a browser that keeps nothing, so the list still works for this visit. */
-function memoryStore(): Storage {
-	const items = new Map<string, string>()
-	return {
-		get length() {
-			return items.size
-		},
-		clear: () => items.clear(),
-		getItem: (key) => items.get(key) ?? null,
-		key: (index) => [...items.keys()][index] ?? null,
-		removeItem: (key) => void items.delete(key),
-		setItem: (key, value) => void items.set(key, String(value)),
-	}
-}
 
 const persistent = localStore()
 const store = persistent ?? memoryStore()

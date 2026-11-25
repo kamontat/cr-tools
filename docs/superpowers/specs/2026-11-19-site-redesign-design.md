@@ -224,6 +224,12 @@ change, 2026-11-22: no sheet or panel stacked over the list):
 
 A short page of rows; each data row opens a pop-up.
 
+> **Owner's change, 2026-11-25:** no row opens a pop-up. Storage, Back up,
+> Restore, Delete all and About each open in place, under their own row, and
+> fold on a second press, as Share does. Wherever this section says "pop-up",
+> read "the row's body". The Storage bar stays visible on the row when it is
+> folded.
+
 - **Appearance:** Language (ไทย, English) and Theme (System, Dark, Light),
   switched in place.
 - **Combi codes data:**
@@ -290,6 +296,18 @@ count.
 
 ### Back up and restore
 
+> **Owner's change, 2026-11-25:**
+>
+> - Rows open in place; there are no pop-ups here.
+> - The backup is JSON, saved as `cr-tools-YYYY-MM-DD.json`, with `combi-codes`
+>   as the first field and `version` and `exportedAt` beside it. Other tools
+>   can add their own fields later without changing the format.
+> - Old text backups still restore.
+> - Restoring from a link works after cc-tracking DD-208: the address may be any
+>   http(s) link, and a Gist or PasteFox share page is rewritten to its raw
+>   address (the two hosts known to allow reading from another site).
+> - Restore skips bad entries and reports them, by position or line and why,
+>   instead of refusing the whole backup.
 - **Back up:** **Download file** (a `.txt` in today's export format,
   extended for rounds) or **As text** (the same text in a box with Copy).
 - **Restore:**

@@ -25,9 +25,10 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `EntryPicker` | molecule | `.svelte` | A searchable grid of catalogue entries with icons: `label`, `searchLabel`, `options`, `value`, `onpick`, optional clear. |
 | `Field` | molecule | `.svelte` | A labelled editor field with its help line and optional note: `id`, `label`, `help`, `helpLabel`, `note`, and a `children` snippet. |
 | `LoadoutIcons` | molecule | `.svelte` | The cookie, pet and treasure icons of a saved code from `rowLoadout`: `loadout`, `size`. |
+| `SettingsRow` | molecule | `.svelte` | A Settings row that opens in place, as `ShareBox` does: `label`, an optional muted `value`, an optional `aside` snippet that stays under the row while it is folded, a `children` body and a bindable `open`. The row is a button with `aria-expanded`, named by its label alone; the body is a labelled `section` shown only while open. A second press folds it. Never a dialog. |
 | `TopBar` | organism | `.astro` | ☰ (`#menu-toggle`, named through `l10nAttr`), the page `title` (a `Pick`, rendered with `Text`), the `pr-<n>` badge on previews, and the environment line under it. `env` is for tests; the build's own is the default. |
 | `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
-| `SettingsApp` | organism | `.svelte` | The Settings page island: Language, Appearance (theme) and About (a `Panel` of `aboutRows`). Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
+| `SettingsApp` | organism | `.svelte` | The Settings page island: Appearance (language, theme), Combi codes data (Storage, with its use as the row's `value` and a `<meter>` as its `aside`; Back up; Restore; Delete all) and About (`aboutRows`), each a `SettingsRow` that opens in place, so Settings has no pop-up. It reads `localStore()` once, falling back to an in-memory store as `CombiApp` does, and reads the saved list again after a restore or a delete. Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
 | `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
 | `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. Nothing on the page opens over it. |
 | `CombiList` | organism | `.svelte` | The saved list: search, goal filter, sort, rows with `LoadoutIcons`, and the New, Open, Copy and Share actions. |
@@ -35,6 +36,7 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
 | `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
 | `ShareBox` | organism | `.svelte` | Share, in place where it was pressed (under the editor's code, or in a saved row): the link with its note, the full code, Copy and Share to app. Never a pop-up. |
+| `StorageBox`, `BackupBox`, `RestoreBox`, `DeleteAllBox` | organism | `.svelte` | The bodies of Settings' data rows. `StorageBox` (`entries`, `m`, `store`, `refresh`) shows the counts and the storage in use; `BackupBox` (`entries`, `m`) downloads the JSON backup or shows it as text; `RestoreBox` (`store`, `entries`, `m`, `onrestored`) restores from the clipboard, a file, a link or pasted text after a preview; `DeleteAllBox` (`store`, `count`, `m`, `ondeleted`) clears the list after a typed word. |
 
 The redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`) lists the
 components still to come and their tiers; the rules below are what every one follows.
@@ -63,7 +65,7 @@ handle's names, which the caller passes in the page's language (`m.frame.close`,
 - A pop-up is `role="dialog" aria-modal="true"` with a scrim, and calls `holdFocus` from
   `#lib/modal`: focus moves in when it opens, Tab wraps inside it, Escape and the scrim
   call `onclose`, and focus returns on close to what held it before.
-- Panels stack (the combi page no longer does; Settings' pop-ups still may): only the topmost handles Tab, focus and Escape,
+- Panels stack (no page opens two at once now; Settings has no pop-ups): only the topmost handles Tab, focus and Escape,
   and the frame's Escape stands aside while any is open. Render a second panel as a
   sibling of the first, not inside its body: the slide-in animation transforms `.panel`,
   which makes it the containing block of a `position: fixed` layer opened inside it.
@@ -121,6 +123,7 @@ A component reaches for these rather than re-implementing them:
   here.
 - **`#lib/panel-width`** — `Panel`'s width rules (`clampWidth`, `readWidth`, `writeWidth`).
 - **`#lib/build-info`** — `readBuildInfo(env?)` and `aboutRows(info)`.
+- **`#lib/backup`**, **`#lib/backup-link`**, **`#lib/download`** — the site backup file (`writeBackup`, `readBackup`, `backupFileName`), restoring from a link (`resolveLink`, `fetchLink`) and saving a text file (`downloadText`). The combi page's part of the backup is `#lib/combi/backup`.
 
 ## Two kinds of component
 
