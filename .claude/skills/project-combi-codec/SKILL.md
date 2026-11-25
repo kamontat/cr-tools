@@ -10,7 +10,7 @@ The combi logic is framework-free TypeScript in `src/lib/combi/`, imported as
 none of it imports from `src/components/`, `src/layouts/` or `src/pages/`. The combi page
 (`src/pages/combi-name/index.astro`, with `CombiApp` and the organisms around it) uses these
 modules; the redesign spec (`docs/superpowers/specs/2026-11-19-site-redesign-design.md`)
-describes what is still to come. The wire format does not change in the redesign: `codec.ts`,
+describes the design. `backup.ts` is the combi page's part of the site backup, and never touches the wire format. The wire format does not change in the redesign: `codec.ts`,
 `catalog.ts`, `loadout.ts` and `full-code.ts` moved here without behaviour changes.
 
 ## The character tables are the source of truth
