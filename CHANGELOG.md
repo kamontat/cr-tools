@@ -2,6 +2,40 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-25: Saved codes keep rounds, with their averages
+
+### BREAKING CHANGES
+
+- A saved code keeps the rounds it was played instead of one set of ranges, stored under
+  `combi-name:saved:v2`. The old list (`combi-name:saved`) is read once and converted, and
+  is never written again, so a page from before this change no longer sees new saves.
+- Share links carry one `round=` per round (`round=:12000::3:245`, values in the order
+  score, money, exp, boxes, time). Old links with `money=12000-15000` still open, their
+  ranges read as rounds.
+
+### Features
+
+- The editor's Run log tab is a table: a row per round with score, money, exp, boxes and
+  time, a ✕ per round, + Add round, and an Average row under it.
+- The saved list shows each code's averages and how many rounds it has; the money sort
+  uses the average money.
+- Backup text writes a `round: score=50000 money=12000` line per round, and still reads
+  the old `money: 1200-1500` lines.
+
+### Improvements
+
+- Every average is a whole number, like every stat.
+
+### Bug fixes
+
+- A pasted link from before rounds followed by an old stat line keeps the link's stats;
+  the two read as one set, field by field, as they did before.
+
+### Decisions
+
+- An old range becomes two rounds, its minimums then its maximums; stats with no range
+  become one round. That keeps the old range's middle as the new average.
+
 ## 2026-11-24: The combi editor as a view of the page, with Share in place
 
 ### Features

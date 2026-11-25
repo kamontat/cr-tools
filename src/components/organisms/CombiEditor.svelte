@@ -14,7 +14,7 @@ import EditorTreasuresTab from "#components/organisms/EditorTreasuresTab.svelte"
 import ShareBox from "#components/organisms/ShareBox.svelte"
 import { CODE_LENGTH } from "#lib/combi/codec"
 import { describeRun } from "#lib/combi/describe"
-import { codeOf, type Draft, draftFromCode, isDirty, tabBadges, tabEnabled } from "#lib/combi/draft"
+import { codeOf, type Draft, draftFromCode, isDirty, keptRounds, tabBadges, tabEnabled } from "#lib/combi/draft"
 import { canJump, jumpTab, ROLES, type Role } from "#lib/combi/editor"
 import { combiSectionOf } from "#lib/combi/full-code"
 import { hintsFor } from "#lib/combi/hints"
@@ -354,7 +354,7 @@ function onclick(event: MouseEvent) {
 				</p>
 			{/if}
 			{#if sharing}
-				<ShareBox entry={{ code, note: draft.note, stats: draft.stats }} />
+				<ShareBox entry={{ code, note: draft.note, rounds: keptRounds(draft) }} />
 			{/if}
 		</div>
 

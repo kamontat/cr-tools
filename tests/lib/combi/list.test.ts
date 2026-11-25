@@ -11,6 +11,7 @@ import {
 	goalTargets,
 	LIST_SORT_KEY,
 	readListSort,
+	roundCount,
 	rowBoosts,
 	rowEpisode,
 	rowFull,
@@ -54,12 +55,14 @@ function storage(initial: string | null = null): Storage {
 }
 
 test("sorts by average money, empty last", () => {
-	const a = entry("1-MS0A000000", { stats: { money: { min: 10, max: 20 } } })
-	const b = entry("1-MS0A000000", { stats: { money: { min: 30, max: 30 } }, savedAt: 2 })
-	const c = entry("1-MS0A000000", { savedAt: 3 })
+	const a = entry("1-MS0A000000", { rounds: [{ money: 10 }, { money: 20 }, { time: 5 }] })
+	const b = entry("1-MS0A000000", { rounds: [{ money: 30 }], savedAt: 2 })
+	const c = entry("1-MS0A000000", { savedAt: 3, rounds: [{ time: 9 }] })
 
 	expect(averageMoney(a)).toBe(15)
 	expect(averageMoney(c)).toBeNull()
+	expect(roundCount(a)).toBe(3)
+	expect(roundCount(entry("1-MS0A000000"))).toBe(0)
 	expect(sortList([c, a, b], "money")).toEqual([b, a, c])
 })
 
@@ -215,17 +218,15 @@ test("row full: the decoded code, or null when it does not read", () => {
 	expect(rowFull("not a code")).toBeNull()
 })
 
-test("goal targets: the saved stat for each goal the code aims for, in the code's goal order", () => {
+test("goal targets: the average for each goal the code aims for, in the code's goal order", () => {
 	const code = full({}, { goals: ["money", "box"] })
-	const stats = { money: { min: 12000, max: 15000 }, boxes: { min: 2, max: 2 }, score: { min: 1, max: 2 } }
-	expect(goalTargets(entry(code, { stats }))).toEqual([
-		{ goal: "money", field: "money", range: { min: 12000, max: 15000 } },
-		{ goal: "box", field: "boxes", range: { min: 2, max: 2 } },
+	const rounds = [{ money: 12000, boxes: 2, score: 1 }, { money: 15000 }]
+	expect(goalTargets(entry(code, { rounds }))).toEqual([
+		{ goal: "money", field: "money", value: 13500 },
+		{ goal: "box", field: "boxes", value: 2 },
 	])
-	// A goal with no saved stat is left out, and so is every goal of a code that does not read.
-	expect(goalTargets(entry(code, { stats: { money: { min: 1, max: 1 } } }))).toEqual([
-		{ goal: "money", field: "money", range: { min: 1, max: 1 } },
-	])
+	// A goal no round filled in is left out, and so is every goal of a code that does not read.
+	expect(goalTargets(entry(code, { rounds: [{ money: 1 }] }))).toEqual([{ goal: "money", field: "money", value: 1 }])
 	expect(goalTargets(entry(code))).toEqual([])
-	expect(goalTargets(entry("not a code", { stats }))).toEqual([])
+	expect(goalTargets(entry("not a code", { rounds }))).toEqual([])
 })

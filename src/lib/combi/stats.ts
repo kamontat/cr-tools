@@ -57,7 +57,7 @@ const LIMITS: Readonly<Record<StatField, { min: number; max: number; range: bool
 	time: { min: 1, max: Number.MAX_SAFE_INTEGER, range: false },
 }
 
-function inLimits(field: StatField, value: number): boolean {
+export function inLimits(field: StatField, value: number): boolean {
 	const limits = LIMITS[field]
 	return Number.isSafeInteger(value) && value >= limits.min && value <= limits.max
 }
@@ -127,20 +127,4 @@ export function readStats(value: unknown): RunStats {
 
 export function isEmptyStats(stats: RunStats): boolean {
 	return STAT_FIELDS.every((field) => stats[field] === undefined)
-}
-
-const grouped = new Intl.NumberFormat("en-US")
-
-/** The stats as one line for the saved list, or "" when there are none. */
-export function statsSentence(stats: RunStats): string {
-	return STAT_FIELDS.flatMap((field) => {
-		const value = stats[field]
-		if (value === undefined) return []
-		if (typeof value === "number") {
-			return [`${STAT_LABELS[field]} ${grouped.format(value)}s`]
-		}
-		const { min, max } = value
-		const shown = min === max ? grouped.format(min) : `${grouped.format(min)}–${grouped.format(max)}`
-		return [`${STAT_LABELS[field]} ${shown}`]
-	}).join(" · ")
 }

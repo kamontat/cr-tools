@@ -38,8 +38,8 @@ test("every IssueId has text in both languages", () => {
 	for (const id of ISSUE_IDS) {
 		for (const m of [en, th]) {
 			expect(m.combi.issues[id], id).toBeDefined()
-			// A stat's field is a stat, not a slot of the code.
-			const values = id === "statFormat" ? { ...SAMPLE, field: "boxes" } : SAMPLE
+			// A stat's or a round's field is a stat, not a slot of the code.
+			const values = id === "statFormat" || id === "roundValue" ? { ...SAMPLE, field: "boxes" } : SAMPLE
 			const text = issueText({ id, values }, m)
 			expect(text.trim().length, id).toBeGreaterThan(0)
 			expect(text, id).not.toContain("undefined")

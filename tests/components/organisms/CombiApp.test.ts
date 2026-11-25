@@ -8,7 +8,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest"
 import CombiApp from "#components/organisms/CombiApp.svelte"
 import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
 import { emptyLoadout, type Loadout } from "#lib/combi/loadout"
-import { readSaved, SAVED_KEY } from "#lib/combi/saved"
+import { LEGACY_SAVED_KEY, readSaved, SAVED_KEY } from "#lib/combi/saved"
 import { shareHashFor } from "#lib/combi/state"
 import { en } from "#lib/i18n/en"
 
@@ -35,7 +35,7 @@ const linkCode = full({}, { goals: ["money"], mode: "auto", episode: "episode3" 
 
 const seeded: SavedCode[] = [
 	{ code: scoreCode, description: "Score farm", savedAt: 2 },
-	{ code: moneyCode, description: "", stats: { money: { min: 12000, max: 15000 } }, savedAt: 1 },
+	{ code: moneyCode, description: "", rounds: [{ money: 12000 }, { money: 15000 }], savedAt: 1 },
 ]
 
 const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard")
@@ -176,21 +176,21 @@ test("a row's Copy copies that row's 10 characters", async () => {
 	expect(editor()).toBeNull()
 })
 
-test("an old share link opens with its note and money, and Save keeps them once", async () => {
-	history.replaceState(
-		null,
-		"",
-		`/combi-name/${shareHashFor(combiSectionOf(linkCode), "Farm run", {})}&money=12000-15000`,
-	)
+test("an old share link opens with its note and its money range as two rounds, and Save keeps them once", async () => {
+	history.replaceState(null, "", `/combi-name/${shareHashFor(combiSectionOf(linkCode), "Farm run")}&money=12000-15000`)
 	render(CombiApp)
 	expect(editor()).not.toBeNull()
 	expect(notice()).toBe(en.combi.notices.linkBoth)
 
 	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
 	expect((screen.getByRole("textbox", { name: en.combi.editor.note }) as HTMLTextAreaElement).value).toBe("Farm run")
-	expect((screen.getByRole("textbox", { name: en.combi.editor.statLabels.money }) as HTMLInputElement).value).toBe(
-		"12000-15000",
-	)
+	const cell = (n: number) =>
+		(
+			screen.getByRole("textbox", {
+				name: en.combi.editor.roundCell(n, en.combi.editor.statLabels.money),
+			}) as HTMLInputElement
+		).value
+	expect([cell(1), cell(2)]).toEqual(["12000", "15000"])
 
 	await fireEvent.click(button(en.combi.editor.save))
 	// Saved, the entry is open: Save gives way to Update, so a second press cannot add it twice.
@@ -198,11 +198,11 @@ test("an old share link opens with its note and money, and Save keeps them once"
 	const saved = stored().filter((entry) => entry.code === linkCode)
 	expect(saved).toHaveLength(1)
 	expect(saved[0]?.description).toBe("Farm run")
-	expect(saved[0]?.stats).toEqual({ money: { min: 12000, max: 15000 } })
+	expect(saved[0]?.rounds).toEqual([{ money: 12000 }, { money: 15000 }])
 
 	// The same link again opens the saved entry rather than a second copy.
 	await fireEvent.click(button(en.frame.close))
-	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run")}`)
 	window.dispatchEvent(new HashChangeEvent("hashchange"))
 	await waitFor(() => expect(notice()).toBe(en.combi.notices.linkSaved("Farm run")))
 	expect(screen.queryByRole("button", { name: en.combi.editor.save })).toBeNull()
@@ -295,7 +295,7 @@ test("a bare-code link to a saved entry opens it without a notice", () => {
 })
 
 test("a link's note stays in the address bar until Save", async () => {
-	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run")}`)
 	render(CombiApp)
 	await waitFor(() => expect(editor()).not.toBeNull())
 	expect(location.hash).toMatch(/[?&]note=/)
@@ -304,14 +304,14 @@ test("a link's note stays in the address bar until Save", async () => {
 })
 
 test("an edit drops the link's note from the address bar", async () => {
-	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run")}`)
 	render(CombiApp)
 	await editNote("Mine")
 	expect(location.hash).toBe(`#${linkCode}`)
 })
 
 test("the editor's own address-bar writes do not re-open or re-notice", async () => {
-	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run", {})}`)
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "Farm run")}`)
 	render(CombiApp)
 	dismissNotice()
 	window.dispatchEvent(new HashChangeEvent("hashchange"))
@@ -471,4 +471,25 @@ test("a row's Delete, pressed twice, removes the entry and closes an editor open
 	expect(editor()).toBeNull()
 	expect(notice()).toBe(en.combi.notices.deleted(game))
 	expect(stored().map((entry) => entry.code)).toEqual([moneyCode])
+})
+
+test("a link with rounds opens them, and the notice says so", async () => {
+	history.replaceState(null, "", `/combi-name/${shareHashFor(linkCode, "", [{ money: 5 }, { time: 9 }])}`)
+	render(CombiApp)
+	expect(notice()).toBe(en.combi.notices.linkRounds)
+	await fireEvent.click(tab(en.combi.editor.tabs.runLog))
+	const money = screen.getByRole("textbox", { name: en.combi.editor.roundCell(1, en.combi.editor.statLabels.money) })
+	expect((money as HTMLInputElement).value).toBe("5")
+})
+
+test("codes saved before rounds show in the list, their ranges as rounds", () => {
+	window.localStorage.removeItem(SAVED_KEY)
+	window.localStorage.setItem(
+		LEGACY_SAVED_KEY,
+		JSON.stringify([{ code: moneyCode, description: "", savedAt: 1, stats: { money: { min: 10000, max: 15000 } } }]),
+	)
+	render(CombiApp)
+	expect(document.body.textContent).toMatch(/Money\s*12,500/)
+	expect(document.body.textContent).toContain(en.combi.list.rounds(2))
+	expect(stored()[0]?.rounds).toEqual([{ money: 10000 }, { money: 15000 }])
 })

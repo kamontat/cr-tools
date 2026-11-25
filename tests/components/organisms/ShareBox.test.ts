@@ -6,7 +6,7 @@ import { shareHashFor } from "#lib/combi/state"
 import { en } from "#lib/i18n/en"
 
 const code = "1-MS0A000000"
-const entry = { code, note: "Money farm", stats: { money: { min: 12000, max: 15000 } } }
+const entry = { code, note: "Money farm", rounds: [{ money: 12000 }, { money: 15000 }] }
 
 const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard")
 const share = Object.getOwnPropertyDescriptor(navigator, "share")
@@ -38,8 +38,9 @@ test("a section in place, never a pop-up, with the link carrying the code and it
 	open()
 	expect(screen.queryByRole("dialog")).toBeNull()
 	const dialog = screen.getByRole("region", { name: en.combi.share.title })
-	const link = `${location.origin}${location.pathname}${shareHashFor(code, entry.note, entry.stats)}`
+	const link = `${location.origin}${location.pathname}${shareHashFor(code, entry.note, entry.rounds)}`
 	expect(link).toContain(`#${code}?note=`)
+	expect(link).toContain("&round=:12000&round=:15000")
 	expect(dialog.textContent).toContain(link)
 })
 
@@ -97,6 +98,6 @@ test("a notice from one share does not carry over to the next", async () => {
 	await fireEvent.click(screen.getByRole("button", { name: en.combi.share.copyFull(code) }))
 	expect(await screen.findByText(en.combi.share.copied)).toBeTruthy()
 
-	await rerender({ entry: { code: "1-AM0A000000", note: "", stats: {} } })
+	await rerender({ entry: { code: "1-AM0A000000", note: "", rounds: [] } })
 	expect(screen.queryByText(en.combi.share.copied)).toBeNull()
 })

@@ -18,6 +18,13 @@ const statTakes: Record<StatField, string> = {
 	boxes: "กล่องต้องเป็น 0 ถึง 5 หรือช่วง เช่น 2-4",
 	time: "เวลาต้องเป็นจำนวนวินาที เป็นจำนวนเต็มบวก",
 }
+const roundTakes: Record<StatField, string> = {
+	score: "คะแนนต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	money: "เหรียญต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	exp: "Exp ต้องเป็นจำนวนเต็มบวกหนึ่งจำนวน",
+	boxes: "กล่องต้องเป็นตัวเลขหนึ่งจำนวน ตั้งแต่ 0 ถึง 5",
+	time: "เวลาต้องเป็นจำนวนวินาที เป็นจำนวนเต็มบวกหนึ่งจำนวน",
+}
 const group = (tag: string) => `กลุ่ม "${tag}" ของการจัดทีม`
 const issues: Messages["combi"]["issues"] = {
 	codeLength: (length: number, got: number, code: string) =>
@@ -58,7 +65,9 @@ const issues: Messages["combi"]["issues"] = {
 	loadoutNoOrderFlag: (tag: string) => `${group(tag)}: ไม่มีตัวบอกลำดับ`,
 	loadoutOrderFlag: (tag: string, flag: string) => `${group(tag)}: ตัวบอกลำดับ "${flag}" ไม่ใช่ "U" หรือ "O"`,
 	statFormat: (field: StatField) => statTakes[field],
+	roundValue: (field: StatField) => roundTakes[field],
 	unreadableLine: "บรรทัดนี้ไม่มีโค้ด",
+	roundLine: "อ่านรอบนี้ไม่ได้ ให้เขียนแบบ round: money=12000 time=245",
 }
 
 export const th: Messages = {
@@ -221,15 +230,11 @@ export const th: Messages = {
 			level: (n: number) => `ระดับ +${n}`,
 			floorInput: "ชั้น 1 ถึง 100 เว้นว่างไว้ถ้าเป็นชั้นใดก็ได้",
 			notePlaceholder: "บิลด์นี้ใช้ทำอะไร? กด Ctrl+Enter เพื่อบันทึก",
-			stats: "ผลการวิ่ง",
+			rounds: "รอบ",
+			addRound: "เพิ่มรอบ",
+			removeRound: (n: number) => `ลบรอบที่ ${n}`,
+			roundCell: (n: number, label: string) => `รอบที่ ${n} ${label}`,
 			statLabels: { score: "คะแนน", money: "เหรียญ", exp: "Exp", boxes: "กล่อง", time: "เวลา (วินาที)" },
-			statPlaceholders: {
-				score: "1200000-1500000",
-				money: "12000-15000",
-				exp: "300-450",
-				boxes: "0-5",
-				time: "วินาที",
-			},
 		},
 		share: {
 			title: "แชร์โค้ด",
@@ -248,8 +253,8 @@ export const th: Messages = {
 			noLongerReads: (code: string, why: string) => `${code} อ่านไม่ได้แล้ว: ${why}`,
 			linkUnreadable: (code: string, why: string) => `โค้ด ${code} ในลิงก์อ่านไม่ได้: ${why}`,
 			linkNote: "ลิงก์นี้มีโน้ตมาด้วย กดบันทึกเพื่อเก็บไว้",
-			linkStats: "ลิงก์นี้มีผลการวิ่งมาด้วย กดบันทึกเพื่อเก็บไว้",
-			linkBoth: "ลิงก์นี้มีโน้ตและผลการวิ่งมาด้วย กดบันทึกเพื่อเก็บไว้",
+			linkRounds: "ลิงก์นี้มีรอบที่เล่นมาด้วย กดบันทึกเพื่อเก็บไว้",
+			linkBoth: "ลิงก์นี้มีโน้ตและรอบที่เล่นมาด้วย กดบันทึกเพื่อเก็บไว้",
 			linkSaved: (name: string) => `โค้ดในลิงก์นี้บันทึกไว้แล้วในชื่อ ${name}`,
 			pasted: "วางโค้ดแล้ว",
 			pastedSaved: (name: string) => `วางโค้ดแล้ว โค้ดนี้บันทึกไว้แล้ว จึงเปิด ${name} ให้`,
@@ -279,11 +284,10 @@ export const th: Messages = {
 			boosts: "ช่อง 5: บูสต์ที่ซื้อก่อนวิ่ง ได้แก่ HP Extension, Power Jelly Boost, Fast Start และ Double XP รวมเป็นตัวอักษรเดียว",
 			randomBoost: "ช่อง 6-7: บูสต์สุ่มที่การวิ่งนี้ต้องการ หรือไม่มี",
 			cookiePower: "ช่อง 8-10: พลังคุกกี้+ ที่เลือก ช่องละกลุ่ม หรือไม่เลือกกลุ่มนั้น",
-			rounds: "เหรียญที่ได้ในแต่ละรอบ เพื่อให้รายการแสดงค่าเฉลี่ย ส่งไปพร้อมลิงก์แชร์ ไม่ได้อยู่ในโค้ด",
+			rounds:
+				"ผลของแต่ละรอบ: คะแนน เหรียญ Exp กล่อง (0 ถึง 5) และเวลาเป็นวินาที ช่องละหนึ่งตัวเลข จะเว้นว่างก็ได้ รายการจะแสดงค่าเฉลี่ยของช่องที่กรอก บันทึกไว้กับโค้ดและส่งไปพร้อมลิงก์แชร์ ไม่ได้อยู่ในโค้ด",
 			treasureOrder: "ช่องสมบัติต้องเรียงตามลำดับนี้ หรือสมบัติอยู่ช่องไหนก็ได้",
 			note: "โน้ตสำหรับตัวเอง ว่าบิลด์นี้ใช้ทำอะไร บันทึกไว้คู่กับโค้ดและส่งไปพร้อมลิงก์แชร์ ไม่ได้อยู่ในโค้ด",
-			stats:
-				"ผลที่การวิ่งได้มา: คะแนน เหรียญ Exp และกล่อง เป็นตัวเลขหรือช่วง เช่น 12000-15000 และเวลาเป็นวินาที บันทึกไว้คู่กับโค้ด ไม่ได้อยู่ในโค้ด",
 		},
 	},
 }
