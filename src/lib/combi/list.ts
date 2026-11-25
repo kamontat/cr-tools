@@ -10,7 +10,6 @@
 import type { Boost, CookiePower, Episode, Goal, RandomBoost } from "./codec"
 import type { FullCode } from "./full-code"
 import type { SavedCode } from "./saved"
-import type { StatField } from "./stats"
 
 import { readKey, writeKey } from "#lib/storage"
 import { boostArt, cookiePowerArt } from "./art"
@@ -19,6 +18,7 @@ import { limitsOf } from "./codec"
 import { levelText } from "./describe"
 import { combiSectionOf, decodeFull } from "./full-code"
 import { averageOf } from "./rounds"
+import { STAT_FIELDS, type StatField } from "./stats"
 
 export const LIST_SORTS = ["newest", "oldest", "money", "code"] as const
 export type ListSort = (typeof LIST_SORTS)[number]
@@ -195,13 +195,18 @@ const GOAL_STATS: Readonly<Record<Goal, Exclude<StatField, "time">>> = {
 export type RowStat = { field: StatField; value: number | null }
 
 /**
- * What a collapsed row measures: the average the entry's rounds reached for each goal
- * its code aims for, in the code's goal order, then time. Each is listed whether or
- * not a round noted it, so a row always shows the same stats for the same goals.
+ * What a row measures: the average the entry's rounds reached for each goal its code
+ * aims for, in the code's goal order, then time. Each is listed whether or not a round
+ * noted it, so a row always shows the same stats for the same goals. With `all`, every
+ * other stat a round noted comes between the goals' and time, in `STAT_FIELDS` order.
  */
-export function rowStats(entry: SavedCode): RowStat[] {
+export function rowStats(entry: SavedCode, all = false): RowStat[] {
 	const average = averageOf(entry.rounds ?? [])
-	const fields: StatField[] = [...(rowGoals(entry.code) ?? []).map((goal) => GOAL_STATS[goal]), "time"]
+	const goals = (rowGoals(entry.code) ?? []).map((goal) => GOAL_STATS[goal])
+	const others = all
+		? STAT_FIELDS.filter((field) => field !== "time" && !goals.includes(field) && average[field] !== undefined)
+		: []
+	const fields: StatField[] = [...goals, ...others, "time"]
 	return fields.map((field) => ({ field, value: average[field] ?? null }))
 }
 

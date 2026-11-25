@@ -238,3 +238,18 @@ test("row stats: the average for each goal the code aims for in the code's goal 
 	// A code that does not read has no goals, only time.
 	expect(rowStats(entry("not a code", { rounds }))).toEqual([{ field: "time", value: 111 }])
 })
+
+test("row stats, all: the goals' stats, then every other stat a round noted, then time", () => {
+	const code = full({}, { goals: ["box"] })
+	const rounds = [{ money: 12000, boxes: 2, score: 1 }, { money: 15000 }]
+	expect(rowStats(entry(code, { rounds }), true)).toEqual([
+		{ field: "boxes", value: 2 },
+		{ field: "score", value: 1 },
+		{ field: "money", value: 13500 },
+		{ field: "time", value: null },
+	])
+	expect(rowStats(entry(code), true)).toEqual([
+		{ field: "boxes", value: null },
+		{ field: "time", value: null },
+	])
+})

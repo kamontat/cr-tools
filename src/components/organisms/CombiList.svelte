@@ -26,9 +26,7 @@ import {
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
-import { averageOf } from "#lib/combi/rounds"
 import { descriptionTitle } from "#lib/combi/saved"
-import { STAT_FIELDS, type StatField } from "#lib/combi/stats"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
 import { localStore } from "#lib/storage"
@@ -104,24 +102,21 @@ const runOf = (code: string) => {
 	}
 }
 
-/** Each value's average over the saved rounds, the ones the code's goals aim for marked. */
-const statsOf = (entry: SavedCode) => {
-	const aimed = new Set<StatField>(rowStats(entry).flatMap((stat) => (stat.field === "time" ? [] : [stat.field])))
-	const average = averageOf(entry.rounds ?? [])
-	return STAT_FIELDS.flatMap((field) => {
-		const value = average[field]
-		if (value === undefined) return []
-		return [{ field, label: m.combi.editor.statLabels[field], value: money.format(value), aimed: aimed.has(field) }]
-	})
-}
-
-/** A collapsed row's stats: the goals' averages and time, a dash where no round noted one. */
-const headStatsOf = (entry: SavedCode) =>
-	rowStats(entry).map(({ field, value }) => ({
+/**
+ * A row's stats: the goals' averages and time, a dash where no round noted one; with
+ * `all`, every other stat a round noted too. The goals' are marked.
+ */
+const statsOf = (entry: SavedCode, all = false) => {
+	const stats = rowStats(entry, all)
+	const aimed = new Set(rowStats(entry).map((stat) => stat.field))
+	aimed.delete("time")
+	return stats.map(({ field, value }) => ({
 		field,
 		label: field === "time" ? m.combi.list.time : m.combi.editor.statLabels[field],
 		value: value === null ? "—" : field === "time" ? clock(value) : money.format(value),
+		aimed: aimed.has(field),
 	}))
+}
 
 /** Seconds as minutes and seconds, `2:05`. */
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
@@ -191,7 +186,6 @@ const pickSort = (value: string) => {
 			{#each shown as entry, index (entry.code)}
 				{@const game = combiSectionOf(entry.code)}
 				{@const run = runOf(entry.code)}
-				{@const stats = statsOf(entry)}
 				{@const rounds = roundCount(entry)}
 				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
@@ -231,10 +225,10 @@ const pickSort = (value: string) => {
 							{/if}
 							{#if !open}
 								<span class="stats">
-									{#each headStatsOf(entry) as stat (stat.field)}
+									{#each statsOf(entry) as stat (stat.field)}
 										<span class="stat">
 											<span class="muted">{stat.label}</span>
-											<strong class:aimed={stat.field !== "time"}>{stat.value}</strong>
+											<strong class:aimed={stat.aimed}>{stat.value}</strong>
 										</span>
 									{/each}
 									<span class="muted">{m.combi.list.rounds(rounds)}</span>
@@ -315,18 +309,22 @@ const pickSort = (value: string) => {
 								{@render line("main", m.combi.list.run, runBody)}
 
 								{#snippet resultsBody()}
-									{#if rounds === 0}
-										<span class="muted">{none}</span>
-									{:else}
-										{#each stats as stat (stat.field)}
+									{@const all = namesOn(entry.code, m.combi.list.results)}
+									<!-- The goals' stats and time; a press shows every stat the rounds noted. -->
+									<button
+										type="button"
+										class="pics"
+										aria-pressed={all}
+										title={m.combi.list.showAllStats}
+										onclick={() => toggleNames(entry.code, m.combi.list.results)}>
+										{#each statsOf(entry, all) as stat (stat.field)}
 											<span class="stat">
 												<span class="muted">{stat.label}</span>
 												<strong class:aimed={stat.aimed}>{stat.value}</strong>
 											</span>
-											<span class="sep" aria-hidden="true">·</span>
 										{/each}
 										<span class="muted">{m.combi.list.rounds(rounds)}</span>
-									{/if}
+									</button>
 								{/snippet}
 								{@render line("runLog", m.combi.list.results, resultsBody)}
 
