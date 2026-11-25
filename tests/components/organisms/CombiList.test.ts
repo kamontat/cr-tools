@@ -265,6 +265,17 @@ test("an open row shows each treasure slot's first treasure with +N for the rest
 	expect(row.querySelector(".more")).toBeNull()
 	expect(row.textContent).toMatch(new RegExp(`${nameFor("treasures", "002")}\\s+\\+0-2`))
 	expect(within(row).getAllByRole("button", { pressed: true })).toHaveLength(2)
+	// Each picture is framed by its kind, and with names shown the kind is written under the name.
+	expect([...row.querySelectorAll(".kind")].map((frame) => frame.getAttribute("data-kind"))).toEqual([
+		"base",
+		"base",
+		"evolved",
+	])
+	expect([...row.querySelectorAll(".kind-word")].map((word) => word.textContent?.trim())).toEqual([
+		en.combi.list.kinds.base,
+		en.combi.list.kinds.base,
+		en.combi.list.kinds.evolved,
+	])
 })
 
 test("each line of an open row opens the entry on its own tab", async () => {

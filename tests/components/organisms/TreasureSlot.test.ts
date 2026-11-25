@@ -167,3 +167,15 @@ test("the add picker is not named like the button that opens it", async () => {
 	expect(screen.queryByRole("group", { name: "Add treasure" })).toBeNull()
 	expect(screen.getByRole("group", { name: "Search treasures" })).toBeTruthy()
 })
+
+test("a pick with a kind shows it framed, with the kind written under its name", () => {
+	const kinds = { base: "Base", evolved: "Evolved", blessed: "Blessed" }
+	const onchange = vi.fn()
+	const picks = [{ id: "098", name: "Evolved Thing", src: "/assets/e.png", kind: "evolved" as const, levels: [0] }]
+	render(TreasureSlot, {
+		props: { index: 1, label: "Slot 1", picks, options, onchange, labels: { ...labels, kinds } },
+	})
+	const pick = screen.getByRole("group", { name: "Evolved Thing" })
+	expect(pick.querySelector(".kind")?.getAttribute("data-kind")).toBe("evolved")
+	expect(pick.querySelector(".kind-word")?.textContent?.trim()).toBe("Evolved")
+})

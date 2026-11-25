@@ -30,3 +30,25 @@ test("without a src a placeholder carries the name", () => {
 	const tile = screen.getByLabelText("Brave")
 	expect(tile.getAttribute("title")).toBe("Brave")
 })
+
+test("a treasure's kind frames its picture in the kind's colour, with its letter on the corner", () => {
+	for (const [kind, letter] of [
+		["base", "N"],
+		["evolved", "E"],
+		["blessed", "B"],
+	] as const) {
+		const { container } = render(EntryIcon, { props: { src: "/assets/x.png", name: `T ${kind}`, kind } })
+		const frame = container.querySelector(".kind")
+		expect(frame?.getAttribute("data-kind")).toBe(kind)
+		expect(frame?.contains(screen.getByRole("img", { name: `T ${kind}` }))).toBe(true)
+		const badge = frame?.querySelector(".badge")
+		expect(badge?.textContent?.trim()).toBe(letter)
+		expect(badge?.getAttribute("aria-hidden")).toBe("true")
+	}
+})
+
+test("without a kind there is no frame", () => {
+	const { container } = render(EntryIcon, { props: { src: "/assets/x.png", name: "Brave" } })
+	expect(container.querySelector(".kind")).toBeNull()
+	expect(container.querySelector(".badge")).toBeNull()
+})

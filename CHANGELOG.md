@@ -2,6 +2,21 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-25: Every treasure shows its kind
+
+### Features
+
+- A base, evolved or blessed treasure is framed in grey, green or gold, with N, E or B on
+  its corner, in the picker, the editor's treasure slots and a saved row. An evolved
+  treasure and its blessed form share a picture, so the picker's cells for them now differ.
+- Where names show, the kind is written under the name in its colour: พื้นฐาน, วิวัฒน์ or
+  ได้รับพร (Base, Evolved or Blessed).
+
+### Improvements
+
+- A saved row's treasures are square-framed like the picker's, base ones included, instead
+  of round with a ring only for evolved and blessed ones.
+
 ## 2026-11-25: Saved codes keep rounds, with their averages
 
 ### BREAKING CHANGES

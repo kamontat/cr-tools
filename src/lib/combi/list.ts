@@ -135,9 +135,9 @@ export type TeamPiece = {
 	position?: number
 	/**
 	 * What the piece accepts: one entry, or for a treasure slot each treasure it
-	 * takes, with its levels and, for an evolved or blessed one, its kind.
+	 * takes, with its levels and its kind: base, evolved or blessed.
 	 */
-	picks: { icon: RowIcon; level?: string; mark?: Exclude<EntryKind, "base"> }[]
+	picks: { icon: RowIcon; level?: string; kind?: EntryKind }[]
 }
 
 /** The team an open row shows, set pieces only, in play order; null when the code does not decode. */
@@ -155,7 +155,7 @@ export function rowTeam(code: string): TeamPiece[] | null {
 			const kind = kindFor("treasures", pick.id)
 			const icon = iconFor("treasures", pick.id)
 			const level = levelText(pick)
-			return kind === null || kind === "base" ? { icon, level } : { icon, level, mark: kind }
+			return kind === null ? { icon, level } : { icon, level, kind }
 		})
 		team.push(numbered ? { role: "treasure", position: index + 1, picks } : { role: "treasure", picks })
 	})

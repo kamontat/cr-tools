@@ -1,7 +1,9 @@
 <script lang="ts">
+import type { EntryKind } from "#lib/combi/catalog"
+
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
 
-type Option = { id: string; name: string; src: string | null }
+type Option = { id: string; name: string; src: string | null; kind?: EntryKind }
 
 interface Props {
 	/** The group's name. */
@@ -52,7 +54,7 @@ const shown = $derived.by(() => {
 				aria-pressed={isPressed(option.id)}
 				hidden={shown !== null && !shown.has(option.id)}
 				onclick={() => onpick(option.id)}>
-				<EntryIcon src={option.src} name={option.name} size={40} />
+				<EntryIcon src={option.src} name={option.name} kind={option.kind} size={40} />
 				<span class="name" aria-hidden="true">{option.name}</span>
 			</button>
 		{/each}

@@ -1,9 +1,11 @@
 <script lang="ts">
+import type { EntryKind } from "#lib/combi/catalog"
+
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
 import EntryPicker from "#components/molecules/EntryPicker.svelte"
 import { levelRange, MAX_LEVEL } from "#lib/combi/loadout"
 
-type Option = { id: string; name: string; src: string | null }
+type Option = { id: string; name: string; src: string | null; kind?: EntryKind }
 type Pick = Option & { levels: number[] }
 
 interface Props {
@@ -24,6 +26,8 @@ interface Props {
 		noMatch?: string
 		allLevels: string
 		level: (n: number) => string
+		/** Each kind's word, written under a treasure's name. */
+		kinds?: Readonly<Record<EntryKind, string>>
 	}
 }
 
@@ -94,8 +98,13 @@ function toggle(id: string) {
 		<!-- biome-ignore lint/a11y/useSemanticElements: a fieldset brings its own border and layout -->
 		<div class="pick" role="group" aria-label={pick.name}>
 			<div row class="head">
-				<EntryIcon src={pick.src} name={pick.name} size={32} />
-				<span class="name">{pick.name}</span>
+				<EntryIcon src={pick.src} name={pick.name} kind={pick.kind} size={32} />
+				<span class="name">
+					{pick.name}
+					{#if pick.kind && labels.kinds}
+						<span class="kind-word" data-kind={pick.kind}>{labels.kinds[pick.kind]}</span>
+					{/if}
+				</span>
 				<button
 					type="button"
 					class="remove"
@@ -252,5 +261,21 @@ button {
 	.remove {
 		width: var(--tap);
 	}
+}
+
+/* A treasure's kind under its name, in the kind's colour. */
+.kind-word {
+	display: block;
+	color: var(--muted);
+	font-size: 0.6875rem;
+	font-weight: 600;
+}
+
+.kind-word[data-kind="evolved"] {
+	color: var(--evolved);
+}
+
+.kind-word[data-kind="blessed"] {
+	color: var(--blessed);
 }
 </style>

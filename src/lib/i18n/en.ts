@@ -172,7 +172,7 @@ export const en = {
 			copy: "Copy",
 			share: "Share",
 			edit: "Edit",
-			kinds: { evolved: "Evolved", blessed: "Blessed" },
+			kinds: { base: "Base", evolved: "Evolved", blessed: "Blessed" },
 			team: "Team",
 			note: "Note",
 			results: "Results",

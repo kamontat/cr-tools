@@ -361,19 +361,14 @@ const pickSort = (value: string) => {
 															<span class="slash" aria-hidden="true">/</span>
 														{/if}
 														<span class="cell">
-															<span class="ring" data-mark={pick.mark}>
+															<span class="framed">
 																<EntryIcon
 																	src={pick.icon.src}
-																	name={pick.mark
-																		? `${pick.icon.name}, ${m.combi.list.kinds[pick.mark]}`
+																	name={pick.kind && pick.kind !== "base"
+																		? `${pick.icon.name}, ${m.combi.list.kinds[pick.kind]}`
 																		: pick.icon.name}
-																	round
-																	size={36} />
-																{#if pick.mark}
-																	<span class="mark" aria-hidden="true">
-																		{pick.mark === "evolved" ? "E" : "B"}
-																	</span>
-																{/if}
+																	kind={pick.kind}
+																	size={32} />
 																{#if !full && piece.picks.length > 1}
 																	<span class="more">+{piece.picks.length - 1}</span>
 																{/if}
@@ -385,6 +380,11 @@ const pickSort = (value: string) => {
 																		<span class="level">{pick.level}</span>
 																	{/if}
 																</span>
+																{#if pick.kind}
+																	<span class="kind-word" data-kind={pick.kind}>
+																		{m.combi.list.kinds[pick.kind]}
+																	</span>
+																{/if}
 															{/if}
 														</span>
 													{/each}
@@ -909,39 +909,26 @@ select {
 	line-height: 38px;
 }
 
-/* An evolved or blessed treasure: a ring in its colour and its letter on the corner, as the picker draws them. */
-.ring {
+/* A treasure's picture, framed by its kind; the +N of a closed slot sits on its corner. */
+.framed {
 	position: relative;
 	display: inline-flex;
-	padding: 2px;
-	border: 2px solid transparent;
-	border-radius: 50%;
 }
 
-.ring[data-mark="evolved"] {
-	--mark: var(--evolved);
+/* A treasure's kind under its name, in the kind's colour. */
+.kind-word {
+	display: block;
+	color: var(--muted);
+	font-size: 0.6875rem;
+	font-weight: 600;
 }
 
-.ring[data-mark="blessed"] {
-	--mark: var(--blessed);
+.kind-word[data-kind="evolved"] {
+	color: var(--evolved);
 }
 
-.ring[data-mark] {
-	border-color: var(--mark);
-}
-
-.mark {
-	position: absolute;
-	top: -6px;
-	left: -6px;
-	padding: 0 4px;
-	border-radius: 4px;
-	background: var(--mark);
-	color: var(--bg);
-	font-family: var(--mono);
-	font-size: 0.625rem;
-	font-weight: 700;
-	line-height: 1.4;
+.kind-word[data-kind="blessed"] {
+	color: var(--blessed);
 }
 
 /* How many more treasures a closed slot takes, on the picture's corner. */

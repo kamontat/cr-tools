@@ -34,6 +34,7 @@ const labels = $derived({
 	noMatch: m.combi.editor.noMatch,
 	allLevels: m.combi.editor.allLevels,
 	level: m.combi.editor.level,
+	kinds: m.combi.list.kinds,
 })
 </script>
 
