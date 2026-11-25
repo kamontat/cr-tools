@@ -91,8 +91,9 @@ test("a collapsed row shows the code, then the mode, episode and goals as badges
 	// The head carries the cookie's picture; the actions wait for the row to open.
 	expect(within(toggleOf(score)).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
-	// Open, the stats move to the Results line, and the note shows whole.
+	// Open, the badges move to the Run line, the stats to the Results line, and the note shows whole.
 	await expand(moneyCode)
+	expect(rowOf(moneyCode).querySelector(".head .badges")).toBeNull()
 	expect(rowOf(moneyCode).querySelector(".head")?.textContent).not.toContain("13,500")
 	const results = rowOf(moneyCode).querySelector(".details")?.textContent ?? ""
 	expect(results).toMatch(/Money\s*13,500/)

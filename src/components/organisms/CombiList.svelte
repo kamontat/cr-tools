@@ -209,7 +209,9 @@ const pickSort = (value: string) => {
 						</span>
 						<span class="summary">
 							<span class="code">{game}</span>
-							{#if run !== null}
+							{#if open}
+								<!-- Open, the Run line says it all, and the note shows whole. -->
+							{:else if run !== null}
 								<span class="badges">
 									<span class="badge mode">{run.mode}</span>
 									<span class="sep" aria-hidden="true">·</span>
@@ -725,12 +727,12 @@ select {
 }
 
 .badge {
-	padding: 1px 8px;
+	padding: 0 6px;
 	border: 1px solid var(--line);
 	border-radius: 999px;
-	font-size: 0.75rem;
+	font-size: 0.6875rem;
 	font-weight: 600;
-	line-height: 1.5;
+	line-height: 1.4;
 	white-space: nowrap;
 }
 
