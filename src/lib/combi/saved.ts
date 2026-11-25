@@ -217,6 +217,8 @@ export function formatSaved(entries: readonly SavedCode[]): string {
 /** One entry read from text, before the list it joins gives it a time. */
 export interface ParsedCode extends SavedNote {
 	readonly code: string
+	/** When a backup says the entry was saved; text has no such time. */
+	readonly savedAt?: number
 }
 
 /** A line of text that named no code this page can read. */
@@ -233,6 +235,14 @@ const ROUND_LINE = /^round\s*:\s*(.*)$/i
 /** An old stat line, `money: 1200-1500`, as the list was written before rounds. */
 const STAT_LINE = /^(score|money|exp|boxes|time)\s*:\s*(.*)$/i
 
+/**
+ * A bare code in the form the page itself would write it. Throws `CodeError`
+ * when it cannot be read.
+ */
+export function canonicalCode(text: string): string {
+	return encodeFull(decodeFull(text.toUpperCase()).full)
+}
+
 /** The code a line names, written in the form the page itself would write it. */
 function codeOnLine(text: string): {
 	code: string
@@ -243,10 +253,8 @@ function codeOnLine(text: string): {
 	// A link, or a bare hash: the code is the fragment, and it may carry a note.
 	const at = text.indexOf("#")
 	const raw = at === -1 ? text : text.slice(at)
-	const code = at === -1 ? text.toUpperCase() : (codeInHash(raw) ?? "")
-	const { full } = decodeFull(code)
 	return {
-		code: encodeFull(full),
+		code: at === -1 ? canonicalCode(text) : encodeFull(decodeFull(codeInHash(raw) ?? "").full),
 		note: at === -1 ? null : noteInHash(raw),
 		rounds: at === -1 ? [] : roundsInHash(raw),
 		stats: at === -1 ? {} : oldStatsInHash(raw),
@@ -358,7 +366,7 @@ export function importSaved(
 	const existing = readSaved(storage)
 	const fresh = incoming
 		.filter((entry) => !existing.some((saved) => saved.code === entry.code))
-		.map((entry) => entryOf(entry.code, entry, now))
+		.map((entry) => entryOf(entry.code, entry, entry.savedAt ?? now))
 	const entries = [...fresh, ...existing]
 	return {
 		entries,

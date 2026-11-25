@@ -450,3 +450,19 @@ test("importing keeps the rounds that came in", () => {
 
 	expect(readSaved(held)[0]?.rounds).toEqual([{ time: 60 }])
 })
+
+test("an imported entry keeps the time a backup gave it, else takes now", () => {
+	const held = storage()
+	importSaved(
+		held,
+		[
+			{ code: "1-MS0A000000", description: "", savedAt: 42 },
+			{ code: "1-MM0A000000", description: "" },
+		],
+		99,
+	)
+	expect(readSaved(held).map((entry) => [entry.code, entry.savedAt])).toEqual([
+		["1-MS0A000000", 42],
+		["1-MM0A000000", 99],
+	])
+})
