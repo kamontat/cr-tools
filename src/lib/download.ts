@@ -20,11 +20,15 @@ export function downloadText(name: string, text: string, type = "application/jso
 	} finally {
 		anchor?.remove()
 		if (href !== null) {
-			try {
-				URL.revokeObjectURL(href)
-			} catch {
-				// Nothing to free if the browser never kept it.
-			}
+			const kept = href
+			// Safari and older Firefox cancel a download whose URL is revoked at once.
+			setTimeout(() => {
+				try {
+					URL.revokeObjectURL(kept)
+				} catch {
+					// Nothing to free if the browser never kept it.
+				}
+			}, 0)
 		}
 	}
 }

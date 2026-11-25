@@ -16,6 +16,9 @@ const PASTEFOX_PAGES = ["create", "docs", "login", "signup", "pricing", "about",
 
 const WITH_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i
 
+/** A scheme with no `//` (`mailto:`), as opposed to a host and port (`localhost:4321`). */
+const OTHER_SCHEME = /^[a-z][a-z0-9+.-]*:(?!\d+(?:[/?#]|$))/i
+
 function decoded(text: string): string {
 	try {
 		return decodeURIComponent(text)
@@ -33,6 +36,7 @@ function decoded(text: string): string {
 export function resolveLink(input: string): ResolvedLink | null {
 	const typed = input.trim()
 	if (typed === "") return null
+	if (!WITH_SCHEME.test(typed) && OTHER_SCHEME.test(typed)) return null
 	let url: URL
 	try {
 		url = new URL(WITH_SCHEME.test(typed) ? typed : `https://${typed}`)
@@ -40,6 +44,7 @@ export function resolveLink(input: string): ResolvedLink | null {
 		return null
 	}
 	if (url.protocol !== "http:" && url.protocol !== "https:") return null
+	if (url.username !== "" || url.password !== "") return null
 	const host = url.hostname
 	if (!host.includes(".") && host !== "localhost") return null
 

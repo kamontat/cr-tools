@@ -70,6 +70,10 @@ test("anything else is not an address", () => {
 	expect(resolveLink("")).toBeNull()
 	expect(resolveLink("   ")).toBeNull()
 	expect(resolveLink("two words.com")).toBeNull()
+	expect(resolveLink("mailto:me@example.com")).toBeNull()
+	expect(resolveLink("javascript:alert(1)")).toBeNull()
+	expect(resolveLink("https://user:pw@example.com/a")).toBeNull()
+	expect(resolveLink("user@example.com/a")).toBeNull()
 })
 
 const link = (platform: ResolvedLink["platform"]): ResolvedLink => ({ url: "https://x.test/a", name: "a", platform })

@@ -53,7 +53,7 @@ function entryAt(value: unknown, index: number): { ok: true; entry: ParsedCode }
 			code,
 			description: cleanDescription(typeof raw.description === "string" ? raw.description : ""),
 			...(rounds.length === 0 ? {} : { rounds }),
-			...(typeof raw.savedAt === "number" && Number.isFinite(raw.savedAt) && raw.savedAt > 0
+			...(typeof raw.savedAt === "number" && raw.savedAt > 0 && !Number.isNaN(new Date(raw.savedAt).getTime())
 				? { savedAt: raw.savedAt }
 				: {}),
 		},
@@ -73,7 +73,9 @@ export function previewRestore(text: string, existing: readonly SavedCode[]): Re
 	let entries: ParsedCode[] = []
 	let skipped: SkippedLine[] = []
 	if (read.kind === "text") {
-		;({ entries, skipped } = parseSaved(read.text))
+		const parsed = parseSaved(read.text)
+		entries = parsed.entries.filter((entry, at) => parsed.entries.findIndex((one) => one.code === entry.code) === at)
+		skipped = parsed.skipped
 	} else {
 		const list = read.parts["combi-codes"]
 		if (Array.isArray(list)) {

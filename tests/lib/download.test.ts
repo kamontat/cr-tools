@@ -12,6 +12,7 @@ afterEach(() => {
 })
 
 test("saves text by clicking a temporary download link, then removes it", () => {
+	vi.useFakeTimers()
 	const created = vi.fn((_blob: Blob) => "blob:test")
 	const revoked = vi.fn()
 	url.createObjectURL = created
@@ -27,7 +28,10 @@ test("saves text by clicking a temporary download link, then removes it", () => 
 	expect(created).toHaveBeenCalledTimes(1)
 	expect(created.mock.calls[0]?.[0].type).toBe("application/json")
 	expect(document.querySelector("a[download]")).toBeNull()
+	expect(revoked).not.toHaveBeenCalled()
+	vi.runAllTimers()
 	expect(revoked).toHaveBeenCalledWith("blob:test")
+	vi.useRealTimers()
 })
 
 test("a browser that throws gets false, not an error", () => {

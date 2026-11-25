@@ -56,6 +56,18 @@ test("an entry's saved time is kept when it is a positive number", () => {
 	expect(preview.entries[1]?.savedAt).toBeUndefined()
 })
 
+test("a saved time no Date can hold is dropped", () => {
+	const preview = previewRestore(jsonOf([{ code: "1-MS0A000000", description: "", savedAt: 1e17 }]), [])
+	expect(preview.entries[0]?.savedAt).toBeUndefined()
+})
+
+test("a code twice in text counts once", () => {
+	const preview = previewRestore("1-MS0A000000\n> a\n1-MS0A000000\n> b\n", [])
+	expect(preview.entries).toHaveLength(1)
+	expect(preview.entries[0]?.description).toBe("a")
+	expect(preview.fresh).toBe(1)
+})
+
 test("a bad entry is skipped with its position and the rest restore", () => {
 	const preview = previewRestore(
 		jsonOf([{ code: "1-MS0A000000", description: "a" }, { code: "bad" }, { code: "1-MM0A000000", description: "b" }]),
