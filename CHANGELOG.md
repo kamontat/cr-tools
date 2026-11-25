@@ -2,6 +2,38 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-25: Back up and restore, in Settings
+
+### Features
+
+- Settings has a Combi codes data section (ข้อมูลโค้ดคอมโบ) with Storage, Back up, Restore
+  and Delete all. Every row, About included, opens in place under itself.
+- Storage shows this site's use against an approximate 5 MB, the saved codes, rounds, codes
+  with rounds and with a note, the first and last save, and the site's whole storage.
+- Back up downloads one JSON file for the whole site, `cr-tools-YYYY-MM-DD.json`, with
+  `combi-codes` first, then `version` and `exportedAt`, or shows the same JSON as text with
+  Copy.
+- Restore reads from the clipboard, a file, a link or text pasted by hand. It shows what it
+  found ("Found 3 codes: 2 new, 1 already saved") and any skipped entries before adding
+  anything, then adds the new codes and skips those already saved. Old text backups,
+  stat lines included, still restore.
+- A link is read in the browser: one typed without `https://` works, and GitHub Gist and
+  PasteFox share pages are read from their raw address. A failure says why (unreachable,
+  not found, private, an error status, not a backup), keeps the address, and writes nothing.
+- Delete all clears the saved codes after the word ลบ (delete) is typed; language and theme
+  stay.
+
+### Improvements
+
+- Restored codes keep their save dates, and the list stays newest first.
+
+### Decisions
+
+- A backup is JSON with a field per tool, so later tools add theirs to the same file.
+- One bad entry in a backup is skipped and named, not a reason to refuse the file:
+  restoring only adds, so a partial restore loses nothing.
+- Settings' rows open in place, as Share does on the combi page; the site has no pop-ups.
+
 ## 2026-11-25: One page title, and room for the editor's title on a phone
 
 ### Bug fixes
