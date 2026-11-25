@@ -11,7 +11,7 @@ import {
 	usageText,
 } from "#lib/combi/backup"
 import { issue } from "#lib/combi/issues"
-import { canonicalCode, formatSaved, parseSaved, type SavedCode } from "#lib/combi/saved"
+import { canonicalCode, parseSaved, type SavedCode } from "#lib/combi/saved"
 
 const NOW = new Date("2026-11-25T08:00:00.000Z")
 
@@ -124,8 +124,9 @@ test("a newer file is named, not read", () => {
 	})
 })
 
-test("today's text export previews as parseSaved reads it", () => {
-	const text = `${formatSaved(LIST)}\n1-MM0A000000\nmoney: 1200-1500\n`
+test("a text export previews as parseSaved reads it", () => {
+	const text =
+		"1-MM0A000000\n> Coin farm\n\n1-MS0A000000\nround: money=12000 time=245\n> note\n\n1-MM0A000000\nmoney: 1200-1500\n"
 	const preview = previewRestore(text, [])
 	const { entries, skipped } = parseSaved(text)
 	expect(preview.entries).toEqual(entries)

@@ -255,16 +255,16 @@ entry onto a code another holds. An entry not in that shape is dropped on read; 
 value or an empty round is dropped rather than the entry. When `combi-name:saved:v2` is
 absent, `readSaved` reads the list from before rounds, `combi-name:saved`, converts it and
 writes the new key; it never writes the old key, so a rolled-back site still finds the codes
-as they were at the move. `formatSaved` writes the export text (each code on its own line, a
-`round: money=12000 time=245` line per round under it, its note quoted with `>`), and
-`parseSaved` / `importSaved` read it back, taking bare codes, shared links and the old
+as they were at the move. Nothing writes the text export now (the backup is a file, `backup.ts`), but
+`parseSaved` / `importSaved` still read it (each code on its own line, a
+`round: money=12000 time=245` line per round under it, its note quoted with `>`), taking bare codes, shared links and the old
 `money: 1200-1500` stat lines too, canonicalising each code through `decodeFull` /
 `encodeFull`, and adding only codes not already saved.
 
 `rounds.ts` is a round: score, money, exp, boxes (0 to 5) and time in seconds, each one
 optional whole number. It reads them (`readRounds`, `parseRoundValue`), averages each field
-over the rounds that filled it in (`averageOf`), writes and reads the link and backup forms
-(`roundParam`, `roundLine`), and converts the old ranges (`roundsFromStats`): no stats give no
+over the rounds that filled it in (`averageOf`), writes the link form and reads the link and text forms
+(`roundParam`, `readRoundLine`), and converts the old ranges (`roundsFromStats`): no stats give no
 rounds, any range gives two rounds (every minimum, then every maximum, time and single values
 in both), and stats with no range give one. Old storage, backups and links all convert through
 it. `stats.ts` still holds those old `{ min, max }` ranges, only to read what was written

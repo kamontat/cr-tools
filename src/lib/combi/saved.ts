@@ -5,8 +5,8 @@
  *
  * It lives in `localStorage` under its own key and nowhere else. It leaves the
  * browser only when someone sends it: one entry as a link carrying its note
- * (`state.ts`'s `shareHashFor`), or the whole list as the text `formatSaved`
- * writes and `parseSaved` reads back. Nothing read back is trusted: the list
+ * (`state.ts`'s `shareHashFor`), or the whole list as a backup file
+ * (`backup.ts`). Text a person pasted, or an old text export, `parseSaved` reads. Nothing read back is trusted: the list
  * outlives the page that wrote it, so an entry that is not the shape this file
  * writes is dropped on the way in, every storage call is wrapped the way
  * `state.ts`'s are, and imported text is decoded code by code.
@@ -14,7 +14,7 @@
 
 import { decodeFull, encodeFull } from "./full-code"
 import { CodeError, type Issue, issue } from "./issues"
-import { isEmptyRound, type Round, readRoundLine, readRounds, roundLine, roundsFromStats } from "./rounds"
+import { isEmptyRound, type Round, readRoundLine, readRounds, roundsFromStats } from "./rounds"
 import { codeInHash, noteInHash, oldStatsInHash, roundsInHash } from "./state"
 import { parseStat, putStat, type RunStats, readStats, type StatField, type StatsDraft } from "./stats"
 
@@ -195,25 +195,6 @@ export function updateSaved(
 	return { ok: true, entries: next, stored: writeSaved(storage, next) }
 }
 
-/**
- * The list as text someone can paste into a chat, a note or a file: each code
- * on a line of its own, its rounds under it one per line as
- * `round: money=12000 time=245`, then its description with every line quoted
- * by `>`, and a blank line between entries. The quote is what tells a description
- * from a code on the way back in, so a note may say anything, a code included.
- */
-export function formatSaved(entries: readonly SavedCode[]): string {
-	return entries
-		.map((entry) => {
-			const note =
-				entry.description === "" ? [] : entry.description.split("\n").map((line) => (line === "" ? ">" : `> ${line}`))
-			const rounds = (entry.rounds ?? []).map((round) => `round: ${roundLine(round)}`)
-			return [entry.code, ...rounds, ...note].join("\n")
-		})
-		.map((block) => `${block}\n`)
-		.join("\n")
-}
-
 /** One entry read from text, before the list it joins gives it a time. */
 export interface ParsedCode extends SavedNote {
 	readonly code: string
@@ -229,7 +210,7 @@ export interface SkippedLine {
 	readonly reason: Issue
 }
 
-/** A round on a line of its own under a code, as `formatSaved` writes it. */
+/** A round on a line of its own under a code, as the text export wrote it. */
 const ROUND_LINE = /^round\s*:\s*(.*)$/i
 
 /** An old stat line, `money: 1200-1500`, as the list was written before rounds. */
@@ -262,7 +243,7 @@ function codeOnLine(text: string): {
 }
 
 /**
- * Reads the text `formatSaved` writes, and the looser things people paste
+ * Reads the text export the page once wrote, and the looser things people paste
  * instead: bare codes one per line, a shared link, a `>` with no space after
  * it, a label in any case, and the stat lines the list was written with
  * before rounds (`money: 1200-1500`), converted as `roundsFromStats` does.

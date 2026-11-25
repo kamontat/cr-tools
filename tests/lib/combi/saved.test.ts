@@ -5,7 +5,6 @@ import {
 	clearSaved,
 	DESCRIPTION_MAX,
 	descriptionTitle,
-	formatSaved,
 	importSaved,
 	LEGACY_SAVED_KEY,
 	parseSaved,
@@ -192,27 +191,14 @@ test("an update to an entry that is gone is refused", () => {
 	expect(result).toEqual({ ok: false, reason: "missing", entries: [] })
 })
 
-test("the list as text is each code on its own line with its note quoted under it", () => {
-	expect(
-		formatSaved([
-			{
-				code: "1-MM0A000000",
-				description: "Coin farm\n\nuse Fairy",
-				savedAt: 2,
-			},
-			{ code: "1-MS0A000000", description: "", savedAt: 1 },
-		]),
-	).toBe("1-MM0A000000\n> Coin farm\n>\n> use Fairy\n\n1-MS0A000000\n")
-})
+test("text with each code on its own line and its note quoted under it reads as the list it was", () => {
+	const text = "1-MM0A000000\n> Coin farm\n>\n> use Fairy\n\n1-MS0A000000\n"
 
-test("the text a list is written as reads back as the same list", () => {
-	const entries = [
-		{ code: "1-MM0A000000", description: "Coin farm\n\nuse Fairy", savedAt: 2 },
-		{ code: "1-MS0A000000", description: "", savedAt: 1 },
-	]
-
-	expect(parseSaved(formatSaved(entries))).toEqual({
-		entries: entries.map(({ code, description }) => ({ code, description })),
+	expect(parseSaved(text)).toEqual({
+		entries: [
+			{ code: "1-MM0A000000", description: "Coin farm\n\nuse Fairy" },
+			{ code: "1-MS0A000000", description: "" },
+		],
 		skipped: [],
 	})
 })
@@ -359,26 +345,22 @@ test("updating an entry rewrites its rounds, and clearing them takes them off", 
 	expect(readSaved(held)[0]).toEqual({ code: "1-MS0A000000", description: "a", savedAt: 3 })
 })
 
-test("exported text carries each round on a line of its own and reads them back", () => {
-	const entries = [
-		{
-			code: "1-MM0A000000",
-			description: "Coin farm",
-			rounds: [
-				{ money: 12000, boxes: 2, time: 245 },
-				{ score: 1200000, money: 15000 },
-			],
-			savedAt: 2,
-		},
-		{ code: "1-MS0A000000", description: "", savedAt: 1 },
-	]
-	const text = formatSaved(entries)
+test("text carries each round on a line of its own, and reads them back", () => {
+	const text =
+		"1-MM0A000000\nround: money=12000 boxes=2 time=245\nround: score=1200000 money=15000\n> Coin farm\n\n1-MS0A000000\n"
 
-	expect(text).toBe(
-		"1-MM0A000000\nround: money=12000 boxes=2 time=245\nround: score=1200000 money=15000\n> Coin farm\n\n1-MS0A000000\n",
-	)
 	expect(parseSaved(text)).toEqual({
-		entries: entries.map(({ savedAt: _savedAt, ...entry }) => entry),
+		entries: [
+			{
+				code: "1-MM0A000000",
+				description: "Coin farm",
+				rounds: [
+					{ money: 12000, boxes: 2, time: 245 },
+					{ score: 1200000, money: 15000 },
+				],
+			},
+			{ code: "1-MS0A000000", description: "" },
+		],
 		skipped: [],
 	})
 })
