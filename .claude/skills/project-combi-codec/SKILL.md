@@ -1,6 +1,6 @@
 ---
 name: project-combi-codec
-description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, rounds.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
+description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, rounds.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts, or backup.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
 ---
 
 # The combi codec
