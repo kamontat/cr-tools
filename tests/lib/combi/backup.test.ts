@@ -130,7 +130,13 @@ test("fresh and kept count against what is already saved", () => {
 })
 
 test("localUse counts every key and value at two bytes a character", () => {
-	expect(localUse({ length: 2, key: (i: number) => ["a", "de"][i] ?? null, getItem: (k: string) => (k === "a" ? "bc" : "f") } as unknown as Storage)).toBe(12)
+	expect(
+		localUse({
+			length: 2,
+			key: (i: number) => ["a", "de"][i] ?? null,
+			getItem: (k: string) => (k === "a" ? "bc" : "f"),
+		} as unknown as Storage),
+	).toBe(12)
 	expect(localUse(null)).toBe(0)
 })
 

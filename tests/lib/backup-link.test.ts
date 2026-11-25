@@ -73,12 +73,16 @@ test("anything else is not an address", () => {
 })
 
 const link = (platform: ResolvedLink["platform"]): ResolvedLink => ({ url: "https://x.test/a", name: "a", platform })
-const answer = (status: number, body = ""): typeof fetch => (() => Promise.resolve(new Response(body, { status }))) as typeof fetch
+const answer = (status: number, body = ""): typeof fetch =>
+	(() => Promise.resolve(new Response(body, { status }))) as typeof fetch
 
 test("a fetch that never answers is unreachable", async () => {
 	const down = (() => Promise.reject(new TypeError("Failed to fetch"))) as typeof fetch
 	expect(await fetchLink(link(null), down)).toEqual({ ok: false, failure: { reason: "unreachable", platform: null } })
-	expect(await fetchLink(link("gist"), down)).toEqual({ ok: false, failure: { reason: "unreachable", platform: "gist" } })
+	expect(await fetchLink(link("gist"), down)).toEqual({
+		ok: false,
+		failure: { reason: "unreachable", platform: "gist" },
+	})
 })
 
 test("a gist or paste that is gone or private says so", async () => {

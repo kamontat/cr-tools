@@ -87,7 +87,13 @@ export async function fetchLink(
 		if (!response.ok) {
 			const { status } = response
 			const reason =
-				platform === null ? "status" : status === 404 || status === 410 ? "missing" : status === 401 || status === 403 ? "private" : "status"
+				platform === null
+					? "status"
+					: status === 404 || status === 410
+						? "missing"
+						: status === 401 || status === 403
+							? "private"
+							: "status"
 			return { ok: false, failure: { reason, platform, status } }
 		}
 		return { ok: true, text: await response.text() }

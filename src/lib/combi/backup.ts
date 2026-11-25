@@ -32,10 +32,7 @@ export type RestorePreview = {
 	newer?: number
 }
 
-function entryAt(
-	value: unknown,
-	index: number,
-): { ok: true; entry: ParsedCode } | { ok: false; skipped: SkippedLine } {
+function entryAt(value: unknown, index: number): { ok: true; entry: ParsedCode } | { ok: false; skipped: SkippedLine } {
 	const skip = (reason: Issue) => ({
 		ok: false as const,
 		skipped: { line: index + 1, text: `combi-codes[${index}]`, reason },

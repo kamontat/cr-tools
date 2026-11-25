@@ -42,7 +42,7 @@ export function readBackup(text: string): ReadBackup {
 	}
 	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return { kind: "text", text }
 	const parts = parsed as Record<string, unknown>
-	const version = parts.version
+	const { version } = parts
 	if (typeof version === "number" && version > BACKUP_VERSION) return { kind: "newer", version }
 	return { kind: "json", parts }
 }
