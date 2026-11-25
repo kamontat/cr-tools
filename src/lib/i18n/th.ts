@@ -242,6 +242,8 @@ export const th: Messages = {
 			saved: (date: string) => `บันทึกเมื่อ ${date}`,
 			empty: "ยังไม่มีโค้ดที่บันทึกไว้ กด “โค้ดใหม่” เพื่อสร้าง",
 			noMatch: "ไม่มีโค้ดที่ตรงกับที่ค้นหา",
+			/** A collapsed row's time, shown as minutes and seconds. */
+			time: "เวลา",
 			rounds: (n: number) => `${n} รอบ`,
 			average: "เฉลี่ย",
 			columns: {

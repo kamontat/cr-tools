@@ -8,7 +8,6 @@ import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
 import {
 	averageMoney,
 	filterList,
-	goalTargets,
 	LIST_SORT_KEY,
 	readListSort,
 	roundCount,
@@ -17,6 +16,7 @@ import {
 	rowFull,
 	rowGoals,
 	rowLoadout,
+	rowStats,
 	rowTeam,
 	sortList,
 	writeListSort,
@@ -218,15 +218,23 @@ test("row full: the decoded code, or null when it does not read", () => {
 	expect(rowFull("not a code")).toBeNull()
 })
 
-test("goal targets: the average for each goal the code aims for, in the code's goal order", () => {
+test("row stats: the average for each goal the code aims for in the code's goal order, then time, each null when no round noted it", () => {
 	const code = full({}, { goals: ["money", "box"] })
-	const rounds = [{ money: 12000, boxes: 2, score: 1 }, { money: 15000 }]
-	expect(goalTargets(entry(code, { rounds }))).toEqual([
-		{ goal: "money", field: "money", value: 13500 },
-		{ goal: "box", field: "boxes", value: 2 },
+	const rounds = [
+		{ money: 12000, boxes: 2, score: 1, time: 100 },
+		{ money: 15000, time: 121 },
+	]
+	expect(rowStats(entry(code, { rounds }))).toEqual([
+		{ field: "money", value: 13500 },
+		{ field: "boxes", value: 2 },
+		{ field: "time", value: 111 },
 	])
-	// A goal no round filled in is left out, and so is every goal of a code that does not read.
-	expect(goalTargets(entry(code, { rounds: [{ money: 1 }] }))).toEqual([{ goal: "money", field: "money", value: 1 }])
-	expect(goalTargets(entry(code))).toEqual([])
-	expect(goalTargets(entry("not a code", { rounds }))).toEqual([])
+	// A stat no round filled in is still listed, with no value; score is not a goal here, so it is left out.
+	expect(rowStats(entry(code))).toEqual([
+		{ field: "money", value: null },
+		{ field: "boxes", value: null },
+		{ field: "time", value: null },
+	])
+	// A code that does not read has no goals, only time.
+	expect(rowStats(entry("not a code", { rounds }))).toEqual([{ field: "time", value: 111 }])
 })

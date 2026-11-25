@@ -14,7 +14,6 @@ import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/com
 import {
 	filterList,
 	type GoalFilter,
-	goalTargets,
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
@@ -22,6 +21,7 @@ import {
 	rowBoosts,
 	rowFull,
 	rowLoadout,
+	rowStats,
 	rowTeam,
 	sortList,
 	writeListSort,
@@ -96,6 +96,7 @@ const runOf = (code: string) => {
 	return {
 		mode: m.combi.modes[combi.mode],
 		goals: goalsText(combi.goals, m),
+		goalNames: combi.goals.map((goal) => m.combi.goals[goal]),
 		episode: episodeText(combi.episode, m),
 		art: episodeArt(combi.episode, "/assets/"),
 		floor: combi.episode === "special2" ? floorText(combi.floor, m) : null,
@@ -105,7 +106,7 @@ const runOf = (code: string) => {
 
 /** Each value's average over the saved rounds, the ones the code's goals aim for marked. */
 const statsOf = (entry: SavedCode) => {
-	const aimed = new Set<StatField>(goalTargets(entry).map((target) => target.field))
+	const aimed = new Set<StatField>(rowStats(entry).flatMap((stat) => (stat.field === "time" ? [] : [stat.field])))
 	const average = averageOf(entry.rounds ?? [])
 	return STAT_FIELDS.flatMap((field) => {
 		const value = average[field]
@@ -113,6 +114,17 @@ const statsOf = (entry: SavedCode) => {
 		return [{ field, label: m.combi.editor.statLabels[field], value: money.format(value), aimed: aimed.has(field) }]
 	})
 }
+
+/** A collapsed row's stats: the goals' averages and time, a dash where no round noted one. */
+const headStatsOf = (entry: SavedCode) =>
+	rowStats(entry).map(({ field, value }) => ({
+		field,
+		label: field === "time" ? m.combi.list.time : m.combi.editor.statLabels[field],
+		value: value === null ? "—" : field === "time" ? clock(value) : money.format(value),
+	}))
+
+/** Seconds as minutes and seconds, `2:05`. */
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
 
 /** The first press asks; the second, on the same button, deletes. */
 const remove = (entry: SavedCode) => {
@@ -202,24 +214,27 @@ const pickSort = (value: string) => {
 							{/if}
 						</span>
 						<span class="summary">
-							<span class="line">
-								<span class="code">{game}</span>
-								{#if run !== null}
-									<span class="aim">{run.mode} · {run.goals}</span>
-								{/if}
-							</span>
+							<span class="code">{game}</span>
 							{#if run !== null}
-								<span class="episode">{run.episode}</span>
+								<span class="badges">
+									<span class="badge mode">{run.mode}</span>
+									{#each run.goalNames as name (name)}
+										<span class="sep" aria-hidden="true">·</span>
+										<span class="badge goal">{name}</span>
+									{/each}
+									<span class="sep" aria-hidden="true">·</span>
+									<span class="badge episode">{run.episode}</span>
+								</span>
 							{:else}
 								<!-- A code that no longer reads still says what it was for. -->
 								<span class="episode">{descriptionTitle(entry.description)}</span>
 							{/if}
-							{#if !open && rounds > 0}
+							{#if !open}
 								<span class="stats">
-									{#each stats as stat (stat.field)}
+									{#each headStatsOf(entry) as stat (stat.field)}
 										<span class="stat">
 											<span class="muted">{stat.label}</span>
-											<strong class:aimed={stat.aimed}>{stat.value}</strong>
+											<strong class:aimed={stat.field !== "time"}>{stat.value}</strong>
 										</span>
 									{/each}
 									<span class="muted">{m.combi.list.rounds(rounds)}</span>
@@ -695,13 +710,6 @@ select {
 	min-width: 0;
 }
 
-.line {
-	display: flex;
-	flex-flow: row wrap;
-	gap: 4px 14px;
-	align-items: baseline;
-}
-
 .code {
 	color: var(--code);
 	font-family: var(--mono);
@@ -710,9 +718,38 @@ select {
 	letter-spacing: 0.08em;
 }
 
-.aim {
-	font-size: 0.875rem;
+/* The second line: what the run is, one badge each for the mode, every goal and the episode. */
+.badges {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 4px 6px;
+	align-items: center;
+}
+
+.badge {
+	padding: 1px 8px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font-size: 0.75rem;
 	font-weight: 600;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+.badge.mode {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.badge.goal {
+	border-color: var(--accent);
+	background: var(--accent);
+	color: var(--bg);
+}
+
+.badge.episode {
+	color: var(--muted);
+	font-weight: 400;
 }
 
 .episode {

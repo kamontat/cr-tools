@@ -192,16 +192,17 @@ const GOAL_STATS: Readonly<Record<Goal, Exclude<StatField, "time">>> = {
 	box: "boxes",
 }
 
-export type GoalTarget = { goal: Goal; field: Exclude<StatField, "time">; value: number }
+export type RowStat = { field: StatField; value: number | null }
 
-/** The average the entry's rounds reached for each goal its code aims for, in the code's goal order; goals no round noted are left out. */
-export function goalTargets(entry: SavedCode): GoalTarget[] {
+/**
+ * What a collapsed row measures: the average the entry's rounds reached for each goal
+ * its code aims for, in the code's goal order, then time. Each is listed whether or
+ * not a round noted it, so a row always shows the same stats for the same goals.
+ */
+export function rowStats(entry: SavedCode): RowStat[] {
 	const average = averageOf(entry.rounds ?? [])
-	return (rowGoals(entry.code) ?? []).flatMap((goal) => {
-		const field = GOAL_STATS[goal]
-		const value = average[field]
-		return value === undefined ? [] : [{ goal, field, value }]
-	})
+	const fields: StatField[] = [...(rowGoals(entry.code) ?? []).map((goal) => GOAL_STATS[goal]), "time"]
+	return fields.map((field) => ({ field, value: average[field] ?? null }))
 }
 
 export type RowIcon = { src: string | null; name: string; round?: true; more?: number }

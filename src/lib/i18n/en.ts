@@ -257,6 +257,8 @@ export const en = {
 			saved: (date: string) => `Saved ${date}`,
 			empty: "No saved codes yet. Press “New code” to make one.",
 			noMatch: "No saved code matches.",
+			/** A collapsed row's time, shown as minutes and seconds. */
+			time: "Time",
 			rounds: (n: number) => `${n} ${n === 1 ? "round" : "rounds"}`,
 			average: "Average",
 			columns: {
