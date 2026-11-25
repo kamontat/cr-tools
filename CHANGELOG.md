@@ -2,12 +2,21 @@
 
 What changed in this project and why, newest first.
 
-## 2026-11-25: Clean-ups after the redesign
+## 2026-11-25: Clean-ups after the redesign, and saved rows by goal
 
 ### Improvements
 
 - Share, Back up, Restore and Delete all share one button style, which shows a focus ring
   for keyboards.
+- A closed saved-code row reads in three lines: the code; small badges for the mode
+  (filled), the episode (outlined) and each goal (muted), most important first; then the
+  stats.
+- A closed row's stats are the average for each goal the code aims for, then time (as
+  `2:05`) and the round count. They always show, with `—` before any round notes them;
+  stats for other goals are left out.
+- An open row hides the badges and stats from its head, since its Run and Results lines
+  say the same. Results shows every stat the rounds noted; a press keeps only the goal's
+  stats, time and the round count.
 
 ### Bug fixes
 

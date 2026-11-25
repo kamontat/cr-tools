@@ -14,7 +14,6 @@ import { BOOST_LABELS, COOKIE_POWER_LABELS, RANDOM_BOOST_LABELS } from "#lib/com
 import {
 	filterList,
 	type GoalFilter,
-	goalTargets,
 	LIST_SORTS,
 	type ListSort,
 	readListSort,
@@ -22,13 +21,12 @@ import {
 	rowBoosts,
 	rowFull,
 	rowLoadout,
+	rowStats,
 	rowTeam,
 	sortList,
 	writeListSort,
 } from "#lib/combi/list"
-import { averageOf } from "#lib/combi/rounds"
 import { descriptionTitle } from "#lib/combi/saved"
-import { STAT_FIELDS, type StatField } from "#lib/combi/stats"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, LOCALES, onLangChange } from "#lib/lang"
 import { localStore } from "#lib/storage"
@@ -96,6 +94,7 @@ const runOf = (code: string) => {
 	return {
 		mode: m.combi.modes[combi.mode],
 		goals: goalsText(combi.goals, m),
+		goalNames: combi.goals.map((goal) => m.combi.goals[goal]),
 		episode: episodeText(combi.episode, m),
 		art: episodeArt(combi.episode, "/assets/"),
 		floor: combi.episode === "special2" ? floorText(combi.floor, m) : null,
@@ -103,16 +102,24 @@ const runOf = (code: string) => {
 	}
 }
 
-/** Each value's average over the saved rounds, the ones the code's goals aim for marked. */
-const statsOf = (entry: SavedCode) => {
-	const aimed = new Set<StatField>(goalTargets(entry).map((target) => target.field))
-	const average = averageOf(entry.rounds ?? [])
-	return STAT_FIELDS.flatMap((field) => {
-		const value = average[field]
-		if (value === undefined) return []
-		return [{ field, label: m.combi.editor.statLabels[field], value: money.format(value), aimed: aimed.has(field) }]
-	})
+/**
+ * A row's stats: the goals' averages and time, a dash where no round noted one; with
+ * `all`, every other stat a round noted too. The goals' are marked.
+ */
+const statsOf = (entry: SavedCode, all = false) => {
+	const stats = rowStats(entry, all)
+	const aimed = new Set(rowStats(entry).map((stat) => stat.field))
+	aimed.delete("time")
+	return stats.map(({ field, value }) => ({
+		field,
+		label: field === "time" ? m.combi.list.time : m.combi.editor.statLabels[field],
+		value: value === null ? "—" : field === "time" ? clock(value) : money.format(value),
+		aimed: aimed.has(field),
+	}))
 }
+
+/** Seconds as minutes and seconds, `2:05`. */
+const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`
 
 /** The first press asks; the second, on the same button, deletes. */
 const remove = (entry: SavedCode) => {
@@ -179,7 +186,6 @@ const pickSort = (value: string) => {
 			{#each shown as entry, index (entry.code)}
 				{@const game = combiSectionOf(entry.code)}
 				{@const run = runOf(entry.code)}
-				{@const stats = statsOf(entry)}
 				{@const rounds = roundCount(entry)}
 				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
@@ -202,21 +208,26 @@ const pickSort = (value: string) => {
 							{/if}
 						</span>
 						<span class="summary">
-							<span class="line">
-								<span class="code">{game}</span>
-								{#if run !== null}
-									<span class="aim">{run.mode} · {run.goals}</span>
-								{/if}
-							</span>
-							{#if run !== null}
-								<span class="episode">{run.episode}</span>
+							<span class="code">{game}</span>
+							{#if open}
+								<!-- Open, the Run line says it all, and the note shows whole. -->
+							{:else if run !== null}
+								<span class="badges">
+									<span class="badge mode">{run.mode}</span>
+									<span class="sep" aria-hidden="true">·</span>
+									<span class="badge episode">{run.episode}</span>
+									{#each run.goalNames as name (name)}
+										<span class="sep" aria-hidden="true">·</span>
+										<span class="badge goal">{name}</span>
+									{/each}
+								</span>
 							{:else}
 								<!-- A code that no longer reads still says what it was for. -->
 								<span class="episode">{descriptionTitle(entry.description)}</span>
 							{/if}
-							{#if !open && rounds > 0}
+							{#if !open}
 								<span class="stats">
-									{#each stats as stat (stat.field)}
+									{#each statsOf(entry) as stat (stat.field)}
 										<span class="stat">
 											<span class="muted">{stat.label}</span>
 											<strong class:aimed={stat.aimed}>{stat.value}</strong>
@@ -300,18 +311,22 @@ const pickSort = (value: string) => {
 								{@render line("main", m.combi.list.run, runBody)}
 
 								{#snippet resultsBody()}
-									{#if rounds === 0}
-										<span class="muted">{none}</span>
-									{:else}
-										{#each stats as stat (stat.field)}
+									{@const fewer = namesOn(entry.code, m.combi.list.results)}
+									<!-- Every stat the rounds noted; a press keeps the goals' stats and time only. -->
+									<button
+										type="button"
+										class="pics"
+										aria-pressed={fewer}
+										title={m.combi.list.fewerStats}
+										onclick={() => toggleNames(entry.code, m.combi.list.results)}>
+										{#each statsOf(entry, !fewer) as stat (stat.field)}
 											<span class="stat">
 												<span class="muted">{stat.label}</span>
 												<strong class:aimed={stat.aimed}>{stat.value}</strong>
 											</span>
-											<span class="sep" aria-hidden="true">·</span>
 										{/each}
 										<span class="muted">{m.combi.list.rounds(rounds)}</span>
-									{/if}
+									</button>
 								{/snippet}
 								{@render line("runLog", m.combi.list.results, resultsBody)}
 
@@ -695,13 +710,6 @@ select {
 	min-width: 0;
 }
 
-.line {
-	display: flex;
-	flex-flow: row wrap;
-	gap: 4px 14px;
-	align-items: baseline;
-}
-
 .code {
 	color: var(--code);
 	font-family: var(--mono);
@@ -710,9 +718,38 @@ select {
 	letter-spacing: 0.08em;
 }
 
-.aim {
-	font-size: 0.875rem;
+/* The second line: what the run is, most important first: the mode (filled), the episode (outlined), then every goal (muted). */
+.badges {
+	display: flex;
+	flex-flow: row wrap;
+	gap: 4px 6px;
+	align-items: center;
+}
+
+.badge {
+	padding: 0 6px;
+	border: 1px solid var(--line);
+	border-radius: 999px;
+	font-size: 0.6875rem;
 	font-weight: 600;
+	line-height: 1.4;
+	white-space: nowrap;
+}
+
+.badge.mode {
+	border-color: var(--accent);
+	background: var(--accent);
+	color: var(--bg);
+}
+
+.badge.episode {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.badge.goal {
+	color: var(--muted);
+	font-weight: 400;
 }
 
 .episode {

@@ -57,25 +57,43 @@ const rowOf = (code: string) => rows().find((row) => row.textContent?.includes(c
 const toggleOf = (row: HTMLElement) => row.querySelector("button[aria-expanded]") as HTMLButtonElement
 const expand = (code: string) => fireEvent.click(toggleOf(rowOf(code)))
 
-test("a collapsed row shows the 10 characters, the mode and goals, the episode, the averages and the round count, not the note", async () => {
+test("a collapsed row shows the code, then the mode, episode and goals as badges, then the goal's average, time and round count, not the note", async () => {
 	setup()
 	expect(rows()).toHaveLength(2)
 	const score = rowOf(scoreCode)
 	const money = rowOf(moneyCode)
-	expect(score.textContent).toContain(`${en.combi.modes.manual} · ${en.combi.goals.score}`)
-	expect(score.textContent).toContain(en.combi.describe.anyEpisode)
+	const badges = (row: HTMLElement) =>
+		[...row.querySelectorAll(".head .badge")].map((badge) => badge.textContent?.trim())
+	expect(badges(score)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.score])
+	expect(badges(money)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.money])
 	expect(score.textContent).not.toContain("Score farm")
-	expect(money.textContent).toContain(en.combi.goals.money)
-	// Money averages the two rounds that noted it; the round count counts all three.
-	expect(money.textContent).toMatch(/Money\s*13,500/)
-	expect(money.textContent).toContain(en.combi.list.rounds(3))
-	expect(score.textContent).not.toContain(en.combi.list.rounds(0))
+	const stats = (row: HTMLElement) =>
+		[...(row.querySelector(".head .stats")?.children ?? [])].map(
+			(part) =>
+				[...part.childNodes]
+					.map((node) => node.textContent?.trim())
+					.filter(Boolean)
+					.join(" ") || part.textContent?.trim(),
+		)
+	// No rounds yet: the goal's stat and time still show, with nothing in them, and so does the count.
+	expect(stats(score)).toEqual([
+		`${en.combi.editor.statLabels.score} —`,
+		`${en.combi.list.time} —`,
+		en.combi.list.rounds(0),
+	])
+	// Money averages the two rounds that noted it; the round count counts all three. Only the goal's stat shows.
+	expect(stats(money)).toEqual([
+		`${en.combi.editor.statLabels.money} 13,500`,
+		`${en.combi.list.time} 1:00`,
+		en.combi.list.rounds(3),
+	])
 	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("false")
 	// The head carries the cookie's picture; the actions wait for the row to open.
 	expect(within(toggleOf(score)).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
-	// Open, the stats move to the Results line, and the note shows whole.
+	// Open, the badges move to the Run line, the stats to the Results line, and the note shows whole.
 	await expand(moneyCode)
+	expect(rowOf(moneyCode).querySelector(".head .badges")).toBeNull()
 	expect(rowOf(moneyCode).querySelector(".head")?.textContent).not.toContain("13,500")
 	const results = rowOf(moneyCode).querySelector(".details")?.textContent ?? ""
 	expect(results).toMatch(/Money\s*13,500/)
@@ -84,12 +102,13 @@ test("a collapsed row shows the 10 characters, the mode and goals, the episode, 
 	expect(rowOf(scoreCode).textContent).toMatch(/Score farm\s*second line/)
 })
 
-test("an average is shown as a whole number, and one round says so", () => {
+test("a collapsed row's averages are whole numbers, only for the code's goals, and time reads as minutes and seconds", () => {
 	const code = full({}, { goals: ["box"] })
-	setup([{ code, description: "", rounds: [{ boxes: 3, score: 10 }, { score: 15 }], savedAt: 1 }])
-	expect(rowOf(code).textContent).toMatch(new RegExp(`${en.combi.editor.statLabels.boxes}\\s*3`))
-	expect(rowOf(code).textContent).toMatch(new RegExp(`${en.combi.editor.statLabels.score}\\s*13`))
-	expect(rowOf(code).textContent).not.toContain("12.5")
+	setup([{ code, description: "", rounds: [{ boxes: 3, score: 10, time: 125 }, { score: 15 }], savedAt: 1 }])
+	const stats = rowOf(code).querySelector(".head .stats")?.textContent ?? ""
+	expect(stats).toMatch(new RegExp(`${en.combi.editor.statLabels.boxes}\\s*3`))
+	expect(stats).not.toContain(en.combi.editor.statLabels.score)
+	expect(stats).toMatch(new RegExp(`${en.combi.list.time}\\s*2:05`))
 	setup([{ code: moneyCode, description: "", rounds: [{ money: 5 }], savedAt: 1 }])
 	expect(document.body.textContent).toContain(en.combi.list.rounds(1))
 })
@@ -251,7 +270,7 @@ test("an open row shows each treasure slot's first treasure with +N for the rest
 		within(row).getByRole("img", { name: `${nameFor("treasures", "098")}, ${en.combi.list.kinds.evolved}` }),
 	).toBeTruthy()
 	expect(row.textContent).not.toContain("+0-2")
-	const [faces, rings] = within(row).getAllByRole("button", { pressed: false })
+	const [faces, rings] = within(row).getAllByTitle(en.combi.list.showNames)
 	// A press shows that line's names only.
 	await fireEvent.click(faces as HTMLElement)
 	expect(row.textContent).toContain(nameFor("cookies", "01"))
@@ -276,6 +295,29 @@ test("an open row shows each treasure slot's first treasure with +N for the rest
 		en.combi.list.kinds.base,
 		en.combi.list.kinds.evolved,
 	])
+})
+
+test("an open row's Results shows every stat the rounds noted; a press keeps only the goal's stats, time and round count", async () => {
+	const code = full({}, { goals: ["money"] })
+	setup([{ code, description: "", rounds: [{ money: 100, score: 7, exp: 3 }], savedAt: 1 }])
+	await expand(code)
+	const results = () => within(rowOf(code)).getByTitle(en.combi.list.fewerStats)
+	const labels = () => [...results().querySelectorAll(".stat .muted")].map((label) => label.textContent?.trim())
+	const every = [
+		en.combi.editor.statLabels.money,
+		en.combi.editor.statLabels.score,
+		en.combi.editor.statLabels.exp,
+		en.combi.list.time,
+	]
+	expect(labels()).toEqual(every)
+	expect(results().textContent).toContain(en.combi.list.rounds(1))
+	expect(results().getAttribute("aria-pressed")).toBe("false")
+	await fireEvent.click(results())
+	expect(results().getAttribute("aria-pressed")).toBe("true")
+	expect(labels()).toEqual([en.combi.editor.statLabels.money, en.combi.list.time])
+	expect(results().textContent).toContain(en.combi.list.rounds(1))
+	await fireEvent.click(results())
+	expect(labels()).toEqual(every)
 })
 
 test("each line of an open row opens the entry on its own tab", async () => {
