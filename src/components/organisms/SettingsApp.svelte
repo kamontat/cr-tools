@@ -10,7 +10,7 @@ import { LOCAL_LIMIT, localUse, usageText } from "#lib/combi/backup"
 import { readSaved, type SavedCode } from "#lib/combi/saved"
 import { messagesFor } from "#lib/i18n/messages"
 import { applyLang, currentLang, LANG_NAMES, LANGS, type Lang, LOCALES, onLangChange, writeLang } from "#lib/lang"
-import { localStore } from "#lib/storage"
+import { localStore, memoryStore } from "#lib/storage"
 import { applyTheme, readTheme, type Theme, writeTheme } from "#lib/theme"
 
 interface Props {
@@ -25,21 +25,6 @@ const m = $derived(messagesFor(lang))
 $effect(() => onLangChange(document, (next) => (lang = next)))
 
 let theme = $state<Theme>(readTheme())
-
-/** Stands in for a browser that keeps nothing, so the rows still work for this visit. */
-function memoryStore(): Storage {
-	const items = new Map<string, string>()
-	return {
-		get length() {
-			return items.size
-		},
-		clear: () => items.clear(),
-		getItem: (key) => items.get(key) ?? null,
-		key: (index) => [...items.keys()][index] ?? null,
-		removeItem: (key) => void items.delete(key),
-		setItem: (key, value) => void items.set(key, String(value)),
-	}
-}
 
 const persistent = localStore()
 const store = persistent ?? memoryStore()
@@ -134,8 +119,7 @@ const shown = (row: AboutRow) => {
 		</div>
 	</section>
 
-	<section aria-labelledby="set-about">
-		<h2 id="set-about">{m.settings.about}</h2>
+	<section>
 		<div class="rows">
 			<SettingsRow label={m.settings.about} value={summary}>
 				<dl class="about">
@@ -191,9 +175,8 @@ h2 {
 }
 
 .bar {
-	width: calc(100% - 28px);
+	width: 100%;
 	height: 6px;
-	margin: 0 14px 10px;
 }
 
 .about {

@@ -356,7 +356,7 @@ export function parseSaved(text: string): {
  * Adds what text brought in to the saved list. A code already saved keeps the
  * note it has: the note someone wrote for themselves outranks one that came
  * from somewhere else, and an import that could overwrite a list is one nobody
- * would dare run twice. New codes go to the top in the order the text had them.
+ * would dare run twice. New codes join the list in date order, newest first; ones with no date of their own are dated now and so go on top.
  */
 export function importSaved(
 	storage: Storage,
@@ -367,7 +367,8 @@ export function importSaved(
 	const fresh = incoming
 		.filter((entry) => !existing.some((saved) => saved.code === entry.code))
 		.map((entry) => entryOf(entry.code, entry, entry.savedAt ?? now))
-	const entries = [...fresh, ...existing]
+	// Newest first by the date each carries, so a year-old backup does not pose as the latest; ties keep fresh first.
+	const entries = [...fresh, ...existing].sort((one, other) => other.savedAt - one.savedAt)
 	return {
 		entries,
 		stored: fresh.length === 0 ? true : writeSaved(storage, entries),

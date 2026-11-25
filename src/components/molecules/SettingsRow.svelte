@@ -25,11 +25,11 @@ const uid = $props.id()
 		class="row"
 		aria-expanded={open}
 		aria-controls={open ? `${uid}-body` : undefined}
-		aria-labelledby="{uid}-label"
+		aria-labelledby={value === undefined ? `${uid}-label` : `${uid}-label ${uid}-value`}
 		onclick={() => (open = !open)}>
 		<span id="{uid}-label" class="label">{label}</span>
 		{#if value !== undefined}
-			<span class="value">{value}</span>
+			<span id="{uid}-value" class="value">{value}</span>
 		{/if}
 		<span class="chev" class:open aria-hidden="true">›</span>
 	</button>

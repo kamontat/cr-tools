@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "vitest"
 
-import { localStore, readKey, writeKey } from "#lib/storage"
+import { localStore, memoryStore, readKey, writeKey } from "#lib/storage"
 
 const throwing = {
 	getItem() {
@@ -48,4 +48,22 @@ test("readKey and writeKey round-trip, and null removes", () => {
 	expect(readKey("k", store)).toBe("v")
 	expect(writeKey("k", null, store)).toBe(true)
 	expect(readKey("k", store)).toBeNull()
+})
+
+test("memoryStore keeps items for the visit like a Storage", () => {
+	const store = memoryStore()
+	expect(store.length).toBe(0)
+	store.setItem("a", "1")
+	store.setItem("b", 2 as unknown as string)
+	expect(store.getItem("a")).toBe("1")
+	expect(store.getItem("b")).toBe("2")
+	expect(store.getItem("none")).toBeNull()
+	expect(store.length).toBe(2)
+	expect(store.key(0)).toBe("a")
+	expect(store.key(5)).toBeNull()
+	store.removeItem("a")
+	expect(store.length).toBe(1)
+	store.clear()
+	expect(store.length).toBe(0)
+	expect(memoryStore().getItem("b")).toBeNull()
 })

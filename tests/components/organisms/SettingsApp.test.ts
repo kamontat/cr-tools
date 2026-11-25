@@ -64,9 +64,9 @@ test("production About row shows the short commit and opens the full list", asyn
 	english()
 	render(SettingsApp, { props: { env: production } })
 	expect(screen.getByText(/Production · 0123456/)).toBeTruthy()
-	await fireEvent.click(screen.getByRole("button", { name: "About" }))
+	await fireEvent.click(screen.getByRole("button", { name: /^About/ }))
 	expect(screen.queryByRole("dialog")).toBeNull()
-	const dialog = body("About")
+	const dialog = body(/^About/)
 	expect(terms(dialog)).toEqual(["Environment", "Built", "Source", "Commit", "Changelog"])
 	const link = within(dialog).getByRole("link", { name: "CHANGELOG.md" })
 	expect(link.getAttribute("target")).toBe("_blank")
@@ -76,8 +76,8 @@ test("production About row shows the short commit and opens the full list", asyn
 test("development lists only Environment and Source", async () => {
 	english()
 	render(SettingsApp, { props: { env: { dev: true } } })
-	await fireEvent.click(screen.getByRole("button", { name: "About" }))
-	expect(terms(body("About"))).toEqual(["Environment", "Source"])
+	await fireEvent.click(screen.getByRole("button", { name: /^About/ }))
+	expect(terms(body(/^About/))).toEqual(["Environment", "Source"])
 })
 
 test("starts in Thai", () => {
@@ -109,17 +109,17 @@ test("choosing English switches the page in place and remembers it", async () =>
 
 test("with About open, switching language re-renders it", async () => {
 	render(SettingsApp, { props: { env: production } })
-	await fireEvent.click(screen.getByRole("button", { name: "เกี่ยวกับ" }))
+	await fireEvent.click(screen.getByRole("button", { name: /^เกี่ยวกับ/ }))
 	applyLang("en", document)
 	await tick()
-	const dialog = body(/^(About|เกี่ยวกับ)$/)
+	const dialog = body(/^(About|เกี่ยวกับ)/)
 	expect(terms(dialog)).toEqual(["Environment", "Built", "Source", "Commit", "Changelog"])
 })
 
 test("Built follows the language's date format", async () => {
 	render(SettingsApp, { props: { env: production } })
-	await fireEvent.click(screen.getByRole("button", { name: "เกี่ยวกับ" }))
-	const built = () => body(/^(About|เกี่ยวกับ)$/).querySelectorAll("dd")[1]?.textContent ?? ""
+	await fireEvent.click(screen.getByRole("button", { name: /^เกี่ยวกับ/ }))
+	const built = () => body(/^(About|เกี่ยวกับ)/).querySelectorAll("dd")[1]?.textContent ?? ""
 	expect(built()).toContain("พ.ย.")
 	expect(built()).toContain("2026")
 	expect(built()).not.toContain("2569")

@@ -13,7 +13,8 @@ afterEach(() => {
 
 test("closed, it is a button named by the label with no body", () => {
 	render(SettingsRow, { props: { label: "Storage", value: "1 kB / 5 MB", children } })
-	const row = screen.getByRole("button", { name: "Storage" })
+	// The folded value is heard with the label.
+	const row = screen.getByRole("button", { name: "Storage 1 kB / 5 MB" })
 	expect(row.getAttribute("aria-expanded")).toBe("false")
 	expect(screen.queryByText("Inside the row")).toBeNull()
 	expect(screen.getByText("1 kB / 5 MB")).toBeTruthy()

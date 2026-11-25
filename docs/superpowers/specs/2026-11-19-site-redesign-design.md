@@ -303,9 +303,9 @@ count.
 >   as the first field and `version` and `exportedAt` beside it. Other tools
 >   can add their own fields later without changing the format.
 > - Old text backups still restore.
-> - Restoring from a link works after cc-tracking DD-208: the address may be a
->   Gist or PasteFox raw address, the two hosts known to allow reading from
->   another site.
+> - Restoring from a link works after cc-tracking DD-208: the address may be any
+>   http(s) link, and a Gist or PasteFox share page is rewritten to its raw
+>   address (the two hosts known to allow reading from another site).
 > - Restore skips bad entries and reports them, by position or line and why,
 >   instead of refusing the whole backup.
 - **Back up:** **Download file** (a `.txt` in today's export format,

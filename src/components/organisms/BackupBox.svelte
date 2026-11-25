@@ -2,9 +2,6 @@
 import type { SavedCode } from "#lib/combi/saved"
 import type { Messages } from "#lib/i18n/messages"
 
-import { onDestroy } from "svelte"
-
-import Toast from "#components/atoms/Toast.svelte"
 import { backupFileName, writeBackup } from "#lib/backup"
 import { copyText } from "#lib/clipboard"
 import { exportCodes } from "#lib/combi/backup"
@@ -26,17 +23,12 @@ const shownName = $derived(backupFileName(new Date()))
 
 let open = $state(false)
 const text = $derived(open ? fileText(new Date()) : null)
-let toast = $state<{ message: string; tone: "info" | "error" } | null>(null)
-let timer: ReturnType<typeof setTimeout> | undefined
+let notice = $state<{ message: string; tone: "info" | "error" } | null>(null)
 let box = $state<HTMLTextAreaElement>()
 
 const say = (message: string, tone: "info" | "error") => {
-	toast = { message, tone }
-	clearTimeout(timer)
-	timer = setTimeout(() => (toast = null), 4000)
+	notice = { message, tone }
 }
-
-onDestroy(() => clearTimeout(timer))
 
 const download = () => {
 	const now = new Date()
@@ -66,7 +58,6 @@ const copy = async () => {
 			<button type="button" class="btn primary" onclick={download}>{t.download}</button>
 		</div>
 		<div row class="line">
-			<span class="what">{t.asText}</span>
 			<button
 				type="button"
 				class="btn"
@@ -90,15 +81,27 @@ const copy = async () => {
 				<button type="button" class="btn primary" onclick={copy}>{t.copy}</button>
 			</div>
 		{/if}
+		{#if notice !== null}
+			<p class="notice" class:error={notice.tone === "error"} role={notice.tone === "error" ? "alert" : "status"}>
+				{notice.message}
+			</p>
+		{/if}
 	</div>
 {/if}
-<Toast message={toast?.message ?? null} tone={toast?.tone ?? "info"} ondismiss={() => (toast = null)} />
 
 <style>
 .rows {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+}
+
+.notice {
+	margin: 0;
+}
+
+.notice.error {
+	color: var(--danger);
 }
 
 .empty {

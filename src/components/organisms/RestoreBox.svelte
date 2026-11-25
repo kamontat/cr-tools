@@ -120,9 +120,9 @@ const onfile = async (event: Event) => {
 	try {
 		text = await file.text()
 	} catch {
-		if (mine !== token) return
-		// Cleared so the same file can be picked again.
+		// Cleared on every path, so the same file can be picked again.
 		input.value = ""
+		if (mine !== token) return
 		notice = { text: t.fileUnreadable, tone: "error" }
 		return
 	}
@@ -267,7 +267,7 @@ const typed = (event: KeyboardEvent) => {
 	{/if}
 
 	{#if found !== null && (step === "preview" || step === "paste")}
-		<section class="preview" aria-label={t.restore} tabindex="-1" bind:this={previewHead}>
+		<div class="preview" tabindex="-1" bind:this={previewHead}>
 			{#if found.preview.newer !== undefined}
 				<p class="notice error">{t.newer(found.preview.newer)}</p>
 			{:else if found.notBackup}
@@ -298,7 +298,7 @@ const typed = (event: KeyboardEvent) => {
 					<button type="button" class="btn primary" onclick={restore}>{t.restoreButton}</button>
 				{/if}
 			</div>
-		</section>
+		</div>
 	{/if}
 </section>
 

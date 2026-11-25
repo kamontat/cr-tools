@@ -462,7 +462,24 @@ test("an imported entry keeps the time a backup gave it, else takes now", () => 
 		99,
 	)
 	expect(readSaved(held).map((entry) => [entry.code, entry.savedAt])).toEqual([
-		["1-MS0A000000", 42],
 		["1-MM0A000000", 99],
+		["1-MS0A000000", 42],
 	])
+})
+
+test("importSaved keeps the list newest first by savedAt, restored dates included", () => {
+	const store = window.localStorage
+	store.clear()
+	saveCode(store, "1-MM0A000000", { description: "new" }, 5000)
+	const result = importSaved(store, [{ code: "1-AM0A000000", description: "old", savedAt: 1000 }], 9000)
+	expect(result.entries.map((entry) => entry.code)).toEqual(["1-MM0A000000", "1-AM0A000000"])
+	expect(readSaved(store).map((entry) => entry.code)).toEqual(["1-MM0A000000", "1-AM0A000000"])
+})
+
+test("importSaved puts text restores, dated now, on top", () => {
+	const store = window.localStorage
+	store.clear()
+	saveCode(store, "1-MM0A000000", { description: "new" }, 5000)
+	const result = importSaved(store, [{ code: "1-AM0A000000", description: "from text" }], 9000)
+	expect(result.entries.map((entry) => entry.code)).toEqual(["1-AM0A000000", "1-MM0A000000"])
 })
