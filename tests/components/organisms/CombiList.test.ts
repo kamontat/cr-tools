@@ -31,7 +31,7 @@ const moneyCode = full({ cookie: "06" }, { goals: ["money"] })
 
 const entries: SavedCode[] = [
 	{ code: scoreCode, description: "Score farm\nsecond line", savedAt: 1 },
-	{ code: moneyCode, description: "", stats: { money: { min: 12000, max: 15000 } }, savedAt: 2 },
+	{ code: moneyCode, description: "", rounds: [{ money: 12000 }, { money: 15000 }, { time: 60 }], savedAt: 2 },
 ]
 
 beforeEach(() => {
@@ -57,7 +57,7 @@ const rowOf = (code: string) => rows().find((row) => row.textContent?.includes(c
 const toggleOf = (row: HTMLElement) => row.querySelector("button[aria-expanded]") as HTMLButtonElement
 const expand = (code: string) => fireEvent.click(toggleOf(rowOf(code)))
 
-test("a collapsed row shows the 10 characters, the mode and goals, the episode and the saved stats, not the note", async () => {
+test("a collapsed row shows the 10 characters, the mode and goals, the episode, the averages and the round count, not the note", async () => {
 	setup()
 	expect(rows()).toHaveLength(2)
 	const score = rowOf(scoreCode)
@@ -66,23 +66,32 @@ test("a collapsed row shows the 10 characters, the mode and goals, the episode a
 	expect(score.textContent).toContain(en.combi.describe.anyEpisode)
 	expect(score.textContent).not.toContain("Score farm")
 	expect(money.textContent).toContain(en.combi.goals.money)
-	expect(money.textContent).toMatch(/Money\s*12,000–15,000/)
+	// Money averages the two rounds that noted it; the round count counts all three.
+	expect(money.textContent).toMatch(/Money\s*13,500/)
+	expect(money.textContent).toContain(en.combi.list.rounds(3))
+	expect(score.textContent).not.toContain(en.combi.list.rounds(0))
 	expect(toggleOf(score).getAttribute("aria-expanded")).toBe("false")
 	// The head carries the cookie's picture; the actions wait for the row to open.
 	expect(within(toggleOf(score)).getByRole("img", { name: nameFor("cookies", "01") })).toBeTruthy()
 	expect(within(score).queryByRole("button", { name: en.combi.list.editCode(combiSectionOf(scoreCode)) })).toBeNull()
 	// Open, the stats move to the Results line, and the note shows whole.
 	await expand(moneyCode)
-	expect(rowOf(moneyCode).querySelector(".head")?.textContent).not.toContain("12,000–15,000")
+	expect(rowOf(moneyCode).querySelector(".head")?.textContent).not.toContain("13,500")
+	const results = rowOf(moneyCode).querySelector(".details")?.textContent ?? ""
+	expect(results).toMatch(/Money\s*13,500/)
+	expect(results).toContain(en.combi.list.rounds(3))
 	await expand(scoreCode)
 	expect(rowOf(scoreCode).textContent).toMatch(/Score farm\s*second line/)
 })
 
-test("a stat saved as one number shows once", () => {
+test("an average is shown as a whole number, and one round says so", () => {
 	const code = full({}, { goals: ["box"] })
-	setup([{ code, description: "", stats: { boxes: { min: 3, max: 3 } }, savedAt: 1 }])
+	setup([{ code, description: "", rounds: [{ boxes: 3, score: 10 }, { score: 15 }], savedAt: 1 }])
 	expect(rowOf(code).textContent).toMatch(new RegExp(`${en.combi.editor.statLabels.boxes}\\s*3`))
-	expect(rowOf(code).textContent).not.toContain("3–3")
+	expect(rowOf(code).textContent).toMatch(new RegExp(`${en.combi.editor.statLabels.score}\\s*13`))
+	expect(rowOf(code).textContent).not.toContain("12.5")
+	setup([{ code: moneyCode, description: "", rounds: [{ money: 5 }], savedAt: 1 }])
+	expect(document.body.textContent).toContain(en.combi.list.rounds(1))
 })
 
 test("a row expands to its run, results, team, treasures, boosts, random boost, cookie power+ and note, and several rows stay open", async () => {

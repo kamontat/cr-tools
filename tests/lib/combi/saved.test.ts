@@ -5,36 +5,26 @@ import {
 	clearSaved,
 	DESCRIPTION_MAX,
 	descriptionTitle,
-	facetValues,
-	filterSaved,
 	formatSaved,
 	importSaved,
-	isFiltering,
-	NO_FILTER,
+	LEGACY_SAVED_KEY,
 	parseSaved,
 	readSaved,
-	rememberSort,
 	removeSaved,
-	runFacets,
 	SAVED_KEY,
-	SAVED_SORT_KEY,
-	SAVED_SORT_LABELS,
-	SAVED_SORTS,
-	type SavedCode,
 	saveCode,
-	sortSaved,
-	storedSort,
 	updateSaved,
 } from "#lib/combi/saved"
 import { shareHashFor } from "#lib/combi/state"
 import { englishOf } from "./issue-expect"
 
-function storage(initial: string | null = null): Storage {
-	let held = initial
+/** A storage holding `initial` as the list, under `key`. */
+function storage(initial: string | null = null, key = SAVED_KEY): Storage {
+	const held = new Map<string, string>(initial === null ? [] : [[key, initial]])
 	return {
-		getItem: () => held,
-		setItem: (_key: string, value: string) => {
-			held = value
+		getItem: (name: string) => held.get(name) ?? null,
+		setItem: (name: string, value: string) => {
+			held.set(name, value)
 		},
 	} as unknown as Storage
 }
@@ -139,7 +129,8 @@ test("a browser that refuses storage still answers, and says the save was not ke
 })
 
 test("the storage key names the page, apart from the last-build key", () => {
-	expect(SAVED_KEY).toBe("combi-name:saved")
+	expect(SAVED_KEY).toBe("combi-name:saved:v2")
+	expect(LEGACY_SAVED_KEY).toBe("combi-name:saved")
 })
 
 test("a description keeps its line breaks, minus the blank edges", () => {
@@ -279,322 +270,183 @@ test("importing adds the codes not yet saved, in order at the top, and leaves sa
 	])
 })
 
-test("an entry keeps its run stats, and drops the ones that are not well formed", () => {
+test("an entry keeps its rounds, and drops values and rounds that are not well formed", () => {
 	const held = storage()
-	saveCode(
-		held,
-		"1-MM0A000000",
-		{
-			description: "Coin farm",
-			stats: { money: { min: 12000, max: 15000 }, time: 245 },
-		},
-		1,
-	)
+	saveCode(held, "1-MM0A000000", { description: "Coin farm", rounds: [{}, { money: 12000, time: 245 }] }, 1)
 
 	expect(readSaved(held)).toEqual([
-		{
-			code: "1-MM0A000000",
-			description: "Coin farm",
-			stats: { money: { min: 12000, max: 15000 }, time: 245 },
-			savedAt: 1,
-		},
+		{ code: "1-MM0A000000", description: "Coin farm", rounds: [{ money: 12000, time: 245 }], savedAt: 1 },
 	])
 	expect(
 		readSaved(
 			storage(
 				JSON.stringify([
-					{
-						code: "1-MS0A000000",
-						description: "",
-						savedAt: 1,
-						stats: { boxes: { min: 0, max: 9 }, exp: { min: 5, max: 5 } },
-					},
-					{ code: "1-MM0A000000", description: "", savedAt: 1, stats: "junk" },
+					{ code: "1-MS0A000000", description: "", savedAt: 1, rounds: [{ boxes: 9, exp: 5 }, { money: "x" }] },
+					{ code: "1-MM0A000000", description: "", savedAt: 1, rounds: "junk" },
 				]),
 			),
 		),
 	).toEqual([
-		{
-			code: "1-MS0A000000",
-			description: "",
-			stats: { exp: { min: 5, max: 5 } },
-			savedAt: 1,
-		},
+		{ code: "1-MS0A000000", description: "", rounds: [{ exp: 5 }], savedAt: 1 },
 		{ code: "1-MM0A000000", description: "", savedAt: 1 },
 	])
 })
 
-test("updating an entry rewrites its stats, and clearing them takes them off", () => {
+test("an entry whose rounds are all blank is kept with none", () => {
 	const held = storage()
-	saveCode(held, "1-MS0A000000", { description: "a", stats: { time: 60 } }, 1)
-
-	updateSaved(held, "1-MS0A000000", { code: "1-MS0A000000", description: "a", stats: { time: 90 } }, 2)
-	expect(readSaved(held)[0]?.stats).toEqual({ time: 90 })
-
-	updateSaved(held, "1-MS0A000000", { code: "1-MS0A000000", description: "a" }, 3)
-	expect(readSaved(held)[0]).toEqual({
-		code: "1-MS0A000000",
-		description: "a",
-		savedAt: 3,
-	})
+	saveCode(held, "1-MM0A000000", { description: "", rounds: [{}] }, 1)
+	expect(readSaved(held)).toEqual([{ code: "1-MM0A000000", description: "", savedAt: 1 }])
 })
 
-test("exported text carries the stats on lines of their own and reads them back", () => {
+test("the first read moves the old list to the new key, its ranges as rounds, and leaves the old key alone", () => {
+	const old = JSON.stringify([
+		{ code: "1-MM0A000000", description: "a", savedAt: 2, stats: { money: { min: 1, max: 2 }, time: 30 } },
+		{ code: "1-MS0A000000", description: "", savedAt: 1, stats: { time: 60 } },
+	])
+	const held = storage(old, LEGACY_SAVED_KEY)
+
+	const moved = [
+		{
+			code: "1-MM0A000000",
+			description: "a",
+			rounds: [
+				{ money: 1, time: 30 },
+				{ money: 2, time: 30 },
+			],
+			savedAt: 2,
+		},
+		{ code: "1-MS0A000000", description: "", rounds: [{ time: 60 }], savedAt: 1 },
+	]
+	expect(readSaved(held)).toEqual(moved)
+	expect(JSON.parse(held.getItem(SAVED_KEY) ?? "null")).toEqual(moved)
+	expect(held.getItem(LEGACY_SAVED_KEY)).toBe(old)
+})
+
+test("a list emptied after the move stays empty, and the old list is not read again", () => {
+	const held = storage(JSON.stringify([{ code: "1-MM0A000000", description: "", savedAt: 1 }]), LEGACY_SAVED_KEY)
+	held.setItem(SAVED_KEY, "[]")
+	expect(readSaved(held)).toEqual([])
+})
+
+test("a browser that refuses the move's write still shows the moved list", () => {
+	const old = JSON.stringify([{ code: "1-MM0A000000", description: "", savedAt: 1, stats: { time: 60 } }])
+	const refusingWrites = {
+		getItem: (name: string) => (name === LEGACY_SAVED_KEY ? old : null),
+		setItem() {
+			throw new Error("storage is full")
+		},
+	} as unknown as Storage
+	expect(readSaved(refusingWrites)).toEqual([
+		{ code: "1-MM0A000000", description: "", rounds: [{ time: 60 }], savedAt: 1 },
+	])
+})
+
+test("an entry under the new key that still has old stats converts too", () => {
+	const held = storage(
+		JSON.stringify([{ code: "1-MM0A000000", description: "", savedAt: 1, stats: { money: { min: 3, max: 3 } } }]),
+	)
+	expect(readSaved(held)[0]?.rounds).toEqual([{ money: 3 }])
+})
+
+test("updating an entry rewrites its rounds, and clearing them takes them off", () => {
+	const held = storage()
+	saveCode(held, "1-MS0A000000", { description: "a", rounds: [{ time: 60 }] }, 1)
+
+	updateSaved(held, "1-MS0A000000", { code: "1-MS0A000000", description: "a", rounds: [{ time: 90 }] }, 2)
+	expect(readSaved(held)[0]?.rounds).toEqual([{ time: 90 }])
+
+	updateSaved(held, "1-MS0A000000", { code: "1-MS0A000000", description: "a" }, 3)
+	expect(readSaved(held)[0]).toEqual({ code: "1-MS0A000000", description: "a", savedAt: 3 })
+})
+
+test("exported text carries each round on a line of its own and reads them back", () => {
 	const entries = [
 		{
 			code: "1-MM0A000000",
 			description: "Coin farm",
-			stats: {
-				money: { min: 12000, max: 15000 },
-				exp: { min: 300, max: 300 },
-				boxes: { min: 2, max: 4 },
-				time: 245,
-			},
+			rounds: [
+				{ money: 12000, boxes: 2, time: 245 },
+				{ score: 1200000, money: 15000 },
+			],
 			savedAt: 2,
 		},
 		{ code: "1-MS0A000000", description: "", savedAt: 1 },
 	]
 	const text = formatSaved(entries)
 
-	expect(text).toBe("1-MM0A000000\nmoney: 12000-15000\nexp: 300\nboxes: 2-4\ntime: 245\n> Coin farm\n\n1-MS0A000000\n")
+	expect(text).toBe(
+		"1-MM0A000000\nround: money=12000 boxes=2 time=245\nround: score=1200000 money=15000\n> Coin farm\n\n1-MS0A000000\n",
+	)
 	expect(parseSaved(text)).toEqual({
 		entries: entries.map(({ savedAt: _savedAt, ...entry }) => entry),
 		skipped: [],
 	})
 })
 
-test("a stat line that does not read is skipped and reported, and the entry stays", () => {
-	const { entries, skipped } = parseSaved("1-MM0A000000\nboxes: 9\nTime: 60\nmoney: 1,000 - 2,000")
-
-	expect(entries).toEqual([
+test("text written before rounds still reads, its stat lines as rounds", () => {
+	expect(parseSaved("1-MM0A000000\nmoney: 1,000 - 2,000\nTime: 60").entries).toEqual([
 		{
 			code: "1-MM0A000000",
 			description: "",
-			stats: { money: { min: 1000, max: 2000 }, time: 60 },
-		},
-	])
-	expect(skipped).toEqual([
-		{
-			line: 2,
-			text: "boxes: 9",
-			reason: { id: "statFormat", values: { field: "boxes" } },
-		},
-	])
-	expect(englishOf(skipped.map((line) => line.reason))).toEqual(["Boxes takes 0 to 5, or a range like 2-4."])
-})
-
-test("a shared link's stats come in with it, and typed stat lines win over them", () => {
-	const link = `https://example.com/combi-name/${shareHashFor("1-MM0A000000", "", {
-		money: { min: 1, max: 2 },
-		time: 60,
-	})}`
-
-	expect(parseSaved(`${link}\ntime: 90`).entries).toEqual([
-		{
-			code: "1-MM0A000000",
-			description: "",
-			stats: { money: { min: 1, max: 2 }, time: 90 },
-		},
-	])
-})
-
-test("importing keeps the stats that came in", () => {
-	const held = storage()
-
-	importSaved(held, [{ code: "1-MM0A000000", description: "a", stats: { time: 60 } }], 5)
-
-	expect(readSaved(held)[0]?.stats).toEqual({ time: 60 })
-})
-
-const LIST: readonly SavedCode[] = [
-	{
-		code: "A",
-		description: "",
-		savedAt: 3,
-		stats: { money: { min: 1, max: 5 } },
-	},
-	{ code: "B", description: "", savedAt: 1, stats: { time: 90 } },
-	{
-		code: "C",
-		description: "",
-		savedAt: 2,
-		stats: { money: { min: 4, max: 9 }, time: 30 },
-	},
-	{
-		code: "D",
-		description: "",
-		savedAt: 4,
-		stats: { money: { min: 2, max: 5 } },
-	},
-]
-
-const codes = (entries: readonly SavedCode[]) => entries.map((entry) => entry.code)
-
-test("newest is the list as stored, and oldest is it the other way up", () => {
-	expect(codes(sortSaved(LIST, "newest"))).toEqual(["A", "B", "C", "D"])
-	expect(codes(sortSaved(LIST, "oldest"))).toEqual(["D", "C", "B", "A"])
-})
-
-test("a stat sort puts the most first, by the top of a range, and entries without it last", () => {
-	// A and D tie on the top of their range, so the higher floor leads.
-	expect(codes(sortSaved(LIST, "money"))).toEqual(["C", "D", "A", "B"])
-	expect(codes(sortSaved(LIST, "time"))).toEqual(["B", "C", "A", "D"])
-	// Nobody has exp: the stored order stands.
-	expect(codes(sortSaved(LIST, "exp"))).toEqual(["A", "B", "C", "D"])
-})
-
-test("the episode sort runs Episode 1 to 7, then the special episodes, Special Exp last", () => {
-	// Mode, goal, episode: slot 4 of the game code is the episode.
-	const entry = (code: string, savedAt: number): SavedCode => ({
-		code,
-		description: "",
-		savedAt,
-	})
-	const list = [
-		entry("1-MS0X000000", 1),
-		entry("1-MS0T000000", 2),
-		entry("1-MS07000000", 3),
-		entry("1-MS0A000000", 4),
-		entry("1ZZZZZZZZZ", 5),
-		entry("1-MS0C000000", 6),
-		entry("1-MS01000000", 7),
-		entry("1-MS0R000000", 8),
-		entry("1-MS03000000", 9),
-	]
-	expect(SAVED_SORTS).toContain("episode")
-	expect(SAVED_SORT_LABELS.episode).toBe("Episode")
-	// Any episode, and a code that no longer reads, come after every episode.
-	expect(codes(sortSaved(list, "episode"))).toEqual([
-		"1-MS01000000",
-		"1-MS03000000",
-		"1-MS07000000",
-		"1-MS0C000000",
-		"1-MS0T000000",
-		"1-MS0R000000",
-		"1-MS0X000000",
-		"1-MS0A000000",
-		"1ZZZZZZZZZ",
-	])
-})
-
-test("saved codes sort by the highest score", () => {
-	const list: SavedCode[] = [
-		{ code: "A", description: "", savedAt: 2 },
-		{
-			code: "B",
-			description: "",
-			savedAt: 1,
-			stats: { score: { min: 1, max: 9 } },
-		},
-	]
-	expect(SAVED_SORTS).toContain("score")
-	expect(SAVED_SORT_LABELS.score).toBe("Highest score")
-	expect(codes(sortSaved(list, "score"))).toEqual(["B", "A"])
-})
-
-test("exported text carries the score as a line of its own", () => {
-	const text = formatSaved([
-		{
-			code: "1-MS0A000000",
-			description: "",
-			stats: { score: { min: 1200000, max: 1500000 } },
-			savedAt: 1,
-		},
-	])
-
-	expect(text).toBe("1-MS0A000000\nscore: 1200000-1500000\n")
-	expect(parseSaved("1-MS0A000000\nScore: 1,200,000").entries).toEqual([
-		{
-			code: "1-MS0A000000",
-			description: "",
-			stats: { score: { min: 1200000, max: 1200000 } },
-		},
-	])
-})
-
-test("sorting leaves the list it was given alone", () => {
-	const before = codes(LIST)
-	sortSaved(LIST, "oldest")
-	expect(codes(LIST)).toEqual(before)
-})
-
-test("the chosen sort is remembered, and anything else reads as newest", () => {
-	const held = storage()
-	expect(storedSort(held)).toBe("newest")
-
-	rememberSort(held, "money")
-	expect(storedSort(held)).toBe("money")
-
-	expect(storedSort(storage("sideways"))).toBe("newest")
-	expect(storedSort(REFUSING)).toBe("newest")
-	expect(() => rememberSort(REFUSING, "time")).not.toThrow()
-	expect(SAVED_SORT_KEY).not.toBe(SAVED_KEY)
-	expect(SAVED_SORTS[0]).toBe("newest")
-})
-
-const RUNS: readonly SavedCode[] = [
-	{ code: "1-MM03000000", description: "Coin farm", savedAt: 4 },
-	{ code: "1-MB03000000", description: "Box\nslow but safe", savedAt: 3 },
-	{ code: "1-AX0A000000", description: "", savedAt: 2 },
-	{ code: "NOT A CODE", description: "old money run", savedAt: 1 },
-]
-
-test("a run's facets are the mode, goal and episode its row reads as", () => {
-	expect(runFacets("1-MM03000000")).toEqual({
-		mode: "Manual",
-		goal: "Money",
-		episode: "EP. 3",
-	})
-	expect(runFacets("1-AX0A000000")).toEqual({
-		mode: "Auto",
-		goal: "Exp",
-		episode: "Any episode",
-	})
-	expect(runFacets("NOT A CODE")).toBeNull()
-})
-
-// A run aiming for several goals is one of each of them: filtering on Exp
-// keeps it, and the goal filter offers each goal once, never the pair.
-test("a run aiming for several goals matches and offers each of them", () => {
-	const runs: readonly SavedCode[] = [...RUNS, { code: "1-MXB3000000", description: "", savedAt: 0 }]
-
-	expect(codes(filterSaved(runs, { ...NO_FILTER, goal: "Exp" }))).toEqual(["1-AX0A000000", "1-MXB3000000"])
-	expect(facetValues(runs, "goal")).toEqual(["Box", "Exp", "Money"])
-})
-
-test("no filter keeps every entry", () => {
-	expect(isFiltering(NO_FILTER)).toBe(false)
-	expect(codes(filterSaved(RUNS, NO_FILTER))).toEqual(codes(RUNS))
-})
-
-test("the search matches the note, the code and the run, in any case", () => {
-	const search = (text: string) => codes(filterSaved(RUNS, { ...NO_FILTER, text }))
-
-	expect(isFiltering({ ...NO_FILTER, text: "x" })).toBe(true)
-	expect(search("MONEY")).toEqual(["1-MM03000000", "NOT A CODE"])
-	expect(search("safe")).toEqual(["1-MB03000000"])
-	expect(search("ax0a")).toEqual(["1-AX0A000000"])
-	// Every word has to match, wherever it is.
-	expect(search("manual box")).toEqual(["1-MB03000000"])
-	expect(search("   ")).toEqual(codes(RUNS))
-})
-
-test("a facet keeps only the runs that read as it, and a code that no longer reads is not one", () => {
-	expect(codes(filterSaved(RUNS, { ...NO_FILTER, mode: "Manual" }))).toEqual(["1-MM03000000", "1-MB03000000"])
-	expect(codes(filterSaved(RUNS, { ...NO_FILTER, mode: "Manual", goal: "Box" }))).toEqual(["1-MB03000000"])
-	expect(codes(filterSaved(RUNS, { ...NO_FILTER, episode: "Any episode" }))).toEqual(["1-AX0A000000"])
-})
-
-test("a facet offers only the values the list holds, once each, in reading order", () => {
-	expect(facetValues(RUNS, "mode")).toEqual(["Auto", "Manual"])
-	expect(facetValues(RUNS, "goal")).toEqual(["Box", "Exp", "Money"])
-	expect(
-		facetValues(
-			[
-				{ code: "1-MM03000000", description: "", savedAt: 1 },
-				{ code: "1-AX0A000000", description: "", savedAt: 1 },
+			rounds: [
+				{ money: 1000, time: 60 },
+				{ money: 2000, time: 60 },
 			],
-			"episode",
-		),
-	).toEqual(["Any episode", "EP. 3"])
+		},
+	])
+	expect(parseSaved("1-MS0A000000\nScore: 1,200,000").entries).toEqual([
+		{ code: "1-MS0A000000", description: "", rounds: [{ score: 1200000 }] },
+	])
+})
+
+test("a round or stat line that does not read is skipped and reported, and the entry stays", () => {
+	const { entries, skipped } = parseSaved("1-MM0A000000\nboxes: 9\nround: money=1-2\nROUND: Money=1,000")
+
+	expect(entries).toEqual([{ code: "1-MM0A000000", description: "", rounds: [{ money: 1000 }] }])
+	expect(skipped).toEqual([
+		{ line: 2, text: "boxes: 9", reason: { id: "statFormat", values: { field: "boxes" } } },
+		{ line: 3, text: "round: money=1-2", reason: { id: "roundLine" } },
+	])
+	expect(englishOf(skipped.map((line) => line.reason))).toEqual([
+		"Boxes takes 0 to 5, or a range like 2-4.",
+		"this round does not read; write it as round: money=12000 time=245",
+	])
+})
+
+test("a shared link's rounds come in with it, and typed rounds replace them", () => {
+	const link = `https://example.com/combi-name/${shareHashFor("1-MM0A000000", "", [{ money: 1 }, { money: 2 }])}`
+
+	expect(parseSaved(link).entries).toEqual([
+		{ code: "1-MM0A000000", description: "", rounds: [{ money: 1 }, { money: 2 }] },
+	])
+	expect(parseSaved(`${link}\nround: time=90`).entries).toEqual([
+		{ code: "1-MM0A000000", description: "", rounds: [{ time: 90 }] },
+	])
+})
+
+test("an old link's stats and the old stat lines under it read as one set, as they did before rounds", () => {
+	const link = "https://example.com/combi-name/#1-MM0A000000?money=1000-2000"
+
+	expect(parseSaved(`${link}\ntime: 245`).entries).toEqual([
+		{
+			code: "1-MM0A000000",
+			description: "",
+			rounds: [
+				{ money: 1000, time: 245 },
+				{ money: 2000, time: 245 },
+			],
+		},
+	])
+	// A typed stat line wins over the link's value for the same field.
+	expect(parseSaved(`${link}\nmoney: 1500`).entries).toEqual([
+		{ code: "1-MM0A000000", description: "", rounds: [{ money: 1500 }] },
+	])
+})
+
+test("importing keeps the rounds that came in", () => {
+	const held = storage()
+
+	importSaved(held, [{ code: "1-MM0A000000", description: "a", rounds: [{ time: 60 }] }], 5)
+
+	expect(readSaved(held)[0]?.rounds).toEqual([{ time: 60 }])
 })

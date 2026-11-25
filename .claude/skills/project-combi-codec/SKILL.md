@@ -1,6 +1,6 @@
 ---
 name: project-combi-codec
-description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
+description: Use when touching src/lib/combi/ — the codec, its character tables, labels, describe.ts, hints.ts, art.ts, the loadout section (loadout.ts, catalog.ts, full-code.ts), or the saved-code and link helpers (state.ts, saved.ts, rounds.ts, stats.ts), the editor's draft and list logic (draft.ts, editor.ts, list.ts), or issues.ts. Required before adding or reordering a mode, goal, episode, boost, random boost, cookie power or action, since the character tables are the wire format.
 ---
 
 # The combi codec
@@ -238,37 +238,48 @@ exists to model exactly those four, for a code that needs to carry them anyway.
 address bar (`codeInHash`, `hashFor`), so a build is a link someone can send, and
 `localStorage` under `combi-name:code` (`storedCode`, `rememberCode`), so closing the tab
 does not throw the last build away. `startingCode` lets a link win over the remembered code.
-A shared link's hash is `#CODE?note=…&money=12000-15000&time=245` (`shareHashFor`): the note
-is base64url of its UTF-8 bytes, so no space, `+` or `%` gives a chat app a place to cut the
-link, and a value that does not read is no note (`noteInHash`); stats ride as plain
-parameters (`statsInHash`). Old links in that shape must keep opening — it is one of the
-redesign's anti-goals. Every storage call takes the `Storage` as an argument and is wrapped,
+A shared link's hash is `#CODE?note=…&round=:12000::3:245&round=:15000` (`shareHashFor`):
+the note is base64url of its UTF-8 bytes, so no space, `+` or `%` gives a chat app a place to
+cut the link, and a value that does not read is no note (`noteInHash`); each round rides as
+one `round=` parameter (`roundsInHash`). Links made before rounds carry
+`&money=12000-15000&time=245` instead; `roundsInHash` reads those as rounds when there is no
+`round=`, and they must keep opening — it is one of the redesign's anti-goals. Every storage call takes the `Storage` as an argument and is wrapped,
 so a browser that refuses storage still works for that visit. `state.ts` also holds the
 current page's tab and full-code keys (`combi-name:tab`, `combi-name:full-code`), which the
 redesign may drop.
 
-`saved.ts` is the saved list under `combi-name:saved`: `{ code, description, stats?,
+`saved.ts` is the saved list under `combi-name:saved:v2`: `{ code, description, rounds?,
 savedAt }` entries, newest first, one per code — the code is the entry's identity, so saving
 a code again replaces its entry, and `updateSaved` refuses (`reason: "taken"`) to move an
 entry onto a code another holds. An entry not in that shape is dropped on read; a malformed
-stat is dropped rather than the entry. `filterSaved`, `sortSaved` (`SAVED_SORTS`, remembered
-under `combi-name:saved-sort`), `runFacets` and `facetValues` are views only: they never
-reorder what is stored. `formatSaved` writes the export text (each code on its own line, its
-stats under it, its note quoted with `>`), and `parseSaved` / `importSaved` read it back,
-taking bare codes and shared links too, canonicalising each code through `decodeFull` /
-`encodeFull`, and adding only codes not already saved. `stats.ts` holds Score, Money, Exp
-and Boxes as `{ min, max }` ranges and Time as seconds; the redesign converts these ranges
-into rounds (see the spec), so read it before changing them.
+value or an empty round is dropped rather than the entry. When `combi-name:saved:v2` is
+absent, `readSaved` reads the list from before rounds, `combi-name:saved`, converts it and
+writes the new key; it never writes the old key, so a rolled-back site still finds the codes
+as they were at the move. `formatSaved` writes the export text (each code on its own line, a
+`round: money=12000 time=245` line per round under it, its note quoted with `>`), and
+`parseSaved` / `importSaved` read it back, taking bare codes, shared links and the old
+`money: 1200-1500` stat lines too, canonicalising each code through `decodeFull` /
+`encodeFull`, and adding only codes not already saved.
+
+`rounds.ts` is a round: score, money, exp, boxes (0 to 5) and time in seconds, each one
+optional whole number. It reads them (`readRounds`, `parseRoundValue`), averages each field
+over the rounds that filled it in (`averageOf`), writes and reads the link and backup forms
+(`roundParam`, `roundLine`), and converts the old ranges (`roundsFromStats`): no stats give no
+rounds, any range gives two rounds (every minimum, then every maximum, time and single values
+in both), and stats with no range give one. Old storage, backups and links all convert through
+it. `stats.ts` still holds those old `{ min, max }` ranges, only to read what was written
+before rounds.
 
 `draft.ts` is the editor's build: `picks` holds everything someone chose, kept whole, so a
 pick the episode or mode has no room for (a relay on Special Episode 1, an action on a
 manual run, the floor off the tower) comes back when they switch back; `full` is the build as
 its code can say it (`normalize`, `fitLoadout`), recomputed from `picks` by every setter, and
-the only one the code, the verdict and `isDirty` read. Setters return a new draft. `editor.ts`
+the only one the code, the verdict and `isDirty` read. Its `rounds` are every row of the
+Run log, blank ones included; `keptRounds` is what a save keeps. Setters return a new draft. `editor.ts`
 is what the editor draws from a draft (picker options, verdict and episode notes in words,
 where a click on the code display leads), and `list.ts` is the saved list's views (`sortList`,
-`filterList`, `LIST_SORTS` under `combi-name:list-sort`) and `rowLoadout(code)` for a row's
-icons. `issues.ts` holds `Issue` and `CodeError` as described above. None of them touch the
+`filterList`, `LIST_SORTS` under `combi-name:list-sort`), `averageMoney`, `roundCount`,
+`goalTargets` (the average for each goal) and `rowLoadout(code)` for a row's icons. `issues.ts` holds `Issue` and `CodeError` as described above. None of them touch the
 DOM or the wire format.
 
 `README.md` documents the slot format, and the loadout grammar, for humans.

@@ -1,14 +1,17 @@
 <script lang="ts">
+import type { Draft } from "#lib/combi/draft"
 import type { Issue } from "#lib/combi/issues"
+import type { Round } from "#lib/combi/rounds"
 import type { Messages } from "#lib/i18n/messages"
 
 import { untrack } from "svelte"
 
 import Field from "#components/molecules/Field.svelte"
-import { type Draft, setNote, setStat } from "#lib/combi/draft"
+import { addRound, removeRound, setNote, setRoundValue } from "#lib/combi/draft"
 import { issueText } from "#lib/combi/issues"
+import { averageOf, parseRoundValue } from "#lib/combi/rounds"
 import { DESCRIPTION_MAX } from "#lib/combi/saved"
-import { formatStat, parseStat, STAT_FIELDS, type StatField, type StatsDraft } from "#lib/combi/stats"
+import { STAT_FIELDS, type StatField } from "#lib/combi/stats"
 
 interface Props {
 	/** Prefix of every field id, unique to this editor. */
@@ -20,48 +23,71 @@ interface Props {
 
 let { uid, draft, m, onchange }: Props = $props()
 
-const shown = (stats: StatsDraft, field: StatField): string => {
-	const value = stats[field]
-	return value === undefined ? "" : formatStat(value)
-}
+type Texts = Record<StatField, string>
+
+const textsOf = (round: Round): Texts =>
+	Object.fromEntries(
+		STAT_FIELDS.map((field) => [field, round[field] === undefined ? "" : String(round[field])]),
+	) as Texts
 
 /**
- * What each box holds. A box keeps what was typed — an unfinished range, or
- * "12,000" — and takes the draft's value only when the draft's stat changes
+ * What each cell holds. A cell keeps what was typed — an unfinished number, or
+ * "12,000" — and takes the draft's value only when the draft's round changes
  * from elsewhere (another code typed, a reset), which `synced` tells apart.
+ * A round taken out shifts the ones after it, so then every cell starts again
+ * from the draft.
  */
-const initial = Object.fromEntries(STAT_FIELDS.map((field) => [field, shown(draft.stats, field)])) as Record<
-	StatField,
-	string
->
-let texts = $state<Record<StatField, string>>({ ...initial })
-let errors = $state<Partial<Record<StatField, Issue>>>({})
-const synced: Record<StatField, string> = { ...initial }
+let texts = $state<Texts[]>(untrack(() => draft.rounds.map(textsOf)))
+let errors = $state<Partial<Record<StatField, Issue>>[]>(untrack(() => draft.rounds.map(() => ({}))))
+let synced: Texts[] = untrack(() => draft.rounds.map(textsOf))
 
 $effect(() => {
-	const stats = draft.stats
+	const rounds = draft.rounds
 	untrack(() => {
-		for (const field of STAT_FIELDS) {
-			const now = shown(stats, field)
-			if (now === synced[field]) continue
-			synced[field] = now
-			texts[field] = now
-			delete errors[field]
+		if (rounds.length < synced.length) {
+			synced = rounds.map(textsOf)
+			texts = rounds.map(textsOf)
+			errors = rounds.map(() => ({}))
+			return
 		}
+		rounds.forEach((round, at) => {
+			const now = textsOf(round)
+			const was = synced[at]
+			if (was === undefined) {
+				synced[at] = now
+				texts[at] = { ...now }
+				errors[at] = {}
+				return
+			}
+			for (const field of STAT_FIELDS) {
+				if (now[field] === was[field]) continue
+				was[field] = now[field]
+				const row = texts[at]
+				if (row !== undefined) row[field] = now[field]
+				delete errors[at]?.[field]
+			}
+		})
 	})
 })
 
-function statInput(field: StatField, text: string) {
-	texts[field] = text
-	const read = parseStat(field, text)
+function cellInput(at: number, field: StatField, text: string) {
+	const row = texts[at]
+	const rowErrors = errors[at]
+	if (row === undefined || rowErrors === undefined) return
+	row[field] = text
+	const read = parseRoundValue(field, text)
 	if (!read.ok) {
-		errors[field] = read.issue
+		rowErrors[field] = read.issue
 		return
 	}
-	delete errors[field]
-	synced[field] = read.value === null ? "" : formatStat(read.value)
-	onchange(setStat(draft, field, read.value))
+	delete rowErrors[field]
+	const was = synced[at]
+	if (was !== undefined) was[field] = read.value === null ? "" : String(read.value)
+	onchange(setRoundValue(draft, at, field, read.value))
 }
+
+const whole = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 })
+const average = $derived(averageOf(draft.rounds))
 </script>
 
 <Field id="{uid}-note" label={m.combi.editor.note} help={m.combi.help.note} helpLabel={m.combi.editor.help}>
@@ -75,27 +101,71 @@ function statInput(field: StatField, text: string) {
 		oninput={(event) => onchange(setNote(draft, event.currentTarget.value))}></textarea>
 </Field>
 
-<Field id="{uid}-stats" label={m.combi.editor.stats} help={m.combi.help.stats} helpLabel={m.combi.editor.help}>
-	<div class="stats">
-		{#each STAT_FIELDS as field (field)}
-			<div class="stat">
-				<label for="{uid}-stat-{field}">{m.combi.editor.statLabels[field]}</label>
-				<input
-					id="{uid}-stat-{field}"
-					type="text"
-					inputmode="numeric"
-					autocomplete="off"
-					placeholder={m.combi.editor.statPlaceholders[field]}
-					value={texts[field]}
-					aria-invalid={errors[field] ? "true" : undefined}
-					aria-describedby={errors[field] ? `${uid}-stat-${field}-error` : undefined}
-					oninput={(event) => statInput(field, event.currentTarget.value)}>
-				{#if errors[field]}
-					<span class="error" id="{uid}-stat-{field}-error">{issueText(errors[field], m)}</span>
-				{/if}
-			</div>
-		{/each}
+<Field id="{uid}-rounds" label={m.combi.editor.rounds} help={m.combi.help.rounds} helpLabel={m.combi.editor.help}>
+	<!-- The table may be wider than a phone; it scrolls inside this box, never the page. -->
+	<div class="scroll">
+		<table>
+			<thead>
+				<tr>
+					<th scope="col" class="number">#</th>
+					{#each STAT_FIELDS as field (field)}
+						<th scope="col">{m.combi.editor.statLabels[field]}</th>
+					{/each}
+					<td></td>
+				</tr>
+			</thead>
+			<tbody>
+				{#each texts as row, at (at)}
+					<tr>
+						<th scope="row" class="number">{at + 1}</th>
+						{#each STAT_FIELDS as field (field)}
+							{@const error = errors[at]?.[field]}
+							{@const id = `${uid}-round-${at}-${field}`}
+							<td>
+								<input
+									{id}
+									name="round-{at}-{field}"
+									type="text"
+									inputmode="numeric"
+									autocomplete="off"
+									aria-label={m.combi.editor.roundCell(at + 1, m.combi.editor.statLabels[field])}
+									value={row[field]}
+									aria-invalid={error ? "true" : undefined}
+									aria-describedby={error ? `${id}-error` : undefined}
+									oninput={(event) => cellInput(at, field, event.currentTarget.value)}>
+								{#if error}
+									<span class="error" id="{id}-error">{issueText(error, m)}</span>
+								{/if}
+							</td>
+						{/each}
+						<td>
+							<button
+								type="button"
+								class="remove"
+								aria-label={m.combi.editor.removeRound(at + 1)}
+								onclick={() => onchange(removeRound(draft, at))}>
+								✕
+							</button>
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+			{#if texts.length > 0}
+				<tfoot>
+					<tr>
+						<th scope="row" class="number">{m.combi.list.average}</th>
+						{#each STAT_FIELDS as field (field)}
+							<td>{average[field] === undefined ? "" : whole.format(average[field])}</td>
+						{/each}
+						<td></td>
+					</tr>
+				</tfoot>
+			{/if}
+		</table>
 	</div>
+	<button type="button" class="add" onclick={() => onchange(addRound(draft))}>
+		<span aria-hidden="true">+</span> {m.combi.editor.addRound}
+	</button>
 </Field>
 
 <style>
@@ -115,7 +185,8 @@ textarea {
 }
 
 @media (pointer: coarse) {
-	input {
+	input,
+	button {
 		min-height: var(--tap);
 	}
 }
@@ -124,25 +195,77 @@ input[aria-invalid="true"] {
 	border-color: var(--danger);
 }
 
-.stats {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-	gap: 10px;
+.scroll {
+	max-width: 100%;
+	overflow-x: auto;
 }
 
-.stat {
-	gap: 4px;
-	min-width: 0;
+table {
+	border-collapse: collapse;
+	font-size: 0.875rem;
+}
+
+th {
+	padding: 4px 6px;
 	color: var(--muted);
 	font-size: 0.8125rem;
+	font-weight: 500;
+	text-align: start;
+	white-space: nowrap;
 }
 
-.stat input {
+td {
+	padding: 3px;
+	vertical-align: top;
+}
+
+.number {
+	text-align: end;
+}
+
+td input {
+	width: 7.5em;
 	min-width: 0;
 	font-size: 0.875rem;
 }
 
+tfoot td,
+tfoot th {
+	padding: 8px 6px 4px;
+	border-top: 1px solid var(--line);
+	font-weight: 600;
+}
+
+tfoot th {
+	color: var(--text);
+}
+
+.remove,
+.add {
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.remove {
+	width: 36px;
+	min-height: 36px;
+	color: var(--muted);
+}
+
+.add {
+	align-self: flex-start;
+	min-height: 36px;
+	padding: 6px 12px;
+}
+
 .error {
+	display: block;
+	max-width: 7.5em;
 	color: var(--danger);
+	font-size: 0.75rem;
 }
 </style>

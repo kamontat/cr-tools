@@ -10,13 +10,16 @@
  * that refuses `localStorage` still has a working page for that visit.
  */
 
-import { formatStat, parseStat, putStat, type RunStats, STAT_FIELDS, type StatsDraft } from "./stats"
+import { type Round, readRoundParam, roundParam, roundsFromStats } from "./rounds"
+import { parseStat, putStat, type RunStats, STAT_FIELDS, type StatsDraft } from "./stats"
 
 export const STORAGE_KEY = "combi-name:code"
 
 /**
- * A shared link may carry a note and run stats after the code, as
- * `#CODE?note=...&money=12000-15000&time=245`. The page's own hash never does — it is the build on screen and nothing else — so only a
+ * A shared link may carry a note and rounds after the code, as
+ * `#CODE?note=...&round=:12000::3:245&round=:15000` (`rounds.ts`'s
+ * `roundParam`). Links made before rounds carried one set of stats instead,
+ * `&money=12000-15000&time=245`, and still read. The page's own hash never does — it is the build on screen and nothing else — so only a
  * link someone sent on purpose has one.
  */
 const NOTE_MARK = "?"
@@ -66,12 +69,8 @@ export function noteInHash(hash: string): string | null {
 	return note === null || note.trim() === "" ? null : note
 }
 
-/**
- * The run stats a shared link carries. They travel as typed — digits and a
- * hyphen need no escaping — and one that does not read is left out.
- */
-export function statsInHash(hash: string): RunStats {
-	const query = new URLSearchParams(splitHash(hash).query)
+/** The stats a link made before rounds carries; one that does not read is left out. */
+function statsIn(query: URLSearchParams): RunStats {
 	const stats: StatsDraft = {}
 	for (const field of STAT_FIELDS) {
 		const parsed = parseStat(field, query.get(field) ?? "")
@@ -80,21 +79,42 @@ export function statsInHash(hash: string): RunStats {
 	return stats
 }
 
+/** The stats a link written before rounds carries; none when the link has `round=`. */
+export function oldStatsInHash(hash: string): RunStats {
+	const query = new URLSearchParams(splitHash(hash).query)
+	return query.has("round") ? {} : statsIn(query)
+}
+
+/**
+ * The rounds a shared link carries, in order; a round that does not read is
+ * left out. A link with no `round=` is read as the stats links carried before
+ * rounds, converted as `roundsFromStats` does.
+ */
+export function roundsInHash(hash: string): Round[] {
+	const query = new URLSearchParams(splitHash(hash).query)
+	const params = query.getAll("round")
+	if (params.length === 0) return roundsFromStats(statsIn(query))
+	return params.flatMap((param) => {
+		const round = readRoundParam(param)
+		return round === null ? [] : [round]
+	})
+}
+
 export function hashFor(code: string): string {
 	return `#${code}`
 }
 
 /**
- * The hash of a link that hands someone a code and the note and stats that go
+ * The hash of a link that hands someone a code and the note and rounds that go
  * with it.
  */
-export function shareHashFor(code: string, note: string, stats: RunStats = {}): string {
+export function shareHashFor(code: string, note: string, rounds: readonly Round[] = []): string {
 	const canonical = code.trim().toUpperCase()
 	const params = [
 		...(note.trim() === "" ? [] : [`note=${encodeNote(note)}`]),
-		...STAT_FIELDS.flatMap((field) => {
-			const value = stats[field]
-			return value === undefined ? [] : [`${field}=${formatStat(value)}`]
+		...rounds.flatMap((round) => {
+			const param = roundParam(round)
+			return param === "" ? [] : [`round=${param}`]
 		}),
 	]
 	if (params.length === 0) return hashFor(canonical)
