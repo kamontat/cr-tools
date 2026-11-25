@@ -35,6 +35,16 @@ describe("averageOf", () => {
 		expect(averageOf([{ money: 10000, boxes: 0 }, { money: 15000 }, {}])).toEqual({ money: 12500, boxes: 0 })
 	})
 
+	test("an average is a whole number, rounded half up", () => {
+		expect(
+			averageOf([
+				{ boxes: 2, time: 100 },
+				{ boxes: 3, time: 101 },
+			]),
+		).toEqual({ boxes: 3, time: 101 })
+		expect(averageOf([{ money: 1 }, { money: 1 }, { money: 2 }])).toEqual({ money: 1 })
+	})
+
 	test("no rounds average to nothing", () => {
 		expect(averageOf([])).toEqual({})
 	})

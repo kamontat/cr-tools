@@ -76,12 +76,15 @@ export function roundsFromStats(stats: RunStats): Round[] {
 	return ranged ? [low, high] : [low]
 }
 
-/** Each field's mean over the rounds that filled it in; a field none filled is left out. */
+/**
+ * Each field's mean over the rounds that filled it in, rounded to a whole
+ * number like every stat; a field none filled is left out.
+ */
 export function averageOf(rounds: readonly Round[]): Round {
 	const average: RoundDraft = {}
 	for (const field of STAT_FIELDS) {
 		const values = rounds.flatMap((round) => (round[field] === undefined ? [] : [round[field]]))
-		if (values.length > 0) average[field] = values.reduce((sum, n) => sum + n, 0) / values.length
+		if (values.length > 0) average[field] = Math.round(values.reduce((sum, n) => sum + n, 0) / values.length)
 	}
 	return average
 }

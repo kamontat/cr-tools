@@ -79,6 +79,12 @@ function statsIn(query: URLSearchParams): RunStats {
 	return stats
 }
 
+/** The stats a link written before rounds carries; none when the link has `round=`. */
+export function oldStatsInHash(hash: string): RunStats {
+	const query = new URLSearchParams(splitHash(hash).query)
+	return query.has("round") ? {} : statsIn(query)
+}
+
 /**
  * The rounds a shared link carries, in order; a round that does not read is
  * left out. A link with no `round=` is read as the stats links carried before

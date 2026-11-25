@@ -424,6 +424,25 @@ test("a shared link's rounds come in with it, and typed rounds replace them", ()
 	])
 })
 
+test("an old link's stats and the old stat lines under it read as one set, as they did before rounds", () => {
+	const link = "https://example.com/combi-name/#1-MM0A000000?money=1000-2000"
+
+	expect(parseSaved(`${link}\ntime: 245`).entries).toEqual([
+		{
+			code: "1-MM0A000000",
+			description: "",
+			rounds: [
+				{ money: 1000, time: 245 },
+				{ money: 2000, time: 245 },
+			],
+		},
+	])
+	// A typed stat line wins over the link's value for the same field.
+	expect(parseSaved(`${link}\nmoney: 1500`).entries).toEqual([
+		{ code: "1-MM0A000000", description: "", rounds: [{ money: 1500 }] },
+	])
+})
+
 test("importing keeps the rounds that came in", () => {
 	const held = storage()
 

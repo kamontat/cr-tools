@@ -15,8 +15,8 @@
 import { decodeFull, encodeFull } from "./full-code"
 import { CodeError, type Issue, issue } from "./issues"
 import { isEmptyRound, type Round, readRoundLine, readRounds, roundLine, roundsFromStats } from "./rounds"
-import { codeInHash, noteInHash, roundsInHash } from "./state"
-import { parseStat, putStat, readStats, type StatField, type StatsDraft } from "./stats"
+import { codeInHash, noteInHash, oldStatsInHash, roundsInHash } from "./state"
+import { parseStat, putStat, type RunStats, readStats, type StatField, type StatsDraft } from "./stats"
 
 /**
  * Where the list lives. Entries moved here when rounds replaced the single set
@@ -238,6 +238,7 @@ function codeOnLine(text: string): {
 	code: string
 	note: string | null
 	rounds: Round[]
+	stats: RunStats
 } {
 	// A link, or a bare hash: the code is the fragment, and it may carry a note.
 	const at = text.indexOf("#")
@@ -248,6 +249,7 @@ function codeOnLine(text: string): {
 		code: encodeFull(full),
 		note: at === -1 ? null : noteInHash(raw),
 		rounds: at === -1 ? [] : roundsInHash(raw),
+		stats: at === -1 ? {} : oldStatsInHash(raw),
 	}
 }
 
@@ -273,6 +275,8 @@ export function parseSaved(text: string): {
 		code: string
 		linkNote: string | null
 		linkRounds: Round[]
+		/** The stats an old-style link carried, which old stat lines under it add to. */
+		linkStats: RunStats
 		rounds: Round[]
 		stats: StatsDraft
 		lines: string[]
@@ -309,8 +313,8 @@ export function parseSaved(text: string): {
 				return
 			}
 			try {
-				const { code, note, rounds } = codeOnLine(line)
-				current = { code, linkNote: note, linkRounds: rounds, rounds: [], stats: {}, lines: [] }
+				const { code, note, rounds, stats } = codeOnLine(line)
+				current = { code, linkNote: note, linkRounds: rounds, linkStats: stats, rounds: [], stats: {}, lines: [] }
 				blocks.push(current)
 			} catch (error) {
 				current = null
@@ -326,7 +330,10 @@ export function parseSaved(text: string): {
 	for (const block of blocks) {
 		if (entries.some((entry) => entry.code === block.code)) continue
 		const typed = cleanDescription(block.lines.join("\n"))
-		const typedRounds = [...block.rounds, ...roundsFromStats(block.stats)]
+		// Old stat lines add to an old link's stats, field by field, as they did before rounds.
+		const typedStats =
+			Object.keys(block.stats).length === 0 ? [] : roundsFromStats({ ...block.linkStats, ...block.stats })
+		const typedRounds = [...block.rounds, ...typedStats]
 		const rounds = (typedRounds.length > 0 ? typedRounds : block.linkRounds).filter((round) => !isEmptyRound(round))
 		entries.push({
 			code: block.code,
