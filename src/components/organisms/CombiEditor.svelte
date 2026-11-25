@@ -321,7 +321,6 @@ function onclick(event: MouseEvent) {
 	id="editor"
 	title={draft.from === null ? m.combi.editor.newTitle : m.combi.editor.editTitle}
 	{open}
-	docked={true}
 	back={view}
 	{onclose}
 	closeLabel={view ? m.combi.editor.back : m.frame.close}

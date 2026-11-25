@@ -59,16 +59,14 @@ const layer = (name: string): number => {
 	return value === undefined ? Number.NaN : Number(value)
 }
 
-test("notices stack above pop-ups, pop-ups above the top bar, the top bar above the sidebar", () => {
-	expect(layer("toast")).toBeGreaterThan(layer("panel"))
-	expect(layer("panel")).toBeGreaterThan(layer("topbar"))
+test("notices stack above the top bar, the top bar above the sidebar", () => {
+	expect(layer("toast")).toBeGreaterThan(layer("topbar"))
 	expect(layer("topbar")).toBeGreaterThan(layer("sidebar"))
 	expect(layer("sidebar")).toBeGreaterThan(layer("scrim"))
 })
 
 test("the frame's layers take their z-index from the tokens", () => {
 	expect(rule(read("src/components/atoms/Toast.svelte"), ".host")).toMatch(/z-index:\s*var\(--z-toast\)/)
-	expect(rule(read("src/components/molecules/Panel.svelte"), ".panel-layer")).toMatch(/z-index:\s*var\(--z-panel\)/)
 	expect(rule(read("src/components/organisms/TopBar.astro"), ".top-bar")).toMatch(/z-index:\s*var\(--z-topbar\)/)
 })
 
@@ -78,4 +76,14 @@ test("a narrow panel gives its title its own line and puts the actions under it"
 	const narrow = /@container panel \(max-width: \d+px\)\s*\{([\s\S]*?)\n\}/.exec(panel)?.[1] ?? ""
 	expect(narrow).toMatch(/\.panel-head\s*\{[^}]*flex-wrap:\s*wrap/)
 	expect(narrow).toMatch(/\.panel-actions\s*\{[^}]*flex-basis:\s*100%/)
+})
+
+test("in view mode the editor takes the page's whole width, not the docked column's", () => {
+	expect(rule(read("src/components/molecules/Panel.svelte"), '.panel[data-layout="view"]')).toMatch(/width:\s*100%/)
+})
+
+test("a shared button shows where keyboard focus is", () => {
+	expect(rule(read("src/components/atoms/Button.svelte"), ".btn:focus-visible")).toMatch(
+		/outline:\s*2px solid var\(--accent\)/,
+	)
 })

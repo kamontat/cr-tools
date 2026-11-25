@@ -6,8 +6,8 @@
  * backups and old share links all read the same way.
  *
  * None of it is part of the code. It belongs to a saved entry, travels in a
- * share link as one `round=` parameter per round (`roundParam`) and in backup
- * text as one `round:` line per round (`roundLine`).
+ * share link as one `round=` parameter per round (`roundParam`) and in text
+ * as one `round:` line per round (`readRoundLine`).
  */
 
 import { type Issue, issue } from "./issues"
@@ -114,11 +114,6 @@ export function readRoundParam(text: string): Round | null {
 	const parts = text.split(":")
 	if (parts.length > STAT_FIELDS.length || parts.some((part) => /[,\s]/.test(part))) return null
 	return roundOf(parts.map((part, at) => [STAT_FIELDS[at] ?? "", part]))
-}
-
-/** A round as backup text writes it, after `round:`: the filled fields as `name=value`. */
-export function roundLine(round: Round): string {
-	return STAT_FIELDS.flatMap((field) => (round[field] === undefined ? [] : [`${field}=${round[field]}`])).join(" ")
 }
 
 /** The round a backup line carries after `round:`, or null when it does not read. */

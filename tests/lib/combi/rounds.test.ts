@@ -7,7 +7,6 @@ import {
 	readRoundLine,
 	readRoundParam,
 	readRounds,
-	roundLine,
 	roundParam,
 	roundsFromStats,
 } from "#lib/combi/rounds"
@@ -104,10 +103,6 @@ describe("the share-link form", () => {
 })
 
 describe("the backup form", () => {
-	test("filled fields in order, as name=value", () => {
-		expect(roundLine({ time: 245, score: 50000 })).toBe("score=50000 time=245")
-	})
-
 	test("reads back in any case and with grouping, and refuses anything else", () => {
 		expect(readRoundLine("Money=12,000  boxes=3")).toEqual({ money: 12000, boxes: 3 })
 		expect(readRoundLine("money=1-2")).toBeNull()

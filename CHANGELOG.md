@@ -2,6 +2,25 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-25: Clean-ups after the redesign
+
+### Improvements
+
+- Share, Back up, Restore and Delete all share one button style, which shows a focus ring
+  for keyboards.
+
+### Bug fixes
+
+- Between 641 and 1099px the editor in place of the saved list stopped at 640px; it now
+  fills the page.
+- Restore's main button keeps its colour on hover; it had turned light on light.
+
+### Decisions
+
+- The pop-up mode of panels is gone, with its focus trap: since the editor became a view
+  and Settings opens in place, nothing used it.
+- The old text export is gone; old text backups still restore.
+
 ## 2026-11-25: Back up and restore, in Settings
 
 ### Features

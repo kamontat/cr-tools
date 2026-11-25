@@ -2,6 +2,7 @@
 import type { SavedCode } from "#lib/combi/saved"
 import type { Messages } from "#lib/i18n/messages"
 
+import Button from "#components/atoms/Button.svelte"
 import { backupFileName, writeBackup } from "#lib/backup"
 import { copyText } from "#lib/clipboard"
 import { exportCodes } from "#lib/combi/backup"
@@ -55,17 +56,15 @@ const copy = async () => {
 	<div class="rows">
 		<div row class="line">
 			<span class="what">{t.fileName(shownName)}</span>
-			<button type="button" class="btn primary" onclick={download}>{t.download}</button>
+			<Button variant="primary" onclick={download}>{t.download}</Button>
 		</div>
 		<div row class="line">
-			<button
-				type="button"
-				class="btn"
+			<Button
 				aria-expanded={text !== null}
 				aria-controls={text !== null ? `${uid}-text` : undefined}
 				onclick={toggleText}>
 				{t.asText}
-			</button>
+			</Button>
 		</div>
 		{#if text !== null}
 			<textarea
@@ -78,7 +77,7 @@ const copy = async () => {
 				value={text}
 				bind:this={box}></textarea>
 			<div row class="acts">
-				<button type="button" class="btn primary" onclick={copy}>{t.copy}</button>
+				<Button variant="primary" onclick={copy}>{t.copy}</Button>
 			</div>
 		{/if}
 		{#if notice !== null}
@@ -136,33 +135,5 @@ const copy = async () => {
 	font-family: var(--mono);
 	font-size: 0.8125rem;
 	resize: vertical;
-}
-
-.btn {
-	min-height: 36px;
-	padding: 6px 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-@media (pointer: coarse) {
-	.btn {
-		min-height: var(--tap);
-	}
-}
-
-.btn:hover {
-	background: var(--hover);
-}
-
-.btn.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
 }
 </style>

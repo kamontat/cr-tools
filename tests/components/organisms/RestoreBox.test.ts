@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, type Mock, test, vi } from "vitest"
 import RestoreBox from "#components/organisms/RestoreBox.svelte"
 import { writeBackup } from "#lib/backup"
 import { exportCodes } from "#lib/combi/backup"
-import { formatSaved, parseSaved, readSaved, SAVED_KEY, type SavedCode } from "#lib/combi/saved"
+import { parseSaved, readSaved, SAVED_KEY, type SavedCode } from "#lib/combi/saved"
 import { en } from "#lib/i18n/en"
 
 const t = en.settings.data
@@ -142,7 +142,7 @@ test("a JSON file with no combi-codes field says it found none", async () => {
 })
 
 test("an old text export restores as it always did", async () => {
-	const old = `${formatSaved([{ code: a, description: "Money farm", savedAt: 1, rounds: [{ money: 12000 }] }])}\n${b}\nmoney: 1200-1500\n`
+	const old = `${a}\nround: money=12000\n> Money farm\n\n${b}\nmoney: 1200-1500\n`
 	clipboardWith(old)
 	open()
 	await press(t.fromClipboard)

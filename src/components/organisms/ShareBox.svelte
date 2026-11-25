@@ -3,6 +3,7 @@ import type { Round } from "#lib/combi/rounds"
 
 import { onDestroy } from "svelte"
 
+import Button from "#components/atoms/Button.svelte"
 import Toast from "#components/atoms/Toast.svelte"
 import { copyText } from "#lib/clipboard"
 import { combiSectionOf } from "#lib/combi/full-code"
@@ -83,15 +84,11 @@ let codeValue = $state<HTMLElement>()
 		<h4 id="{uid}-link">{m.combi.share.link}</h4>
 		<p class="value" bind:this={linkValue}>{link}</p>
 		<div row class="acts">
-			<button
-				type="button"
-				class="btn primary"
-				aria-label={m.combi.share.copyLink}
-				onclick={() => copy(link, linkValue)}>
+			<Button variant="primary" aria-label={m.combi.share.copyLink} onclick={() => copy(link, linkValue)}>
 				{m.combi.share.copy}
-			</button>
+			</Button>
 			{#if canShare}
-				<button type="button" class="btn" onclick={shareToApp}>{m.combi.share.shareToApp}</button>
+				<Button onclick={shareToApp}>{m.combi.share.shareToApp}</Button>
 			{/if}
 		</div>
 	</section>
@@ -99,13 +96,12 @@ let codeValue = $state<HTMLElement>()
 		<h4 id="{uid}-full">{m.combi.share.fullCode}</h4>
 		<p class="value code" bind:this={codeValue}>{entry.code}</p>
 		<div row class="acts">
-			<button
-				type="button"
-				class="btn primary"
+			<Button
+				variant="primary"
 				aria-label={m.combi.share.copyFull(entry.code)}
 				onclick={() => copy(entry.code, codeValue)}>
 				{m.combi.share.copy}
-			</button>
+			</Button>
 		</div>
 	</section>
 	<Toast message={toast?.message ?? null} tone={toast?.tone ?? "info"} ondismiss={() => (toast = null)} />
@@ -159,33 +155,5 @@ h4 {
 .acts {
 	flex-wrap: wrap;
 	gap: 8px;
-}
-
-.btn {
-	min-height: 36px;
-	padding: 6px 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-@media (pointer: coarse) {
-	.btn {
-		min-height: var(--tap);
-	}
-}
-
-.btn:hover {
-	background: var(--hover);
-}
-
-.btn.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
 }
 </style>

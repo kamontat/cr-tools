@@ -24,7 +24,6 @@ import { codeInHash, hashFor, noteInHash, roundsInHash, shareHashFor, type TabNa
 import { DOCK_MIN_WIDTH } from "#lib/frame"
 import { messagesFor } from "#lib/i18n/messages"
 import { currentLang, type Lang, onLangChange } from "#lib/lang"
-import { isModalOpen } from "#lib/modal"
 import { localStore, memoryStore } from "#lib/storage"
 
 let lang = $state<Lang>(currentLang(document))
@@ -293,14 +292,12 @@ $effect(() => {
 	}
 })
 
-/** Whether a paste is meant for something else: a text box, or a pop-up over the page. */
+/** Whether a paste is meant for something else: a text box. */
 const pasteIsElsewhere = () => {
 	const focused = document.activeElement
-	if (focused instanceof HTMLElement) {
-		if (focused.matches("input, textarea, select") || focused.isContentEditable) return true
-		if (focused.closest('[contenteditable]:not([contenteditable="false"])') !== null) return true
-	}
-	return isModalOpen(document)
+	if (!(focused instanceof HTMLElement)) return false
+	if (focused.matches("input, textarea, select") || focused.isContentEditable) return true
+	return focused.closest('[contenteditable]:not([contenteditable="false"])') !== null
 }
 
 const onpaste = (event: ClipboardEvent) => {
@@ -327,8 +324,7 @@ let listBox = $state<HTMLElement | null>(null)
 
 /**
  * Focus inside an editor that goes away would fall to `<body>`: it goes to the
- * list's New code instead. A pop-up already handed focus back to whatever
- * opened it, which keeps it when that is still on the page.
+ * list's New code instead; focus that is still on the page stays where it is.
  */
 const focusList = async () => {
 	await tick()

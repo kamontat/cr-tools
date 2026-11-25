@@ -25,7 +25,6 @@ beforeEach(() => {
 
 afterEach(() => {
 	cleanup()
-	document.documentElement.style.overflow = ""
 	if (original) Object.defineProperty(window, "localStorage", original)
 	vi.restoreAllMocks()
 	document.body.innerHTML = ""
@@ -37,7 +36,6 @@ const open = (
 		onclose: () => void
 		withFooter: boolean
 		withActions: boolean
-		docked: boolean
 		back: boolean
 	}> = {},
 ) => {
@@ -52,113 +50,56 @@ const open = (
 			...labels,
 			...(props.withFooter ? { footer } : {}),
 			...(props.withActions ? { actions } : {}),
-			...(props.docked ? { docked: true } : {}),
 			...(props.back ? { back: true } : {}),
 		},
 	})
 	return { ...result, onclose }
 }
 
-const panelWidth = () => screen.getByRole("dialog").style.getPropertyValue("--panel-width")
+const panelWidth = () => screen.getByRole("region").style.getPropertyValue("--panel-width")
 
 test("renders nothing when closed", () => {
 	render(Panel, { props: { id: "about", title: "About", open: false, onclose: vi.fn(), children, ...labels } })
-	expect(screen.queryByRole("dialog")).toBeNull()
+	expect(screen.queryByRole("region")).toBeNull()
 	expect(screen.queryByText("Inside")).toBeNull()
 })
 
-test("when open, is a modal dialog named by its title, holding its content and footer", () => {
-	open({ withFooter: true })
-	const dialog = screen.getByRole("dialog", { name: "About" })
-	expect(dialog.getAttribute("aria-modal")).toBe("true")
+test("when open, is a section named by its title, holding its content and footer, never a modal dialog", () => {
+	const { container } = open({ withFooter: true })
+	const region = screen.getByRole("region", { name: "About" })
+	expect(region.tagName).toBe("SECTION")
+	expect(container.contains(region)).toBe(true)
+	expect(screen.queryByRole("dialog")).toBeNull()
+	expect(document.querySelector(".panel-scrim, .panel-layer, .panel-grab")).toBeNull()
 	expect(screen.getByRole("heading", { name: "About" })).toBeTruthy()
 	expect(screen.getByRole("button", { name: "Inside" })).toBeTruthy()
 	expect(screen.getByText("Footer note")).toBeTruthy()
 })
 
-test("Escape calls onclose once", async () => {
+test("Escape inside closes once; one outside, or already handled inside, does not", async () => {
 	const { onclose } = open()
-	await fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" })
-	expect(onclose).toHaveBeenCalledTimes(1)
-})
-
-test("Escape while closed, or already consumed inside, does not call onclose", async () => {
-	const onclose = vi.fn()
-	const { rerender } = render(Panel, {
-		props: { id: "about", title: "About", open: false, onclose, children, ...labels },
-	})
-	await fireEvent.keyDown(document.body, { key: "Escape" })
-	expect(onclose).not.toHaveBeenCalled()
-	await rerender({ open: true })
 	const inside = screen.getByRole("button", { name: "Inside" })
+	await fireEvent.keyDown(inside, { key: "Escape" })
+	expect(onclose).toHaveBeenCalledTimes(1)
+	await fireEvent.keyDown(document.body, { key: "Escape" })
+	expect(onclose).toHaveBeenCalledTimes(1)
 	inside.addEventListener("keydown", (event) => event.preventDefault())
 	await fireEvent.keyDown(inside, { key: "Escape" })
-	expect(onclose).not.toHaveBeenCalled()
-})
-
-const stack = () => {
-	const closeEditor = vi.fn()
-	const closeShare = vi.fn()
-	const editor = render(Panel, {
-		props: { id: "editor", title: "Editor", open: true, onclose: closeEditor, children, ...labels },
-	})
-	const share = render(Panel, {
-		props: { id: "share", title: "Share", open: true, onclose: closeShare, children, ...labels },
-	})
-	return { editor, share, closeEditor, closeShare }
-}
-
-test("with a panel open over another, Escape closes only the top one, and a second Escape the other", async () => {
-	const { share, closeEditor, closeShare } = stack()
-	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
-	expect(closeShare).toHaveBeenCalledTimes(1)
-	expect(closeEditor).not.toHaveBeenCalled()
-	await share.rerender({ open: false })
-	expect(screen.getByRole("dialog", { name: "Editor" }).contains(document.activeElement)).toBe(true)
-	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" })
-	expect(closeEditor).toHaveBeenCalledTimes(1)
-	expect(closeShare).toHaveBeenCalledTimes(1)
-})
-
-test("with a panel open over another, Tab in the top one never lands in the lower one", async () => {
-	stack()
-	const top = screen.getByRole("dialog", { name: "Share" })
-	const lower = screen.getByRole("dialog", { name: "Editor" })
-	const separator = top.querySelector('[role="separator"]') as HTMLElement
-	separator.focus()
-	await fireEvent.keyDown(separator, { key: "Tab" })
-	expect(top.contains(document.activeElement)).toBe(true)
-	await fireEvent.keyDown(document.activeElement ?? document.body, { key: "Tab", shiftKey: true })
-	expect(top.contains(document.activeElement)).toBe(true)
-	;(lower.querySelector("button") as HTMLElement).focus()
-	expect(top.contains(document.activeElement)).toBe(true)
-})
-
-test("clicking the scrim or the close button calls onclose", async () => {
-	const { onclose } = open()
-	const scrim = document.querySelector(".panel-scrim") as HTMLElement
-	await fireEvent.click(scrim)
 	expect(onclose).toHaveBeenCalledTimes(1)
-	await fireEvent.click(screen.getByRole("button", { name: "Shut" }))
-	expect(onclose).toHaveBeenCalledTimes(2)
 })
 
-test("focus moves into the panel, and back to the opener when it closes", async () => {
-	const opener = document.createElement("button")
-	document.body.append(opener)
-	opener.focus()
-	const { rerender } = open()
-	expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true)
-	await rerender({ open: false })
-	expect(document.activeElement).toBe(opener)
-})
-
-test("Tab stays inside the open panel", async () => {
+test("Tab is not trapped, and the page keeps scrolling", async () => {
 	open()
-	const separator = screen.getByRole("separator")
+	const separator = screen.getByRole("separator", { name: "Widen" })
 	separator.focus()
-	await fireEvent.keyDown(separator, { key: "Tab" })
-	expect(document.activeElement).toBe(screen.getByRole("button", { name: "Shut" }))
+	expect(await fireEvent.keyDown(separator, { key: "Tab" })).toBe(true)
+	expect(document.documentElement.style.overflow).toBe("")
+})
+
+test("the close button calls onclose", async () => {
+	const { onclose } = open()
+	await fireEvent.click(screen.getByRole("button", { name: "Shut" }))
+	expect(onclose).toHaveBeenCalledTimes(1)
 })
 
 test("opens at 460px, and ArrowLeft on the separator widens it by 16 and remembers it", async () => {
@@ -191,7 +132,7 @@ test("dragging the separator sizes the panel from the right edge and remembers i
 test("a drag ends when the button comes up off the handle, or the handle loses the pointer", async () => {
 	open()
 	const separator = screen.getByRole("separator")
-	const layer = () => document.querySelector(".panel-layer") as HTMLElement
+	const layer = () => screen.getByRole("region")
 
 	await fireEvent.pointerDown(separator, { clientX: 740, button: 0, pointerId: 1 })
 	expect(layer().classList.contains("resizing")).toBe(true)
@@ -243,87 +184,8 @@ test("a storage whose calls throw still opens at the default width and resizes",
 	expect(panelWidth()).toBe("476px")
 })
 
-test("on a phone it is a bottom sheet with a grab handle and no separator", () => {
-	viewport(390)
-	open()
-	const dialog = screen.getByRole("dialog")
-	expect(dialog.getAttribute("data-layout")).toBe("sheet")
-	expect(document.querySelector(".panel-grab")).not.toBeNull()
-	expect(screen.queryByRole("separator")).toBeNull()
-	expect(panelWidth()).toBe("")
-})
-
-test("on a larger screen it is a side panel without a grab handle", () => {
-	open()
-	expect(screen.getByRole("dialog").getAttribute("data-layout")).toBe("side")
-	expect(document.querySelector(".panel-grab")).toBeNull()
-})
-
-test("a closed-to-open panel is a child of body, not of its parent", async () => {
-	const { container, rerender } = render(Panel, {
-		props: { id: "about", title: "About", open: false, onclose: vi.fn(), children, ...labels },
-	})
-	await rerender({ open: true })
-	const layer = document.querySelector(".panel-layer") as HTMLElement
-	expect(layer.parentElement).toBe(document.body)
-	expect(container.contains(layer)).toBe(false)
-	expect(layer.contains(screen.getByRole("dialog"))).toBe(true)
-	await rerender({ open: false })
-	expect(document.querySelector(".panel-layer")).toBeNull()
-	expect(screen.queryByRole("dialog")).toBeNull()
-})
-
-test("unmounting an open panel takes it out of body", () => {
-	const { unmount } = open()
-	expect(document.querySelector(".panel-layer")).not.toBeNull()
-	unmount()
-	expect(document.querySelector(".panel-layer")).toBeNull()
-})
-
-test("the page does not scroll while a panel is open, and does again after", async () => {
-	document.documentElement.style.overflow = "clip"
-	const { rerender } = open()
-	expect(document.documentElement.style.overflow).toBe("hidden")
-	await rerender({ open: false })
-	expect(document.documentElement.style.overflow).toBe("clip")
-})
-
-test("two open panels unlock only when both close", async () => {
-	const { editor, share } = stack()
-	expect(document.documentElement.style.overflow).toBe("hidden")
-	await editor.rerender({ open: false })
-	expect(document.documentElement.style.overflow).toBe("hidden")
-	await share.rerender({ open: false })
-	expect(document.documentElement.style.overflow).toBe("")
-})
-
-test("docked: a section, no dialog role, no scrim, and Tab leaves it", async () => {
-	const { container } = open({ id: "editor", docked: true })
-	expect(screen.queryByRole("dialog")).toBeNull()
-	const region = screen.getByRole("region", { name: "About" })
-	expect(region.tagName).toBe("SECTION")
-	expect(container.contains(region)).toBe(true)
-	expect(document.querySelector(".panel-scrim")).toBeNull()
-	expect(document.documentElement.style.overflow).toBe("")
-	const separator = screen.getByRole("separator", { name: "Widen" })
-	separator.focus()
-	expect(await fireEvent.keyDown(separator, { key: "Tab" })).toBe(true)
-	const after = document.createElement("button")
-	document.body.append(after)
-	after.focus()
-	expect(document.activeElement).toBe(after)
-})
-
-test("docked: Escape inside closes", async () => {
-	const { onclose } = open({ id: "editor", docked: true })
-	await fireEvent.keyDown(screen.getByRole("button", { name: "Inside" }), { key: "Escape" })
-	expect(onclose).toHaveBeenCalledTimes(1)
-	await fireEvent.keyDown(document.body, { key: "Escape" })
-	expect(onclose).toHaveBeenCalledTimes(1)
-})
-
-test("docked: the separator still resizes and remembers the width", async () => {
-	open({ id: "editor", docked: true })
+test("the editor's separator resizes and remembers the width", async () => {
+	open({ id: "editor" })
 	const separator = screen.getByRole("separator")
 	await fireEvent.keyDown(separator, { key: "ArrowLeft" })
 	expect(separator.getAttribute("aria-valuenow")).toBe("656")
@@ -341,7 +203,7 @@ test("actions sit in the header, before the close button", () => {
 })
 
 test("as a page's view: the close button is a back arrow before the title, and nothing resizes", async () => {
-	const { onclose } = open({ docked: true, back: true })
+	const { onclose } = open({ back: true })
 	const section = document.querySelector('[data-layout="view"]') as HTMLElement
 	expect(section).not.toBeNull()
 	const back = screen.getByRole("button", { name: "Shut" })
