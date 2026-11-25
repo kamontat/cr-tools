@@ -296,25 +296,27 @@ test("an open row shows each treasure slot's first treasure with +N for the rest
 	])
 })
 
-test("an open row's Results shows the goal's stats, time and round count; a press shows every stat the rounds noted", async () => {
+test("an open row's Results shows every stat the rounds noted; a press keeps only the goal's stats, time and round count", async () => {
 	const code = full({}, { goals: ["money"] })
 	setup([{ code, description: "", rounds: [{ money: 100, score: 7, exp: 3 }], savedAt: 1 }])
 	await expand(code)
-	const results = () => within(rowOf(code)).getByTitle(en.combi.list.showAllStats)
+	const results = () => within(rowOf(code)).getByTitle(en.combi.list.fewerStats)
 	const labels = () => [...results().querySelectorAll(".stat .muted")].map((label) => label.textContent?.trim())
-	expect(labels()).toEqual([en.combi.editor.statLabels.money, en.combi.list.time])
-	expect(results().textContent).toContain(en.combi.list.rounds(1))
-	expect(results().getAttribute("aria-pressed")).toBe("false")
-	await fireEvent.click(results())
-	expect(results().getAttribute("aria-pressed")).toBe("true")
-	expect(labels()).toEqual([
+	const every = [
 		en.combi.editor.statLabels.money,
 		en.combi.editor.statLabels.score,
 		en.combi.editor.statLabels.exp,
 		en.combi.list.time,
-	])
+	]
+	expect(labels()).toEqual(every)
+	expect(results().textContent).toContain(en.combi.list.rounds(1))
+	expect(results().getAttribute("aria-pressed")).toBe("false")
 	await fireEvent.click(results())
+	expect(results().getAttribute("aria-pressed")).toBe("true")
 	expect(labels()).toEqual([en.combi.editor.statLabels.money, en.combi.list.time])
+	expect(results().textContent).toContain(en.combi.list.rounds(1))
+	await fireEvent.click(results())
+	expect(labels()).toEqual(every)
 })
 
 test("each line of an open row opens the entry on its own tab", async () => {

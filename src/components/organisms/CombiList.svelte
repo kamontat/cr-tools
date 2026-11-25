@@ -309,15 +309,15 @@ const pickSort = (value: string) => {
 								{@render line("main", m.combi.list.run, runBody)}
 
 								{#snippet resultsBody()}
-									{@const all = namesOn(entry.code, m.combi.list.results)}
-									<!-- The goals' stats and time; a press shows every stat the rounds noted. -->
+									{@const fewer = namesOn(entry.code, m.combi.list.results)}
+									<!-- Every stat the rounds noted; a press keeps the goals' stats and time only. -->
 									<button
 										type="button"
 										class="pics"
-										aria-pressed={all}
-										title={m.combi.list.showAllStats}
+										aria-pressed={fewer}
+										title={m.combi.list.fewerStats}
 										onclick={() => toggleNames(entry.code, m.combi.list.results)}>
-										{#each statsOf(entry, all) as stat (stat.field)}
+										{#each statsOf(entry, !fewer) as stat (stat.field)}
 											<span class="stat">
 												<span class="muted">{stat.label}</span>
 												<strong class:aimed={stat.aimed}>{stat.value}</strong>
