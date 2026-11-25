@@ -37,8 +37,9 @@ test("the menu button is named in both languages", async () => {
 	expect(toggle?.hasAttribute("data-l10n")).toBe(true)
 })
 
-test("renders the page title in both languages", async () => {
+test("renders the page title in both languages, as the page's one heading", async () => {
 	const doc = await render({ dev: false })
+	expect(doc.querySelector("h1.title")).not.toBeNull()
 	expect(doc.querySelector('.title [data-lang="th"]')?.textContent).toBe("ตั้งค่า")
 	expect(doc.querySelector('.title [data-lang="en"]')?.textContent).toBe("Settings")
 })

@@ -69,7 +69,9 @@ test("development lists only Environment and Source", async () => {
 
 test("starts in Thai", () => {
 	render(SettingsApp, { props: { env: production } })
-	expect(screen.getByRole("heading", { level: 1, name: "ตั้งค่า" })).toBeTruthy()
+	// The top bar carries the page's title; the page repeats it nowhere.
+	expect(screen.queryByRole("heading", { level: 1 })).toBeNull()
+	expect(screen.getByRole("heading", { level: 2, name: "การแสดงผล" })).toBeTruthy()
 	expect(screen.getByRole("button", { name: "ไทย" }).getAttribute("aria-pressed")).toBe("true")
 	expect(screen.getByRole("button", { name: "English" }).getAttribute("aria-pressed")).toBe("false")
 	expect(screen.getByRole("button", { name: "ตามระบบ" })).toBeTruthy()
@@ -88,7 +90,7 @@ test("choosing English switches the page in place and remembers it", async () =>
 	await fireEvent.click(screen.getByRole("button", { name: "English" }))
 	expect(document.documentElement.lang).toBe("en")
 	expect(window.localStorage.getItem("lang")).toBe("en")
-	expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeTruthy()
+	expect(screen.getByRole("heading", { level: 2, name: "Appearance" })).toBeTruthy()
 	expect(screen.getByRole("button", { name: "System" })).toBeTruthy()
 })
 

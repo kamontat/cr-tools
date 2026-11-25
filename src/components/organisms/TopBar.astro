@@ -25,7 +25,8 @@ const badge = info.environment === "preview" && info.pr !== null ? `pr-${info.pr
 		aria-expanded="false">
 		☰
 	</button>
-	<span class="title"><Text pick={title} /></span>
+	<!-- The page's one heading: no page repeats its title under the bar. -->
+	<h1 class="title"><Text pick={title} /></h1>
 	{badge && <span class="badge">{badge}</span>}
 </header>
 
@@ -79,7 +80,9 @@ const badge = info.environment === "preview" && info.pr !== null ? `pr-${info.pr
 }
 
 .title {
+	margin: 0;
 	overflow: hidden;
+	font-size: inherit;
 	font-weight: 650;
 	text-overflow: ellipsis;
 	white-space: nowrap;

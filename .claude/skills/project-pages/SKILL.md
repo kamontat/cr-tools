@@ -69,16 +69,19 @@ tool slug, so a new tool is a valid `current` as soon as it is registered.
    ---
    import type { Pick } from "#lib/i18n/messages"
 
-   import Text from "#components/atoms/Text.astro"
+   import CombiApp from "#components/organisms/CombiApp.svelte"
    import AppLayout from "#layouts/AppLayout.astro"
 
    const title: Pick = (m) => m.tools["combi-name"].title
    ---
 
-   <AppLayout title={title} current="combi-name">
-   	<h1><Text pick={title} /></h1>
+   <AppLayout title={title} current="combi-name" wide>
+   	<CombiApp client:only="svelte" />
    </AppLayout>
    ```
+
+   The top bar shows `title` as the page's one `<h1>`. A page never repeats its title in
+   a heading of its own; its sections start at `<h2>`.
 
    `AppLayout` puts the page inside the frame — top bar, sidebar, environment line — and
    inside `main > .wrap`, the one page gutter (padding and max width), so a page never pads
@@ -113,7 +116,6 @@ import { TOOLS } from "#lib/tools"
 ---
 
 <AppLayout title={(m) => m.site.name} current="home">
-	<h1><Text pick={(m) => m.site.name} /></h1>
 	<p class="intro"><Text pick={(m) => m.site.intro} /></p>
 	<HomeSaved client:only="svelte" />
 	<div class="tools">
