@@ -1,9 +1,16 @@
 <script lang="ts">
 import Segmented from "#components/atoms/Segmented.svelte"
-import Panel from "#components/molecules/Panel.svelte"
+import SettingsRow from "#components/molecules/SettingsRow.svelte"
+import BackupBox from "#components/organisms/BackupBox.svelte"
+import DeleteAllBox from "#components/organisms/DeleteAllBox.svelte"
+import RestoreBox from "#components/organisms/RestoreBox.svelte"
+import StorageBox from "#components/organisms/StorageBox.svelte"
+import { LOCAL_LIMIT, localUse, usageText } from "#lib/combi/backup"
+import { readSaved, type SavedCode } from "#lib/combi/saved"
 import { type AboutRow, aboutRows, type BuildEnv, formatBuilt, readBuildInfo } from "#lib/build-info"
 import { messagesFor } from "#lib/i18n/messages"
 import { applyLang, currentLang, LANG_NAMES, LANGS, type Lang, LOCALES, onLangChange, writeLang } from "#lib/lang"
+import { localStore } from "#lib/storage"
 import { applyTheme, readTheme, type Theme, writeTheme } from "#lib/theme"
 
 interface Props {
@@ -18,7 +25,39 @@ const m = $derived(messagesFor(lang))
 $effect(() => onLangChange(document, (next) => (lang = next)))
 
 let theme = $state<Theme>(readTheme())
-let aboutOpen = $state(false)
+
+/** Stands in for a browser that keeps nothing, so the rows still work for this visit. */
+function memoryStore(): Storage {
+	const items = new Map<string, string>()
+	return {
+		get length() {
+			return items.size
+		},
+		clear: () => items.clear(),
+		getItem: (key) => items.get(key) ?? null,
+		key: (index) => [...items.keys()][index] ?? null,
+		removeItem: (key) => void items.delete(key),
+		setItem: (key, value) => void items.set(key, String(value)),
+	}
+}
+
+const persistent = localStore()
+const store = persistent ?? memoryStore()
+
+let entries = $state<SavedCode[]>(readSaved(store))
+let refresh = $state(0)
+
+const reread = () => {
+	entries = readSaved(store)
+	refresh += 1
+}
+
+const usage = $derived.by(() => {
+	void refresh
+	void entries
+	return usageText(localUse(persistent), LOCAL_LIMIT, LOCALES[lang])
+})
+const usageValue = $derived(`${usage.used} / ${usage.limit} (${usage.percent})`)
 
 const info = $derived(readBuildInfo(env))
 const rows = $derived(aboutRows(info))
@@ -69,39 +108,54 @@ const shown = (row: AboutRow) => {
 		</div>
 	</section>
 
+	<section aria-labelledby="set-data">
+		<h2 id="set-data">{m.settings.data.title}</h2>
+		<div class="rows">
+			<SettingsRow label={m.settings.data.storage} value={usageValue}>
+				{#snippet aside()}
+					<meter
+						class="bar"
+						aria-label={m.settings.data.localStorage}
+						min="0"
+						max="1"
+						value={Math.min(1, usage.ratio)}></meter>
+				{/snippet}
+				<StorageBox {entries} {m} store={persistent} {refresh} />
+			</SettingsRow>
+			<SettingsRow label={m.settings.data.backUp}>
+				<BackupBox {entries} {m} />
+			</SettingsRow>
+			<SettingsRow label={m.settings.data.restore}>
+				<RestoreBox {store} {m} onrestored={reread} />
+			</SettingsRow>
+			<SettingsRow label={m.settings.data.deleteAll}>
+				<DeleteAllBox {store} count={entries.length} {m} ondeleted={reread} />
+			</SettingsRow>
+		</div>
+	</section>
+
 	<section aria-labelledby="set-about">
 		<h2 id="set-about">{m.settings.about}</h2>
 		<div class="rows">
-			<button type="button" class="row nav" onclick={() => (aboutOpen = true)}>
-				<span>{summary}</span>
-				<span class="chev" aria-hidden="true">›</span>
-			</button>
+			<SettingsRow label={m.settings.about} value={summary}>
+				<dl class="about">
+					{#each rows as row (row.key)}
+						<div class="item">
+							<dt>{m.settings.rows[row.key]}</dt>
+							<dd>
+								{#if row.href}
+									<a href={row.href} target="_blank" rel="noopener">{shown(row)}</a>
+								{:else}
+									{shown(row)}
+								{/if}
+							</dd>
+						</div>
+					{/each}
+				</dl>
+			</SettingsRow>
 		</div>
 	</section>
 </div>
-
-<Panel
-	id="about"
-	title={m.settings.about}
-	closeLabel={m.frame.close}
-	resizeLabel={m.frame.resize}
-	open={aboutOpen}
-	onclose={() => (aboutOpen = false)}>
-	<dl class="about">
-		{#each rows as row (row.key)}
-			<div class="item">
-				<dt>{m.settings.rows[row.key]}</dt>
-				<dd>
-					{#if row.href}
-						<a href={row.href} target="_blank" rel="noopener">{shown(row)}</a>
-					{:else}
-						{shown(row)}
-					{/if}
-				</dd>
-			</div>
-		{/each}
-	</dl>
-</Panel>
 
 <style>
 .settings {
@@ -136,27 +190,15 @@ h2 {
 	border-bottom: 0;
 }
 
-.nav {
-	width: 100%;
-	border-width: 0;
-	border-radius: var(--radius-lg);
-	background: none;
-	color: var(--text);
-	font: inherit;
-	text-align: left;
-	cursor: pointer;
-}
-
-.nav:hover {
-	background: var(--hover);
-}
-
-.chev {
-	color: var(--muted);
+.bar {
+	width: calc(100% - 28px);
+	height: 6px;
+	margin: 0 14px 10px;
 }
 
 .about {
 	margin: 0;
+	padding: 0 14px 6px;
 }
 
 .item {
@@ -164,7 +206,7 @@ h2 {
 	flex-flow: row wrap;
 	justify-content: space-between;
 	gap: 12px;
-	padding: 12px 0;
+	padding: 10px 0;
 	border-bottom: 1px solid var(--line);
 }
 
