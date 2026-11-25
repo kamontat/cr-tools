@@ -6,7 +6,8 @@
  * It lives in `localStorage` under its own key and nowhere else. It leaves the
  * browser only when someone sends it: one entry as a link carrying its note
  * (`state.ts`'s `shareHashFor`), or the whole list as a backup file
- * (`backup.ts`). Text a person pasted, or an old text export, `parseSaved` reads. Nothing read back is trusted: the list
+ * (`backup.ts`). `parseSaved` reads text someone pasted and the text exports
+ * written before backups were JSON. Nothing read back is trusted: the list
  * outlives the page that wrote it, so an entry that is not the shape this file
  * writes is dropped on the way in, every storage call is wrapped the way
  * `state.ts`'s are, and imported text is decoded code by code.

@@ -77,3 +77,13 @@ test("a narrow panel gives its title its own line and puts the actions under it"
 	expect(narrow).toMatch(/\.panel-head\s*\{[^}]*flex-wrap:\s*wrap/)
 	expect(narrow).toMatch(/\.panel-actions\s*\{[^}]*flex-basis:\s*100%/)
 })
+
+test("in view mode the editor takes the page's whole width, not the docked column's", () => {
+	expect(rule(read("src/components/molecules/Panel.svelte"), '.panel[data-layout="view"]')).toMatch(/width:\s*100%/)
+})
+
+test("a shared button shows where keyboard focus is", () => {
+	expect(rule(read("src/components/atoms/Button.svelte"), ".btn:focus-visible")).toMatch(
+		/outline:\s*2px solid var\(--accent\)/,
+	)
+})

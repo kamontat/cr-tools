@@ -174,6 +174,11 @@ const ondblclick = () => {
 	outline: none;
 }
 
+/* Below the dock breakpoint the editor is the page, as wide as it. */
+.panel[data-layout="view"] {
+	width: 100%;
+}
+
 .panel.resizing {
 	cursor: ew-resize;
 	user-select: none;

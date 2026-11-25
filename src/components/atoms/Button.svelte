@@ -46,6 +46,11 @@ let { variant = "plain", type = "button", children, ...rest }: Props = $props()
 	color: #fff;
 }
 
+.btn:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 .btn:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
