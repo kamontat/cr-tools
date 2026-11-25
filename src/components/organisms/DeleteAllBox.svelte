@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { Messages } from "#lib/i18n/messages"
 
+import Button from "#components/atoms/Button.svelte"
 import { clearSaved } from "#lib/combi/saved"
 
 interface Props {
@@ -58,7 +59,7 @@ const remove = () => {
 			spellcheck="false"
 			bind:value={typed}>
 		<div row class="acts">
-			<button type="button" class="btn danger" disabled={!ready} onclick={remove}>{t.deleteButton}</button>
+			<Button variant="danger" disabled={!ready} onclick={remove}>{t.deleteButton}</Button>
 		</div>
 		{#if notice !== null}
 			<p class="line" class:error={notice.tone === "error"} role={notice.tone === "error" ? "alert" : "status"}>
@@ -102,34 +103,5 @@ const remove = () => {
 .acts {
 	flex-wrap: wrap;
 	gap: 8px;
-}
-
-.btn {
-	min-height: 36px;
-	padding: 6px 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-@media (pointer: coarse) {
-	.btn {
-		min-height: var(--tap);
-	}
-}
-
-.btn.danger {
-	border-color: var(--danger);
-	background: var(--danger);
-	color: #fff;
-}
-
-.btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
 }
 </style>

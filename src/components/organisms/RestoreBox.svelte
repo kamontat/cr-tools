@@ -3,6 +3,7 @@ import type { Messages } from "#lib/i18n/messages"
 
 import { tick } from "svelte"
 
+import Button from "#components/atoms/Button.svelte"
 import { readBackup } from "#lib/backup"
 import { fetchLink, type LinkFailure, resolveLink } from "#lib/backup-link"
 import { readClipboard } from "#lib/clipboard"
@@ -203,10 +204,10 @@ const typed = (event: KeyboardEvent) => {
 
 	{#if step === "start"}
 		<div row class="acts">
-			<button type="button" class="btn" disabled={busy} onclick={fromClipboard}>{t.fromClipboard}</button>
-			<button type="button" class="btn" onclick={chooseFile}>{t.fromFile}</button>
-			<button type="button" class="btn" onclick={() => go("link")}>{t.fromLink}</button>
-			<button type="button" class="btn" onclick={() => go("paste")}>{t.byHand}</button>
+			<Button disabled={busy} onclick={fromClipboard}>{t.fromClipboard}</Button>
+			<Button onclick={chooseFile}>{t.fromFile}</Button>
+			<Button onclick={() => go("link")}>{t.fromLink}</Button>
+			<Button onclick={() => go("paste")}>{t.byHand}</Button>
 		</div>
 		<input
 			bind:this={fileInput}
@@ -238,10 +239,10 @@ const typed = (event: KeyboardEvent) => {
 			<a href="https://pastefox.com/create" target="_blank" rel="noopener">{t.pastefox}</a>.
 		</p>
 		<div row class="acts">
-			<button type="button" class="btn" onclick={reset}>{t.back}</button>
-			<button type="button" class="btn primary" disabled={link === null || busy} onclick={fromLink}>
+			<Button onclick={reset}>{t.back}</Button>
+			<Button variant="primary" disabled={link === null || busy} onclick={fromLink}>
 				{t.restoreButton}
-			</button>
+			</Button>
 		</div>
 		{#if address.trim() !== "" && link === null}
 			<p class="hint">{t.link.notAddress}</p>
@@ -257,12 +258,12 @@ const typed = (event: KeyboardEvent) => {
 			bind:this={pasteField}
 			bind:value={pasted}></textarea>
 		<div row class="acts">
-			<button type="button" class="btn" onclick={reset}>{t.back}</button>
+			<Button onclick={reset}>{t.back}</Button>
 		</div>
 	{:else if step === "done"}
 		<p class="notice" role="status" tabindex="-1" bind:this={doneLine}>{done}</p>
 		<div row class="acts">
-			<button type="button" class="btn" onclick={reset}>{t.back}</button>
+			<Button onclick={reset}>{t.back}</Button>
 		</div>
 	{/if}
 
@@ -292,10 +293,10 @@ const typed = (event: KeyboardEvent) => {
 			{/if}
 			<div row class="acts">
 				{#if step === "preview"}
-					<button type="button" class="btn" onclick={reset}>{t.back}</button>
+					<Button onclick={reset}>{t.back}</Button>
 				{/if}
 				{#if found.preview.fresh > 0}
-					<button type="button" class="btn primary" onclick={restore}>{t.restoreButton}</button>
+					<Button variant="primary" onclick={restore}>{t.restoreButton}</Button>
 				{/if}
 			</div>
 		</div>
@@ -360,38 +361,5 @@ a {
 .acts {
 	flex-wrap: wrap;
 	gap: 8px;
-}
-
-.btn {
-	min-height: 36px;
-	padding: 6px 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-@media (pointer: coarse) {
-	.btn {
-		min-height: var(--tap);
-	}
-}
-
-.btn:hover:not(:disabled) {
-	background: var(--hover);
-}
-
-.btn:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.btn.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
 }
 </style>
