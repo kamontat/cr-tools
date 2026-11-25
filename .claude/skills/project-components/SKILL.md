@@ -227,11 +227,18 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
   blocked storage) gets the defaults and a working page for that visit. Take the `Storage`
   as an argument where possible, as `#lib/frame`, `#lib/theme` and
   `src/lib/combi/state.ts` do, so a test can hand in one that throws.
-- **Nothing opens as a pop-up.** Secondary content opens in place (a `Panel` section, a
-  `SettingsRow`, `ShareBox`), so there is no modal, focus trap or scroll lock to manage.
-  The one exception is `CombiFilter` below 1100px, a sheet over the bottom of the page on
-  `--z-sheet`, as the owner asked: it takes focus when it opens and hands it back, and shuts
-  on Escape, its backdrop or Show N codes, but traps nothing and locks no scroll.
+- **Pick the kind of pop-up that fits.** Three kinds may open over the page:
+  - a **sheet** that slides up from the bottom, the usual pop-up on a phone (`CombiFilter`
+    below 1100px);
+  - a **side panel** that slides in over the page from the side, as the sidebar drawer does;
+  - a **centred dialog**, kept for an important interaction that needs an answer before
+    anything else, such as confirming what cannot be undone.
+
+  Each takes focus when it opens and hands it back when it shuts, shuts on Escape and on
+  its backdrop, and stacks on the `--z-*` tokens (`--z-sheet` for a sheet). Content that
+  belongs to a row or to the page opens in place instead: the editor and the filter panel
+  dock beside the list as a `Panel`, Settings rows open as a `SettingsRow`, Share as
+  `ShareBox`.
 - **Sets are written in table order.** A control that holds a set the codec encodes (goals,
   boosts, cookie powers, a treasure slot's alternatives) reports it filtered from its own
   options, never in click order — click order would give one build two codes. See the
