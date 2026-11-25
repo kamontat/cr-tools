@@ -15,7 +15,7 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `NavItem` | atom | `.astro` | One sidebar link: `href`, `icon`, `label` (`Record<Lang, string>`, from `both`), `current` (sets `aria-current="page"`). The label is a `.label` span, holding both language spans, that the sidebar hides in the rail; `title` is the tooltip in both languages. |
 | `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label, lang? }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`; an option's `lang` goes on its button, for a label in another language than the page's (a language's own name). |
 | `Button` | atom | `.svelte` | The one button of the in-place boxes (`ShareBox`, `BackupBox`, `RestoreBox`, `DeleteAllBox`): `variant` (`plain`, `primary`, `danger`), `type` (default `button`), `disabled`, `onclick`, any other button attribute such as `aria-*`, and a `children` snippet. |
-| `Chips` | atom | `.svelte` | A group of toggle chips: `label`, `options` (`{ value, label, icon?, disabled? }[]`), `value` (the picked values), `multiple`, `onchange`. |
+| `Chips` | atom | `.svelte` | A group of toggle chips: `label`, `options` (`{ value, label, icon?, disabled?, count? }[]`, `count` a muted number beside the label and out of its name), `value` (the picked values), `multiple`, `onchange`. |
 | `EntryIcon` | atom | `.svelte` | One catalogue icon from `/assets/`: `src`, `name`, `round`, `size`; a missing `src` draws a placeholder. |
 | `HelpToggle` | atom | `.svelte` | The `?` button that shows and hides a help line: `label`, `controls`, `expanded`, `ontoggle`. |
 | `Tabs` | atom | `.svelte` | A tab strip with roving focus: `label`, `tabs` (`{ value, label, badge?, disabled? }[]`), `value`, `onchange`. |
@@ -31,8 +31,9 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `Sidebar` | organism | `.astro` | `nav#sidebar` (named through `l10nAttr`): Home, one `NavItem` per `TOOLS` entry (its `icon`, its name from `tools[slug].name`), Settings at the bottom. `current` is a `FramePage`. Its shape follows `<body data-sidebar>`, which `initFrame` sets. |
 | `SettingsApp` | organism | `.svelte` | The Settings page island: Appearance (language, theme), Combi codes data (Storage, with its use as the row's `value` and a `<meter>` as its `aside`; Back up; Restore; Delete all) and About (`aboutRows`), each a `SettingsRow` that opens in place, so Settings has no pop-up. It reads `localStore()` once, falling back to an in-memory store as `CombiApp` does, and reads the saved list again after a restore or a delete. Its text comes from `messagesFor(lang)`, with `lang` following `<html lang>` through `onLangChange`; choosing a language calls `writeLang` and `applyLang`, so the page switches in place. Each language button carries its own `lang`. |
 | `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
-| `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. Nothing on the page opens over it. |
-| `CombiList` | organism | `.svelte` | The saved list: search, goal filter, sort, rows with `LoadoutIcons`, and the New, Open, Copy and Share actions. |
+| `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. It also holds the list's search, filter and sort (remembered through `writeListSort`) and which `CombiFilter` tab is open. Beside the list there is room for one panel: while the filter panel is open it takes the editor's place, the draft kept, and opening a code shuts it. |
+| `CombiList` | organism | `.svelte` | The saved list: New code, search (bindable `query`), the Filter and Sort buttons (`panel`, `onpanel`), how many show with a removable tag per pick of the bindable `filter`, the `sort` in words, then the rows and their New, Open, Copy and Share actions. |
+| `CombiFilter` | organism | `.svelte` | The list's Filter and Sort tabs (`tab`, `ontab`): goal, mode, episode, cookie and rounds filters with a count on each choice, and the sort with its order named in the sort's own words. A `Panel` (`id="list-view"`) beside the list from 1100px; below, with `sheet`, a sheet over the bottom of the page. |
 | `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (beside the list, or as the page's view): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
 | `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
 | `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
@@ -226,8 +227,18 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
   blocked storage) gets the defaults and a working page for that visit. Take the `Storage`
   as an argument where possible, as `#lib/frame`, `#lib/theme` and
   `src/lib/combi/state.ts` do, so a test can hand in one that throws.
-- **Nothing opens as a pop-up.** Secondary content opens in place (a `Panel` section, a
-  `SettingsRow`, `ShareBox`), so there is no modal, focus trap or scroll lock to manage.
+- **Pick the kind of pop-up that fits.** Three kinds may open over the page:
+  - a **sheet** that slides up from the bottom, the usual pop-up on a phone (`CombiFilter`
+    below 1100px);
+  - a **side panel** that slides in over the page from the side, as the sidebar drawer does;
+  - a **centred dialog**, kept for an important interaction that needs an answer before
+    anything else, such as confirming what cannot be undone.
+
+  Each takes focus when it opens and hands it back when it shuts, shuts on Escape and on
+  its backdrop, and stacks on the `--z-*` tokens (`--z-sheet` for a sheet). Content that
+  belongs to a row or to the page opens in place instead: the editor and the filter panel
+  dock beside the list as a `Panel`, Settings rows open as a `SettingsRow`, Share as
+  `ShareBox`.
 - **Sets are written in table order.** A control that holds a set the codec encodes (goals,
   boosts, cookie powers, a treasure slot's alternatives) reports it filtered from its own
   options, never in click order — click order would give one build two codes. See the

@@ -148,6 +148,11 @@ CSS and are the builder's to refine.
 
 ### Pop-ups
 
+> **Owner's change, 2026-11-25:** three kinds of pop-up may be used: a sheet that
+> slides up from the bottom, a side panel that slides in over the page, and a
+> centred dialog for an important interaction that needs an answer first. What
+> belongs to a row or the page still opens in place, as the changes below say.
+
 All secondary content opens in one kind of pop-up:
 
 - **Phone:** a sheet sliding up from the bottom, rounded top, grab handle,

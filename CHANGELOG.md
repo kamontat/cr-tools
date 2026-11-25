@@ -2,7 +2,22 @@
 
 What changed in this project and why, newest first.
 
-## 2026-11-25: Clean-ups after the redesign, and saved rows by goal
+## 2026-11-25: Clean-ups after the redesign, saved rows by goal, and filter and sort
+
+### Features
+
+- The saved list has Filter and Sort buttons in place of its goal and sort dropdowns. Each
+  opens one panel on its own tab (กรอง, เรียง), Filter first.
+- The Filter tab narrows by goal (any of several), mode, episode, cookie and whether a code
+  has rounds. The episodes and cookies offered are the ones the saved codes use, with their
+  pictures, and every goal, episode and cookie shows how many codes it would match.
+- The Sort tab sorts by date saved, its goal, average score, money, exp or boxes, run time,
+  rounds logged or code, with an order named in the sort's own words (Newest first,
+  Shortest first, A–Z and their reverses). Codes with nothing to rank by stay last.
+- Under the tools, the list says how many codes it shows, has a tag for each filter that
+  removes it, Clear all, and the sort in words.
+- From 1100px the panel docks beside the list; below, it is a sheet that slides up over the
+  bottom of the page, with Show N codes.
 
 ### Improvements
 
@@ -17,6 +32,8 @@ What changed in this project and why, newest first.
 - An open row hides the badges and stats from its head, since its Run and Results lines
   say the same. Results shows every stat the rounds noted; a press keeps only the goal's
   stats, time and the round count.
+- The sort is still remembered: a sort picked before (Newest, Oldest, Highest average money,
+  Code A–Z) opens as its new sort and order.
 
 ### Bug fixes
 
@@ -26,6 +43,13 @@ What changed in this project and why, newest first.
 
 ### Decisions
 
+- Beside the list there is room for one panel, so the filter panel takes the editor's place
+  while it is open. The editor's draft is kept and comes back when the panel shuts, rather
+  than closing the editor or squeezing three columns together.
+- Filters are not remembered between visits, as the goal filter was not; the sort is.
+- Three kinds of pop-up may open over the page: a sheet sliding up from the bottom, a side
+  panel, and a centred dialog for an important step that needs an answer first. What
+  belongs to a row or the page still opens in place.
 - The pop-up mode of panels is gone, with its focus trap: since the editor became a view
   and Settings opens in place, nothing used it.
 - The old text export is gone; old text backups still restore.

@@ -493,3 +493,75 @@ test("codes saved before rounds show in the list, their ranges as rounds", () =>
 	expect(document.body.textContent).toContain(en.combi.list.rounds(2))
 	expect(stored()[0]?.rounds).toEqual([{ money: 10000 }, { money: 15000 }])
 })
+
+const list = en.combi.list
+const filterButton = () => screen.getByRole("button", { name: new RegExp(`^${list.filter}`) })
+const sortButton = () => button(list.sort)
+/** The filter panel, docked beside the list. */
+const viewPanel = () => document.querySelector<HTMLElement>("section.panel[aria-labelledby='panel-list-view-title']")
+/** The editor's own panel, not the filter panel docked in its place. */
+const editorPanel = () => document.querySelector<HTMLElement>("section.panel[aria-labelledby='panel-editor-title']")
+
+test("from 1100px Filter docks its panel beside the list, Sort switches it to its own tab, and pressing the open one shuts it", async () => {
+	render(CombiApp)
+	await fireEvent.click(filterButton())
+	expect(viewPanel()).toBeTruthy()
+	expect(screen.getByRole("heading", { name: list.filter })).toBeTruthy()
+	noPopup()
+	await fireEvent.click(sortButton())
+	expect(screen.getByRole("heading", { name: list.sort })).toBeTruthy()
+	await fireEvent.click(sortButton())
+	expect(viewPanel()).toBeNull()
+})
+
+test("a filter pick narrows the list as it is made", async () => {
+	render(CombiApp)
+	await fireEvent.click(filterButton())
+	const goals = screen.getByRole("group", { name: list.goalFilter })
+	await fireEvent.click(within(goals).getByRole("button", { name: en.combi.goals.money }))
+	expect(rows()).toHaveLength(1)
+	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
+	expect(filterButton().querySelector(".count")?.textContent).toBe("1")
+})
+
+test("the sort orders the list and is remembered", async () => {
+	render(CombiApp)
+	await fireEvent.click(sortButton())
+	await fireEvent.click(
+		within(screen.getByRole("group", { name: list.order })).getByRole("button", { name: list.orders.saved.reversed }),
+	)
+	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
+	expect(window.localStorage.getItem("combi-name:list-sort")).toBe("saved:reverse")
+	cleanup()
+	render(CombiApp)
+	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
+})
+
+test("below 1100px Filter opens a sheet over the bottom of the page, and Show N codes closes it", async () => {
+	viewport(800)
+	render(CombiApp)
+	await fireEvent.click(filterButton())
+	expect(viewPanel()).toBeNull()
+	const sheet = screen.getByRole("region", { name: list.filter })
+	expect(sheet.matches("section.sheet")).toBe(true)
+	await fireEvent.click(within(sheet).getByRole("button", { name: list.showCodes(2) }))
+	expect(screen.queryByRole("region", { name: list.filter })).toBeNull()
+})
+
+test("the docked editor and the filter panel take turns: Filter sets the editor aside, its edits kept, and a row brings the editor back", async () => {
+	render(CombiApp)
+	await openEntry(scoreCode)
+	await editNote("kept while filtering")
+	await fireEvent.click(filterButton())
+	expect(viewPanel()).toBeTruthy()
+	expect(editorPanel()).toBeNull()
+	await fireEvent.click(button(en.frame.close))
+	expect(viewPanel()).toBeNull()
+	expect(noteBox().value).toBe("kept while filtering")
+
+	await fireEvent.click(sortButton())
+	expect(editorPanel()).toBeNull()
+	await openEntry(scoreCode)
+	expect(viewPanel()).toBeNull()
+	expect(noteBox().value).toBe("kept while filtering")
+})

@@ -1,5 +1,6 @@
 import type { Action, Goal, Mode } from "#lib/combi/codec"
 import type { LoadoutNoun, SlotField } from "#lib/combi/issues"
+import type { SortKey } from "#lib/combi/list"
 import type { StatField } from "#lib/combi/stats"
 import type { ToolSlug, ToolText } from "#lib/tools"
 
@@ -17,6 +18,20 @@ const tools: Record<ToolSlug, ToolText> = {
 const goals: Record<Goal, string> = { score: "Score", money: "Money", exp: "Exp", box: "Box" }
 const modes: Record<Mode, string> = { manual: "Manual", auto: "Auto", semiauto: "Semi-auto" }
 const actions: Record<Action, string> = { none: "No action", jumpAtStart: "Jump at start" }
+
+// Each sort's natural order and its reverse, in the sort's own words.
+const mostFirst = { natural: "Highest first", reversed: "Lowest first" }
+const orders: Record<SortKey, { natural: string; reversed: string }> = {
+	saved: { natural: "Newest first", reversed: "Oldest first" },
+	goal: mostFirst,
+	score: mostFirst,
+	money: mostFirst,
+	exp: mostFirst,
+	boxes: mostFirst,
+	time: { natural: "Shortest first", reversed: "Longest first" },
+	rounds: { natural: "Most first", reversed: "Fewest first" },
+	code: { natural: "A–Z", reversed: "Z–A" },
+}
 
 // What the codec says about a code. The wording is the codec's own from before
 // the catalogue, kept word for word; `issueText` in `#lib/combi/issues` picks one.
@@ -234,9 +249,42 @@ export const en = {
 		list: {
 			newCode: "New code",
 			search: "Search",
-			allGoals: "All goals",
-			sort: { newest: "Newest", oldest: "Oldest", money: "Highest average money", code: "Code A–Z" },
-			sortBy: "Sort",
+			filter: "Filter",
+			sort: "Sort",
+			filterAndSort: "Filter and sort",
+			sortBy: "Sort by",
+			sorts: {
+				saved: "Date saved",
+				goal: "Its goal",
+				score: "Average score",
+				money: "Average money",
+				exp: "Average exp",
+				boxes: "Average boxes",
+				time: "Run time",
+				rounds: "Rounds logged",
+				code: "Code",
+			} satisfies Record<SortKey, string>,
+			goalSortHint: "Each code by the average of its first goal",
+			order: "Order",
+			orders,
+			goalFilter: "Goal",
+			goalHint: "Any of these",
+			mode: "Mode",
+			any: "Any",
+			episode: "Episode",
+			cookie: "Cookie",
+			cookieHint: "In your saved codes",
+			roundsFilter: "Rounds",
+			withRounds: "With rounds",
+			withoutRounds: "No rounds yet",
+			shown: (n: number, total: number) =>
+				n === total ? `${total} ${total === 1 ? "code" : "codes"}` : `${n} of ${total} codes`,
+			removeFilter: (name: string) => `Remove ${name}`,
+			clearAll: "Clear all",
+			clearFilters: "Clear filters",
+			clear: "Clear",
+			resetSort: "Reset sort",
+			showCodes: (n: number) => `Show ${n} ${n === 1 ? "code" : "codes"}`,
 			copyCode: (code: string) => `Copy ${code}`,
 			shareCode: (code: string) => `Share ${code}`,
 			copy: "Copy",

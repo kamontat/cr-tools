@@ -47,3 +47,10 @@ test("the group is named, pressed follows the value, and the icon is decorative"
 	expect(img?.getAttribute("alt")).toBe("")
 	expect(img?.getAttribute("src")).toBe("/assets/a.png")
 })
+
+test("an option's count shows beside its label, out of its name", () => {
+	const counted = [{ value: "a", label: "Alpha", count: 3 }]
+	render(Chips, { props: { label: "Pick", options: counted, value: [], onchange: vi.fn() } })
+	const alpha = screen.getByRole("button", { name: "Alpha" })
+	expect(alpha.querySelector(".count")?.textContent).toBe("3")
+})

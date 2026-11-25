@@ -5,9 +5,9 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/sve
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
 import CombiList from "#components/organisms/CombiList.svelte"
-import { nameFor } from "#lib/combi/catalog"
+import { labelFor, nameFor } from "#lib/combi/catalog"
 import { combiSectionOf, encodeFull } from "#lib/combi/full-code"
-import { LIST_SORT_KEY } from "#lib/combi/list"
+import { NO_FILTER } from "#lib/combi/list"
 import { emptyLoadout, type Loadout, treasurePick } from "#lib/combi/loadout"
 import { en } from "#lib/i18n/en"
 import { th } from "#lib/i18n/th"
@@ -45,9 +45,9 @@ afterEach(() => {
 	document.body.innerHTML = ""
 })
 
-function setup(list: SavedCode[] = entries, current: string | null = null) {
-	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), ondelete: vi.fn() }
-	const result = render(CombiList, { props: { entries: list, current, ...handlers } })
+function setup(list: SavedCode[] = entries, current: string | null = null, over: Record<string, unknown> = {}) {
+	const handlers = { onnew: vi.fn(), onopen: vi.fn(), oncopy: vi.fn(), ondelete: vi.fn(), onpanel: vi.fn() }
+	const result = render(CombiList, { props: { entries: list, current, ...over, ...handlers } })
 	return { ...result, ...handlers }
 }
 
@@ -152,27 +152,60 @@ test("search narrows the rows", async () => {
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(scoreCode))
 })
 
-test("the goal filter narrows the rows", async () => {
-	setup()
-	await fireEvent.change(screen.getByRole("combobox", { name: en.combi.list.columns.goal }), {
-		target: { value: "money" },
-	})
+const t = en.combi.list
+
+test("a filter narrows the rows, says how many show, and each pick is a tag that removes it", async () => {
+	setup(entries, null, { filter: { ...NO_FILTER, goals: ["money"] } })
 	expect(rows()).toHaveLength(1)
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
+	expect(screen.getByText(t.shown(1, 2))).toBeTruthy()
+	expect(screen.queryByRole("button", { name: t.clearAll })).toBeNull()
+	await fireEvent.click(screen.getByRole("button", { name: t.removeFilter(en.combi.goals.money) }))
+	expect(rows()).toHaveLength(2)
+	expect(screen.getByText(t.shown(2, 2))).toBeTruthy()
 })
 
-test("the sort orders the rows and persists", async () => {
+test("a tag names each kind of pick, and Clear all takes every pick away", async () => {
+	const filter = { goals: ["score"], mode: "manual", episodes: ["any"], cookies: ["01"], rounds: "without" }
+	setup(entries, null, { filter })
+	const names = [
+		en.combi.goals.score,
+		en.combi.modes.manual,
+		en.combi.describe.anyEpisode,
+		labelFor("cookies", "01"),
+		t.withoutRounds,
+	]
+	for (const name of names) expect(screen.getByRole("button", { name: t.removeFilter(name) })).toBeTruthy()
+	expect(rows()).toHaveLength(1)
+	await fireEvent.click(screen.getByRole("button", { name: t.clearAll }))
+	expect(rows()).toHaveLength(2)
+	expect(screen.queryByRole("button", { name: t.removeFilter(en.combi.goals.score) })).toBeNull()
+})
+
+test("the sort orders the rows, and the line under the tools names it with its order", () => {
 	setup()
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
-	await fireEvent.change(screen.getByRole("combobox", { name: en.combi.list.sortBy }), {
-		target: { value: "oldest" },
-	})
-	expect(rows()[0]?.textContent).toContain(combiSectionOf(scoreCode))
-	expect(window.localStorage.getItem(LIST_SORT_KEY)).toBe("oldest")
+	expect(screen.getByText(`${t.sorts.saved} · ${t.orders.saved.natural}`)).toBeTruthy()
 	cleanup()
-	setup()
-	expect((screen.getByRole("combobox", { name: en.combi.list.sortBy }) as HTMLSelectElement).value).toBe("oldest")
+	setup(entries, null, { sort: { key: "saved", reverse: true } })
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(scoreCode))
+	expect(screen.getByText(`${t.sorts.saved} · ${t.orders.saved.reversed}`)).toBeTruthy()
+})
+
+test("Filter and Sort ask for their tab; the open one is pressed, and Filter counts its picks", async () => {
+	const { onpanel } = setup(entries, null, {
+		panel: "sort",
+		filter: { ...NO_FILTER, goals: ["money"], rounds: "with" },
+	})
+	const filter = screen.getByRole("button", { name: new RegExp(`^${t.filter}`) })
+	const sort = screen.getByRole("button", { name: t.sort })
+	expect(filter.getAttribute("aria-expanded")).toBe("false")
+	expect(sort.getAttribute("aria-expanded")).toBe("true")
+	expect(filter.querySelector(".count")?.textContent).toBe("2")
+	await fireEvent.click(filter)
+	expect(onpanel).toHaveBeenLastCalledWith("filter")
+	await fireEvent.click(sort)
+	expect(onpanel).toHaveBeenLastCalledWith("sort")
 })
 
 test("expanding a row opens nothing; Edit and Copy act on its entry, and Share opens in the row", async () => {

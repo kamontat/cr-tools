@@ -2,7 +2,7 @@
 interface Props {
 	label: string
 	/** `icon` is an image URL; it is decorative, since the label already names the option. */
-	options: { value: string; label: string; icon?: string | null; disabled?: boolean }[]
+	options: { value: string; label: string; icon?: string | null; disabled?: boolean; count?: number }[]
 	value: string[]
 	multiple?: boolean
 	onchange: (value: string[]) => void
@@ -28,6 +28,9 @@ function pick(option: string) {
 				<img width="20" height="20" src={option.icon} alt="" loading="lazy">
 			{/if}
 			<span>{option.label}</span>
+			{#if option.count !== undefined}
+				<span class="count" aria-hidden="true">{option.count}</span>
+			{/if}
 		</button>
 	{/each}
 </div>
@@ -68,6 +71,13 @@ button[aria-pressed="true"] {
 button:disabled {
 	opacity: 0.45;
 	cursor: not-allowed;
+}
+
+/* How many the option would show: quieter than the label, digits in step down a list. */
+.count {
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
 }
 
 img {
