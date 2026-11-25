@@ -212,12 +212,12 @@ const pickSort = (value: string) => {
 							{#if run !== null}
 								<span class="badges">
 									<span class="badge mode">{run.mode}</span>
+									<span class="sep" aria-hidden="true">·</span>
+									<span class="badge episode">{run.episode}</span>
 									{#each run.goalNames as name (name)}
 										<span class="sep" aria-hidden="true">·</span>
 										<span class="badge goal">{name}</span>
 									{/each}
-									<span class="sep" aria-hidden="true">·</span>
-									<span class="badge episode">{run.episode}</span>
 								</span>
 							{:else}
 								<!-- A code that no longer reads still says what it was for. -->
@@ -716,7 +716,7 @@ select {
 	letter-spacing: 0.08em;
 }
 
-/* The second line: what the run is, one badge each for the mode, every goal and the episode. */
+/* The second line: what the run is, most important first: the mode (filled), the episode (outlined), then every goal (muted). */
 .badges {
 	display: flex;
 	flex-flow: row wrap;
@@ -736,16 +736,16 @@ select {
 
 .badge.mode {
 	border-color: var(--accent);
-	color: var(--accent);
-}
-
-.badge.goal {
-	border-color: var(--accent);
 	background: var(--accent);
 	color: var(--bg);
 }
 
 .badge.episode {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.badge.goal {
 	color: var(--muted);
 	font-weight: 400;
 }

@@ -57,15 +57,15 @@ const rowOf = (code: string) => rows().find((row) => row.textContent?.includes(c
 const toggleOf = (row: HTMLElement) => row.querySelector("button[aria-expanded]") as HTMLButtonElement
 const expand = (code: string) => fireEvent.click(toggleOf(rowOf(code)))
 
-test("a collapsed row shows the code, then the mode, goals and episode as badges, then the goal's average, time and round count, not the note", async () => {
+test("a collapsed row shows the code, then the mode, episode and goals as badges, then the goal's average, time and round count, not the note", async () => {
 	setup()
 	expect(rows()).toHaveLength(2)
 	const score = rowOf(scoreCode)
 	const money = rowOf(moneyCode)
 	const badges = (row: HTMLElement) =>
 		[...row.querySelectorAll(".head .badge")].map((badge) => badge.textContent?.trim())
-	expect(badges(score)).toEqual([en.combi.modes.manual, en.combi.goals.score, en.combi.describe.anyEpisode])
-	expect(badges(money)).toEqual([en.combi.modes.manual, en.combi.goals.money, en.combi.describe.anyEpisode])
+	expect(badges(score)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.score])
+	expect(badges(money)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.money])
 	expect(score.textContent).not.toContain("Score farm")
 	const stats = (row: HTMLElement) =>
 		[...(row.querySelector(".head .stats")?.children ?? [])].map(
