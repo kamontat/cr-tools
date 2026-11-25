@@ -29,6 +29,8 @@ const local = $derived.by(() => {
 })
 
 let estimate = $state<{ usage: number; quota: number } | null>(null)
+/** True until the browser has answered, or said it cannot. */
+let checking = $state(true)
 
 $effect(() => {
 	void refresh
@@ -37,12 +39,14 @@ $effect(() => {
 	const storage = typeof navigator === "undefined" ? undefined : navigator.storage
 	if (typeof storage?.estimate !== "function") {
 		estimate = null
+		checking = false
 		return
 	}
 	storage
 		.estimate()
 		.then((found) => {
 			if (current) {
+				checking = false
 				estimate =
 					typeof found.usage === "number" && typeof found.quota === "number"
 						? { usage: found.usage, quota: found.quota }
@@ -50,7 +54,10 @@ $effect(() => {
 			}
 		})
 		.catch(() => {
-			if (current) estimate = null
+			if (current) {
+				estimate = null
+				checking = false
+			}
 		})
 	return () => {
 		current = false
@@ -94,7 +101,7 @@ const day = (time: number | null) =>
 	</div>
 	<div class="item">
 		<dt>{t.siteStorage}</dt>
-		<dd>{site === null ? t.notReported : line(site)}</dd>
+		<dd>{checking ? t.checking : site === null ? t.notReported : line(site)}</dd>
 	</div>
 </dl>
 <p class="note">{t.approximate}</p>

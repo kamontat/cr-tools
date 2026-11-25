@@ -91,3 +91,14 @@ test("with nothing saved it says so and offers nothing", () => {
 	expect(screen.queryByRole("button")).toBeNull()
 	expect(screen.queryByRole("textbox")).toBeNull()
 })
+
+test("the Deleted notice goes when codes are saved again", async () => {
+	const ondeleted = vi.fn()
+	const { rerender } = render(DeleteAllBox, { props: { store: window.localStorage, count: 2, m: en, ondeleted } })
+	await fireEvent.input(field(), { target: { value: "delete" } })
+	await fireEvent.click(button())
+	await rerender({ store: window.localStorage, count: 0, m: en, ondeleted })
+	expect(screen.getByText(en.settings.data.deleted(2))).toBeTruthy()
+	await rerender({ store: window.localStorage, count: 3, m: en, ondeleted })
+	expect(screen.queryByText(en.settings.data.deleted(2))).toBeNull()
+})

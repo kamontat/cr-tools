@@ -83,8 +83,7 @@ test("site storage is usage / quota when the estimate resolves", async () => {
 test("a rejecting estimate is not reported", async () => {
 	setStorage({ estimate: () => Promise.reject(new Error("no")) })
 	open()
-	await Promise.resolve()
-	expect(shown(en.settings.data.siteStorage)).toBe(en.settings.data.notReported)
+	await waitFor(() => expect(shown(en.settings.data.siteStorage)).toBe(en.settings.data.notReported))
 })
 
 test("the numbers follow refresh", async () => {
@@ -93,4 +92,13 @@ test("the numbers follow refresh", async () => {
 	window.localStorage.setItem("more", "x".repeat(5000))
 	await rerender({ entries, m: en, store: window.localStorage, refresh: 1 })
 	expect(shown(en.settings.data.localStorage)).not.toBe(before)
+})
+
+test("site storage shows a neutral word until the estimate resolves", async () => {
+	let finish: (value: { usage: number; quota: number }) => void = () => {}
+	setStorage({ estimate: () => new Promise((done) => (finish = done)) })
+	open()
+	expect(shown(en.settings.data.siteStorage)).toBe(en.settings.data.checking)
+	finish({ usage: 1024, quota: 1024 * 1024 })
+	await waitFor(() => expect(shown(en.settings.data.siteStorage)).not.toBe(en.settings.data.checking))
 })

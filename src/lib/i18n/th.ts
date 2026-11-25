@@ -108,6 +108,7 @@ export const th: Messages = {
 			deleteAll: "ลบทั้งหมด",
 			approximate: "ขีดจำกัดเป็นค่าโดยประมาณ",
 			notReported: "ไม่มีข้อมูล",
+			checking: "กำลังตรวจสอบ...",
 			counts: {
 				codes: "โค้ดที่บันทึก",
 				rounds: "รอบที่จดไว้",
@@ -140,6 +141,7 @@ export const th: Messages = {
 			foundIn: (name: string) => `ใน ${name}`,
 			foundNone: "ไม่พบโค้ดในนี้",
 			notBackup: "นี่ไม่ใช่ไฟล์สำรอง",
+			fileUnreadable: "อ่านไฟล์นั้นไม่ได้",
 			newer: (version: number) => `ไฟล์สำรองนี้สร้างจากเว็บเวอร์ชันที่ใหม่กว่า (เวอร์ชัน ${version})`,
 			skipped: (n: number) => `ข้าม ${n} รายการ:`,
 			restored: (n: number) => `เพิ่มแล้ว ${n} โค้ด`,

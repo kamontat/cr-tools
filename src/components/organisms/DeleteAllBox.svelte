@@ -19,6 +19,13 @@ const t = $derived(m.settings.data)
 let typed = $state("")
 let notice = $state<{ text: string; tone: "info" | "error" } | null>(null)
 
+// The result belongs to the list it was about: codes saved again drop it.
+let before = count
+$effect(() => {
+	if (count > before && notice?.tone === "info") notice = null
+	before = count
+})
+
 const ready = $derived(typed.trim().toLowerCase() === t.deleteWord.toLowerCase())
 
 const remove = () => {

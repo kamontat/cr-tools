@@ -126,7 +126,7 @@ const shown = (row: AboutRow) => {
 				<BackupBox {entries} {m} />
 			</SettingsRow>
 			<SettingsRow label={m.settings.data.restore}>
-				<RestoreBox {store} {m} onrestored={reread} />
+				<RestoreBox {store} {entries} {m} onrestored={reread} />
 			</SettingsRow>
 			<SettingsRow label={m.settings.data.deleteAll}>
 				<DeleteAllBox {store} count={entries.length} {m} ondeleted={reread} />

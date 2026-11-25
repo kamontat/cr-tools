@@ -121,6 +121,7 @@ export const en = {
 			deleteAll: "Delete all",
 			approximate: "The limit is approximate.",
 			notReported: "Not reported",
+			checking: "Checking...",
 			counts: {
 				codes: "Saved codes",
 				rounds: "Rounds logged",
@@ -154,6 +155,7 @@ export const en = {
 			foundIn: (name: string) => `in ${name}`,
 			foundNone: "No codes found in it.",
 			notBackup: "This is not a backup.",
+			fileUnreadable: "Could not read that file.",
 			newer: (version: number) => `This backup was made by a newer version of the site (version ${version}).`,
 			skipped: (n: number) => `Skipped ${n} ${n === 1 ? "entry" : "entries"}:`,
 			restored: (n: number) => `Added ${n} ${n === 1 ? "code" : "codes"}.`,

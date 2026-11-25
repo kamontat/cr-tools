@@ -36,7 +36,8 @@ afterEach(() => {
 	else setClipboard(undefined)
 })
 
-const open = (store: Storage = window.localStorage) => render(RestoreBox, { props: { store, m: en, onrestored } })
+const open = (store: Storage = window.localStorage) =>
+	render(RestoreBox, { props: { store, m: en, entries: readSaved(store), onrestored } })
 
 const press = (name: string) => fireEvent.click(screen.getByRole("button", { name }))
 
@@ -272,4 +273,101 @@ test("a browser that refuses to store says so and keeps the preview", async () =
 	await press(t.restoreButton)
 	expect(await screen.findByText(t.notStored)).toBeTruthy()
 	await waitFor(() => expect(onrestored).not.toHaveBeenCalled())
+})
+
+const deferred = <T>() => {
+	let resolve!: (value: T) => void
+	const promise = new Promise<T>((done) => {
+		resolve = done
+	})
+	return { promise, resolve }
+}
+
+test("Back during a pending fetch stays on the start step, whatever the fetch does", async () => {
+	const pending = deferred<Response>()
+	vi.stubGlobal("fetch", () => pending.promise)
+	open()
+	await press(t.fromLink)
+	await fireEvent.input(screen.getByRole("textbox", { name: t.linkLabel }), {
+		target: { value: "pastefox.com/206br1" },
+	})
+	await press(t.restoreButton)
+	await press(t.back)
+	pending.resolve(new Response(json(a)))
+	await new Promise((done) => setTimeout(done, 20))
+	expect(screen.getByRole("button", { name: t.fromLink })).toBeTruthy()
+	expect(screen.queryByText(t.found(1, 1, 0), { exact: false })).toBeNull()
+})
+
+test("a stale fetch failure after Back shows no notice", async () => {
+	const pending = deferred<Response>()
+	vi.stubGlobal("fetch", () => pending.promise)
+	open()
+	await press(t.fromLink)
+	await fireEvent.input(screen.getByRole("textbox", { name: t.linkLabel }), {
+		target: { value: "https://example.com/b.json" },
+	})
+	await press(t.restoreButton)
+	await press(t.back)
+	pending.resolve(new Response("", { status: 500 }))
+	await new Promise((done) => setTimeout(done, 20))
+	expect(screen.queryByRole("alert")).toBeNull()
+})
+
+test("a slow clipboard read that settles after Back is dropped", async () => {
+	const pending = deferred<string>()
+	setClipboard({ readText: () => pending.promise })
+	open()
+	await press(t.fromClipboard)
+	await press(t.byHand)
+	await press(t.back)
+	pending.resolve(json(a))
+	await new Promise((done) => setTimeout(done, 20))
+	expect(screen.getByRole("button", { name: t.fromLink })).toBeTruthy()
+})
+
+test("the preview follows the saved list as it changes", async () => {
+	clipboardWith(json(a))
+	const { rerender } = render(RestoreBox, {
+		props: { store: window.localStorage, m: en, entries: list(a), onrestored },
+	})
+	await press(t.fromClipboard)
+	await screen.findByText(t.found(1, 0, 1))
+	expect(screen.queryByRole("button", { name: t.restoreButton })).toBeNull()
+	await rerender({ store: window.localStorage, m: en, entries: [], onrestored })
+	expect(await screen.findByText(t.found(1, 1, 0))).toBeTruthy()
+	expect(screen.getByRole("button", { name: t.restoreButton })).toBeTruthy()
+})
+
+test("an unreadable file says so once, and the same file can be picked again", async () => {
+	const { container } = open()
+	const input = container.querySelector('input[type="file"]') as HTMLInputElement
+	const bad = { name: "x.json", text: () => Promise.reject(new Error("no")) } as unknown as File
+	Object.defineProperty(input, "files", { value: [bad], configurable: true })
+	await fireEvent.change(input)
+	expect(await screen.findByText(t.fileUnreadable)).toBeTruthy()
+	expect(screen.queryByText(t.notBackup)).toBeNull()
+	expect(input.value).toBe("")
+})
+
+test("after Back the link field is empty", async () => {
+	open()
+	await press(t.fromLink)
+	await fireEvent.input(screen.getByRole("textbox", { name: t.linkLabel }), { target: { value: "pastefox.com/x" } })
+	await press(t.back)
+	await press(t.fromLink)
+	expect((screen.getByRole("textbox", { name: t.linkLabel }) as HTMLInputElement).value).toBe("")
+})
+
+test("the link step takes focus", async () => {
+	open()
+	await press(t.fromLink)
+	await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("textbox", { name: t.linkLabel })))
+})
+
+test("the paste preview does not announce while typing", async () => {
+	open()
+	await press(t.byHand)
+	await fireEvent.input(screen.getByRole("textbox", { name: t.pasteLabel }), { target: { value: json(a) } })
+	expect(screen.getByText(t.found(1, 1, 0)).getAttribute("role")).toBeNull()
 })

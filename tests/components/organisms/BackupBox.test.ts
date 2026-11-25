@@ -83,3 +83,12 @@ test("with nothing saved there is a line and neither action", () => {
 	expect(screen.queryByRole("button", { name: en.settings.data.download })).toBeNull()
 	expect(screen.queryByRole("button", { name: en.settings.data.asText })).toBeNull()
 })
+
+test("As text follows the saved list while open", async () => {
+	const { rerender } = open()
+	await fireEvent.click(screen.getByRole("button", { name: en.settings.data.asText }))
+	const first = entries.slice(0, 1)
+	await rerender({ entries: first, m: en })
+	const box = screen.getByRole("textbox") as HTMLTextAreaElement
+	expect(box.value).toBe(writeBackup({ "combi-codes": exportCodes(first) }, now))
+})

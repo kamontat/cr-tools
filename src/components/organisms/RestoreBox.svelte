@@ -1,20 +1,24 @@
 <script lang="ts">
 import type { Messages } from "#lib/i18n/messages"
 
+import { tick } from "svelte"
+
 import { readBackup } from "#lib/backup"
 import { fetchLink, type LinkFailure, resolveLink } from "#lib/backup-link"
 import { readClipboard } from "#lib/clipboard"
 import { previewRestore, type RestorePreview } from "#lib/combi/backup"
 import { issueText } from "#lib/combi/issues"
-import { importSaved, readSaved, type SavedCode } from "#lib/combi/saved"
+import { importSaved, type SavedCode } from "#lib/combi/saved"
 
 interface Props {
 	store: Storage
+	/** The saved list as it stands now, which the preview counts against. */
+	entries: SavedCode[]
 	m: Messages
 	onrestored: (entries: SavedCode[]) => void
 }
 
-let { store, m, onrestored }: Props = $props()
+let { store, entries, m, onrestored }: Props = $props()
 
 const uid = $props.id()
 const t = $derived(m.settings.data)
@@ -42,7 +46,7 @@ type Found = { preview: RestorePreview; notBackup: boolean; none: boolean }
 
 /** What a restore of this text would do, and why when there is nothing to do. */
 const look = (text: string): Found => {
-	const preview = previewRestore(text, readSaved(store))
+	const preview = previewRestore(text, entries)
 	const isText = readBackup(text).kind === "text"
 	return {
 		preview,
@@ -53,25 +57,54 @@ const look = (text: string): Found => {
 
 const found = $derived(step === "preview" || (step === "paste" && pasted.trim() !== "") ? look(view.text) : null)
 
+/** Every step change and every new request takes a number; an answer that comes back under an old one is dropped. */
+let token = 0
+
+const go = (next: Step) => {
+	token += 1
+	busy = false
+	step = next
+}
+
 const reset = () => {
 	notice = null
-	step = "start"
+	pasted = ""
+	address = ""
+	go("start")
 }
 
 const show = (text: string, name: string | null) => {
 	source = { text, name }
 	notice = null
-	step = "preview"
+	go("preview")
 }
 
+let linkField = $state<HTMLInputElement>()
+let pasteField = $state<HTMLTextAreaElement>()
+let previewHead = $state<HTMLElement>()
+let doneLine = $state<HTMLElement>()
+
+// A new step takes focus, so a keyboard or screen reader user lands in it.
+$effect(() => {
+	const now = step
+	if (now === "start") return
+	void tick().then(() => {
+		const target = { link: linkField, paste: pasteField, preview: previewHead, done: doneLine }[now]
+		target?.focus()
+	})
+})
+
 const fromClipboard = async () => {
+	go("start")
+	const mine = token
 	busy = true
 	const read = await readClipboard()
+	if (mine !== token) return
 	busy = false
 	if (read.ok) show(read.text, null)
 	else {
 		notice = { text: read.reason === "missing" ? t.clipboardMissing : t.clipboardRefused, tone: "info" }
-		step = "paste"
+		go("paste")
 	}
 }
 
@@ -81,16 +114,20 @@ const onfile = async (event: Event) => {
 	const input = event.currentTarget as HTMLInputElement
 	const file = input.files?.[0]
 	if (file === undefined) return
+	go("start")
+	const mine = token
 	let text: string
 	try {
 		text = await file.text()
 	} catch {
-		notice = { text: t.notBackup, tone: "error" }
-		step = "preview"
-		source = { text: "", name: file.name }
+		if (mine !== token) return
+		// Cleared so the same file can be picked again.
+		input.value = ""
+		notice = { text: t.fileUnreadable, tone: "error" }
 		return
 	}
 	input.value = ""
+	if (mine !== token) return
 	show(text, file.name)
 }
 
@@ -114,9 +151,11 @@ const linkFailure = (failure: LinkFailure): string => {
 
 const fromLink = async () => {
 	if (busy || link === null) return
+	const mine = ++token
 	busy = true
 	notice = null
 	const result = await fetchLink(link)
+	if (mine !== token) return
 	busy = false
 	if (!result.ok) {
 		notice = { text: linkFailure(result.failure), tone: "error" }
@@ -141,7 +180,9 @@ const restore = () => {
 	}
 	notice = null
 	done = t.restored(result.added)
-	step = "done"
+	pasted = ""
+	address = ""
+	go("done")
 	onrestored(result.entries)
 }
 
@@ -164,8 +205,8 @@ const typed = (event: KeyboardEvent) => {
 		<div row class="acts">
 			<button type="button" class="btn" disabled={busy} onclick={fromClipboard}>{t.fromClipboard}</button>
 			<button type="button" class="btn" onclick={chooseFile}>{t.fromFile}</button>
-			<button type="button" class="btn" onclick={() => (step = "link")}>{t.fromLink}</button>
-			<button type="button" class="btn" onclick={() => (step = "paste")}>{t.byHand}</button>
+			<button type="button" class="btn" onclick={() => go("link")}>{t.fromLink}</button>
+			<button type="button" class="btn" onclick={() => go("paste")}>{t.byHand}</button>
 		</div>
 		<input
 			bind:this={fileInput}
@@ -188,6 +229,7 @@ const typed = (event: KeyboardEvent) => {
 			autocapitalize="off"
 			spellcheck="false"
 			placeholder="https://"
+			bind:this={linkField}
 			bind:value={address}
 			onkeydown={typed}>
 		<p class="hint">
@@ -212,25 +254,26 @@ const typed = (event: KeyboardEvent) => {
 			class="input text"
 			rows="8"
 			spellcheck="false"
+			bind:this={pasteField}
 			bind:value={pasted}></textarea>
 		<div row class="acts">
 			<button type="button" class="btn" onclick={reset}>{t.back}</button>
 		</div>
 	{:else if step === "done"}
-		<p class="notice" role="status">{done}</p>
+		<p class="notice" role="status" tabindex="-1" bind:this={doneLine}>{done}</p>
 		<div row class="acts">
 			<button type="button" class="btn" onclick={reset}>{t.back}</button>
 		</div>
 	{/if}
 
 	{#if found !== null && (step === "preview" || step === "paste")}
-		<section class="preview" aria-label={t.restore}>
+		<section class="preview" aria-label={t.restore} tabindex="-1" bind:this={previewHead}>
 			{#if found.preview.newer !== undefined}
 				<p class="notice error">{t.newer(found.preview.newer)}</p>
 			{:else if found.notBackup}
 				<p class="notice error">{t.notBackup}</p>
 			{:else}
-				<p class="notice" role="status">
+				<p class="notice" role={step === "preview" ? "status" : undefined}>
 					{t.found(found.preview.entries.length, found.preview.fresh, found.preview.kept)}{view.name === null
 						? ""
 						: ` ${t.foundIn(view.name)}`}

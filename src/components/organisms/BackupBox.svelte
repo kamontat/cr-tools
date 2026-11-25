@@ -24,7 +24,8 @@ const fileText = (now: Date) => writeBackup({ "combi-codes": exportCodes(entries
 
 const shownName = $derived(backupFileName(new Date()))
 
-let text = $state<string | null>(null)
+let open = $state(false)
+const text = $derived(open ? fileText(new Date()) : null)
 let toast = $state<{ message: string; tone: "info" | "error" } | null>(null)
 let timer: ReturnType<typeof setTimeout> | undefined
 let box = $state<HTMLTextAreaElement>()
@@ -43,7 +44,7 @@ const download = () => {
 }
 
 const toggleText = () => {
-	text = text === null ? fileText(new Date()) : null
+	open = !open
 }
 
 const copy = async () => {
