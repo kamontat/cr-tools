@@ -40,8 +40,8 @@ one site, and wants that look to be more than a tidy-up of today's.
 
 - No change to behaviour, copy, routes, storage or the combi wire format.
 - Settings rows still open in place. The editor and the filter still dock beside the
-  list as a `Panel` from 1100px. Below 1100px they follow the panel rule under Shared
-  parts, which changes the editor: today it takes over the page there.
+  list as a `Panel` from 1100px. Below 1100px the editor still fills the main container
+  in place of the list, as today; it is never an overlay.
 - Dark stays the default theme. Light still follows the system or an explicit
   `data-theme="light"`.
 
@@ -165,10 +165,12 @@ Tiers follow `tests/components/atomic.test.ts`.
 
 ### Organisms and the frame
 
-- `CombiFilter` and `CombiEditor` dock as a `Panel` from 1100px. Below 1100px each opens
-  as an `Overlay` `panel`: a side panel from 700px, a sheet below. `CombiFilter` drops its
-  own `.sheet*` markup. Each keeps its own panel id, so the docked and the overlay width
-  are remembered apart.
+- `CombiFilter` docks as a `Panel` from 1100px. Below 1100px it opens as an `Overlay`
+  `panel`: a side panel from 700px, a sheet below. It drops its own `.sheet*` markup and
+  keeps its own panel id, so the docked and the overlay width are remembered apart.
+- `CombiEditor` docks as a `Panel` from 1100px. Below 1100px it fills the main container
+  (`main > .wrap`) in place of the list, as today, with the `Panel` head and foot so it
+  looks like the docked editor.
 - `CombiList` rows become `Surface` rows with `Tag`s. The current row turns `--pick` at
   30% over `--surface`. Its raw colours and `px` values move to tokens.
 - `ShareBox`, `StorageBox`, `BackupBox`, `RestoreBox`, `DeleteAllBox` and `HomeSaved` use
@@ -204,7 +206,7 @@ Each piece is its own pull request against `main`.
 2. **Atoms.** `Surface`, `IconButton`, `Tag`, `CodeTiles`, and the restyled `Button`,
    `Segmented`, `Chips`, `Tabs`, `Toast`.
 3. **Overlay and Panel.** `Overlay` with its resize edge and sheet handle, `Panel`
-   matched to it, then `CombiFilter` and `CombiEditor` on them below 1100px.
+   matched to it, then `CombiFilter` on them below 1100px.
 4. **Combi page.** `CombiList`, `CombiEditor` and its tabs, `TreasureSlot`, `ShareBox`,
    `CodeDisplay`, `EntryPicker`.
 5. **Home, Settings and the frame.** `HomeSaved`, `ToolCard`, `SettingsRow` and the four
