@@ -537,7 +537,7 @@ function onclick(event: MouseEvent) {
 	min-width: 180px;
 	padding: 4px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 }
 

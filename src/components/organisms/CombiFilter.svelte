@@ -308,7 +308,7 @@ const onsheetkeydown = (event: KeyboardEvent) => {
 	display: flex;
 	flex-direction: column;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	overflow: hidden;
 }
 

@@ -70,6 +70,6 @@ button.warn {
 
 button.error {
 	background: var(--danger);
-	color: #fff;
+	color: var(--on-danger);
 }
 </style>

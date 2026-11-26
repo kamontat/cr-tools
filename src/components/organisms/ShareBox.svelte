@@ -115,7 +115,7 @@ let codeValue = $state<HTMLElement>()
 	gap: 18px;
 	padding: 14px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 }
 

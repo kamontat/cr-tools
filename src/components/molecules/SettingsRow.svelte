@@ -62,7 +62,7 @@ const uid = $props.id()
 	min-height: 44px;
 	padding: 10px 14px;
 	border: 0;
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: none;
 	color: var(--text);
 	font: inherit;

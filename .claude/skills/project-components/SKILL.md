@@ -281,19 +281,38 @@ A `<style>` in an Astro or Svelte component is **scoped**: `p { … }` only hits
 component's paragraphs, not those passed in through a slot or rendered by a child
 component. Use `:global(…)` for a selector that must reach further.
 
-`src/styles/global.css` holds the reset, the tokens and `lang.css` (which hides the
-language not chosen), and anything global; `BaseLayout` imports it, so
-every page gets it. Theme values belong in custom properties defined once on `:root` and
-read with `var(--…)`; a component that hardcodes a colour also hardcodes a theme.
-`src/styles/tokens.css` holds the token set — `--bg`, `--surface`, `--hover`, `--text`,
-`--muted`, `--line`, `--accent`, `--on-accent`, `--code`, `--danger`, `--success`, `--env`,
-`--radius`, `--radius-lg`, `--mono`, `--tap` — dark by default, light under
-`data-theme="light"` or, with no `data-theme`, the system's light preference; `--env` is
-the environment colour from `<html data-env>`.
+`src/styles/global.css` holds the reset, the self-hosted fonts (`@fontsource` Mitr, IBM
+Plex Sans Thai and JetBrains Mono), the tokens and `lang.css` (which hides the language
+not chosen), and anything global; `BaseLayout` imports it, so every page gets it. Theme
+values belong in custom properties defined once on `:root` and read with `var(--…)`; a
+component that hardcodes a colour also hardcodes a theme.
+
+`src/styles/tokens.css` holds the Sugar Rush token set
+(`docs/superpowers/specs/2026-11-25-sugar-rush-look-design.md`):
+
+- colour, dark by default, light under `data-theme="light"` or, with no `data-theme`, the
+  system's light preference: `--bg`, `--surface`, `--surface-2` (sunken), `--hover`,
+  `--text`, `--muted`, `--line` (dividers), `--ink` (outlines and sticker shadows),
+  `--accent` and `--accent-deep` (the primary colour), `--on-accent`, `--secondary`,
+  `--pick` and `--on-pick` (a picked option), `--code`, `--danger`, `--on-danger`,
+  `--success`, `--scrim`, `--evolved`, `--blessed`, and `--env`, the environment colour
+  from `<html data-env>`;
+- type: `--font-head` (headings, set on `h1`–`h4`), `--font-ui` (controls and labels),
+  `--font-body` (on `body`) and `--mono`;
+- shape: `--radius`, `--radius-sm`, `--radius-ctl` (pills), `--border` (outline width),
+  `--shadow`, `--shadow-pop`, and `--shadow-btn`, which a button completes with its own
+  colour;
+- spacing: `--pad` (inside a surface), `--gap` (between its items), `--stack` (between
+  sibling surfaces), `--ctl` (a control's height) and `--tap` (a touch target);
+- stacking: `--z-scrim`, `--z-sidebar`, `--z-topbar`, `--z-sheet`, `--z-toast`.
 
 Labels are sentence case: no `text-transform: uppercase` and no `letter-spacing` (the
 spec's Look; letter-spacing also pulls Thai combining marks off their base).
 `tests/styles/look.test.ts` fails on either in any component, layout, page or stylesheet.
+It also fails on a colour literal outside `tokens.css`, a numeric `z-index`, and a
+`border-radius` or `box-shadow` not built from tokens (`0`, `none` and a circle's `50%`
+are fine). Files from before the Sugar Rush look that still break one of these sit on the
+test's allow-list; fix one and take it off, and never add one.
 A page's outer gutter is `AppLayout`'s `.wrap`; a component never pads the page edge
 itself.
 

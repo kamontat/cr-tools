@@ -1,3 +1,11 @@
 @import "@kcstyles/reset.css";
+/* Self-hosted faces for the Sugar Rush look: headings and controls, body text, codes. */
+@import "@fontsource/mitr/500.css";
+@import "@fontsource/mitr/600.css";
+@import "@fontsource/ibm-plex-sans-thai/400.css";
+@import "@fontsource/ibm-plex-sans-thai/600.css";
+@import "@fontsource/ibm-plex-sans-thai/700.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
 @import "./tokens.css";
 @import "./lang.css";

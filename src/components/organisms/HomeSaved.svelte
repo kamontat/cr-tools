@@ -102,7 +102,7 @@ li {
 	gap: 8px;
 	padding: 12px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 }
 
 .code {

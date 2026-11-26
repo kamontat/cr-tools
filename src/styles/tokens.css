@@ -1,26 +1,55 @@
-/* Design tokens. Dark is the default; light follows the system preference or an
-   explicit data-theme="light". Values come from the approved prototype. */
+/* Design tokens: the Sugar Rush look (docs/superpowers/specs/2026-11-25-sugar-rush-look-design.md).
+   Dark is the default; light follows the system preference or an explicit data-theme="light".
+   Only colours change with the theme; type, shape and spacing are the same in both. */
 :root {
 	color-scheme: dark;
-	--bg: #111116;
-	--surface: #1a1a21;
-	--hover: #22222b;
-	--text: #f2f2f5;
-	--muted: #8e8ea0;
-	--line: #2a2a35;
-	--accent: #ff3d7f;
-	--on-accent: #111;
-	--code: #ffd23f;
-	--danger: #e5484d;
+	--bg: #1c1620;
+	--surface: #262029;
+	--surface-2: #201a23;
+	--hover: #2f2833;
+	--text: #f1e9f2;
+	--muted: #ab9eb0;
+	--line: #372e3b;
+	--ink: #5d4f63;
+	--accent: #e27a9a;
+	--accent-deep: #a8506d;
+	--on-accent: #1c1620;
+	--secondary: #6cc7b2;
+	--pick: #e6c66e;
+	--on-pick: #1c1620;
+	--code: #c2b0ec;
+	--danger: #f07c86;
+	--on-danger: #1c1620;
 	--success: #30a46c;
+	--scrim: rgb(5 2 10 / 60%);
 	/* An evolved and a blessed treasure share a picture; these colours tell them apart. */
 	--evolved: #4ade80;
 	--blessed: #ffd23f;
 	--env: transparent;
-	--radius: 8px;
-	--radius-lg: 10px;
-	--mono: ui-monospace, sfmono-regular, menlo, monospace;
+
+	/* Type. Every face covers Thai, except the monospace, which only sets codes. */
+	--font-head: "Mitr", "IBM Plex Sans Thai", system-ui, sans-serif;
+	--font-ui: var(--font-head);
+	--font-body: "IBM Plex Sans Thai", "Noto Sans Thai", "Thonburi", system-ui, sans-serif;
+	--mono: "JetBrains Mono", ui-monospace, sfmono-regular, menlo, monospace;
+
+	/* Shape: a thin outline in --ink and a hard shadow offset down and right, like a sticker. */
+	--radius: 14px;
+	--radius-sm: 10px;
+	--radius-ctl: 999px;
+	--border: 1.5px;
+	--shadow: 2px 2px 0 var(--ink);
+	--shadow-pop: 4px 4px 0 var(--ink);
+	/* A button adds its own colour; it drops the shadow when pressed. */
+	--shadow-btn: 2px 2px 0;
+
+	/* Spacing: inside a surface, between its items, between sibling surfaces. */
+	--pad: 12px;
+	--gap: 10px;
+	--stack: 8px;
+	--ctl: 32px;
 	--tap: 2.75rem;
+
 	/* Stacking, lowest first: the drawer's scrim, the sidebar over the page, the top bar, notices. */
 	--z-scrim: 15;
 	--z-sidebar: 20;
@@ -32,15 +61,24 @@
 @media (prefers-color-scheme: light) {
 	:root:not([data-theme="dark"]) {
 		color-scheme: light;
-		--bg: #f7f7f5;
+		--bg: #faf6f8;
 		--surface: #fff;
-		--hover: #efefec;
-		--text: #15151c;
-		--muted: #62626f;
-		--line: #e2e2dc;
-		--accent: #d81b60;
+		--surface-2: #f4ecf0;
+		--hover: #f8f1f4;
+		--text: #2e2433;
+		--muted: #75687b;
+		--line: #ecdfe5;
+		--ink: #4b3d52;
+		--accent: #c9466f;
+		--accent-deep: #8e2f4e;
 		--on-accent: #fff;
-		--code: #9a5b00;
+		--secondary: #3f9f8a;
+		--pick: #f2d27a;
+		--on-pick: #2e2433;
+		--code: #6a4bb0;
+		--danger: #c9424f;
+		--on-danger: #fff;
+		--scrim: rgb(46 36 51 / 35%);
 		--evolved: #1b7a43;
 		--blessed: #a86800;
 	}
@@ -48,15 +86,24 @@
 
 :root[data-theme="light"] {
 	color-scheme: light;
-	--bg: #f7f7f5;
+	--bg: #faf6f8;
 	--surface: #fff;
-	--hover: #efefec;
-	--text: #15151c;
-	--muted: #62626f;
-	--line: #e2e2dc;
-	--accent: #d81b60;
+	--surface-2: #f4ecf0;
+	--hover: #f8f1f4;
+	--text: #2e2433;
+	--muted: #75687b;
+	--line: #ecdfe5;
+	--ink: #4b3d52;
+	--accent: #c9466f;
+	--accent-deep: #8e2f4e;
 	--on-accent: #fff;
-	--code: #9a5b00;
+	--secondary: #3f9f8a;
+	--pick: #f2d27a;
+	--on-pick: #2e2433;
+	--code: #6a4bb0;
+	--danger: #c9424f;
+	--on-danger: #fff;
+	--scrim: rgb(46 36 51 / 35%);
 	--evolved: #1b7a43;
 	--blessed: #a86800;
 }
@@ -74,11 +121,21 @@
 }
 
 body {
-	background: var(--bg);
+	background:
+		radial-gradient(var(--line) 1.6px, transparent 1.9px) 0 0 / 22px 22px,
+		var(--bg);
 	color: var(--text);
-	font-family: system-ui, "Noto Sans Thai", "Thonburi", sans-serif;
-	font-size: 15px;
+	font-family: var(--font-body);
+	font-size: 14px;
 	line-height: 1.45;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: var(--font-head);
+	font-weight: 600;
 }
 
 code,

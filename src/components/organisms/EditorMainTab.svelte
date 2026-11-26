@@ -167,7 +167,7 @@ fieldset {
 	min-height: 76px;
 	padding: 6px 4px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 	color: var(--muted);
 	font: inherit;

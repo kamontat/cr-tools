@@ -2,9 +2,26 @@
 
 What changed in this project and why, newest first.
 
-## 2026-11-26: Sugar Rush look planned
+## 2026-11-26: Sugar Rush look planned, and its colours, fonts and style checks
 
 ### Improvements
+
+- The site takes the Sugar Rush colours in both themes: a muted plum dark theme by default
+  and a soft pink-white light theme, with rose as the primary colour, teal as the secondary
+  and butter yellow for a picked option.
+- Text is set in IBM Plex Sans Thai at 14px, headings in Mitr and codes in JetBrains Mono,
+  all served with the site. Every page has a faint dot grid behind it.
+- Corners are rounder (14px). Components keep today's shapes until the next pieces restyle
+  them.
+- White text on a danger button and the sidebar's dimmed backdrop now follow the theme
+  instead of fixed colours.
+- `tokens.css` adds the tokens the restyle builds on: `--surface-2`, `--ink`,
+  `--accent-deep`, `--secondary`, `--pick`, `--on-pick`, `--on-danger`, `--scrim`, the font
+  tokens, `--radius-sm`, `--radius-ctl`, `--border`, the three shadows and `--pad`, `--gap`,
+  `--stack` and `--ctl`. `--radius-lg` is gone; use `--radius`.
+- `tests/styles/look.test.ts` fails on a colour literal outside `tokens.css`, a numeric
+  `z-index`, and a radius or shadow not built from tokens. Files from before the look that
+  still break one sit on an allow-list that may only shrink.
 
 - `docs/superpowers/specs/2026-11-25-sugar-rush-look-design.md` plans one look for every
   page, panel and pop-up: a muted candy-sticker style with thin outlines, hard offset

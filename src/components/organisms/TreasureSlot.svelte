@@ -172,7 +172,7 @@ function toggle(id: string) {
 	gap: 8px;
 	padding: 8px 10px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 }
 
