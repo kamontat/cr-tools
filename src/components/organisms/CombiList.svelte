@@ -771,7 +771,7 @@ const remove = (entry: SavedCode) => {
 	margin: 0;
 	padding: 14px;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 	color: var(--muted);
 }
@@ -782,7 +782,7 @@ const remove = (entry: SavedCode) => {
 	margin: 0;
 	padding: 0;
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 	list-style: none;
 	overflow: hidden;
@@ -943,7 +943,7 @@ const remove = (entry: SavedCode) => {
 	/* The head's hover colour fills it to its bottom edge, so the details start a step below. */
 	margin: 12px 16px 14px;
 	padding: 4px 14px 12px;
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--bg);
 }
 
@@ -1235,7 +1235,7 @@ const remove = (entry: SavedCode) => {
 .btn.danger.armed {
 	border-color: var(--danger);
 	background: var(--danger);
-	color: #fff;
+	color: var(--on-danger);
 }
 
 /* A narrow list puts each label over its line. */

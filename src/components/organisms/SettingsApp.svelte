@@ -156,7 +156,7 @@ h2 {
 
 .rows {
 	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
+	border-radius: var(--radius);
 	background: var(--surface);
 }
 

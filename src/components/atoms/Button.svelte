@@ -43,7 +43,7 @@ let { variant = "plain", type = "button", children, ...rest }: Props = $props()
 .danger {
 	border-color: var(--danger);
 	background: var(--danger);
-	color: #fff;
+	color: var(--on-danger);
 }
 
 .btn:focus-visible {
