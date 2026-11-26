@@ -135,7 +135,7 @@ Tiers follow `tests/components/atomic.test.ts`.
 | Part | Status | What it is |
 | --- | --- | --- |
 | `Surface` | new | the sticker container: `kind` = `card` (outline + shadow), `sunken` (`--surface-2`, no shadow) or `row` (smaller shadow). Every card, box and row uses it. |
-| `Button` | restyle | `plain`, `primary` (`--accent`), `danger`, and a new `ghost` (no fill, no outline, `--muted`). Pill, `--shadow-btn`, presses in. |
+| `Button` | restyle | Every action is `primary` or `secondary`. `primary` (`--accent` fill, `--on-accent` text) is the one main action of a group: Save, Copy name, Show 6 codes. `secondary` (`--surface` fill, `--ink` outline) is every other action beside it, and the default. `secondary` replaces today's `plain`. Two more for special cases: `danger` (`--danger` fill) for an action that deletes, and `ghost` (no fill, no outline, `--muted`) for Cancel or Clear. Pill, `--shadow-btn`, presses in. A group has at most one `primary`; a row of equals is all `secondary`. |
 | `IconButton` | new | square, no outline, `--muted` until hovered. Close, back and "more" buttons. |
 | `Segmented` | restyle | sunken outlined track; the picked option is `--pick` with an inner `--ink` outline. |
 | `Chips` | restyle | outlined pills; a picked chip is `--pick` and starts with a check mark. |
