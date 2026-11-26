@@ -29,7 +29,8 @@ one site, and wants that look to be more than a tidy-up of today's.
 
 1. One token set for colour, type, shape and spacing. A component reads tokens, never
    literals.
-2. One overlay with three placements (sheet, side, dialog) behind every pop-up.
+2. One overlay behind every pop-up: a resizable side panel that becomes a sheet on a
+   phone, and a centred dialog.
 3. One surface for every card, box and row.
 4. The Sugar Rush look in both themes: thin outlines, a hard offset shadow that presses
    in, yellow for the picked option, Mitr headings.
@@ -38,8 +39,9 @@ one site, and wants that look to be more than a tidy-up of today's.
 ## Non-goals
 
 - No change to behaviour, copy, routes, storage or the combi wire format.
-- No change to which pop-up kind a feature uses. The editor and the filter still dock
-  beside the list as a `Panel` from 1100px. Settings rows still open in place.
+- Settings rows still open in place. The editor and the filter still dock beside the
+  list as a `Panel` from 1100px. Below 1100px they follow the panel rule under Shared
+  parts, which changes the editor: today it takes over the page there.
 - Dark stays the default theme. Light still follows the system or an explicit
   `data-theme="light"`.
 
@@ -152,8 +154,10 @@ Tiers follow `tests/components/atomic.test.ts`.
 
 | Part | Status | What it is |
 | --- | --- | --- |
-| `Overlay` | new | the one pop-up. `place` = `sheet` (from the bottom, top corners rounded, a grab handle), `side` (from the right, full height) or `dialog` (centred). Scrim in `--scrim`, header with title and `IconButton` close, scrolling body, footer with a `--line` divider. Takes focus on open, returns it on close, shuts on Escape and on the scrim, stacks on `--z-sheet`. A `danger` flag outlines it and casts its shadow in `--danger`, for confirming what cannot be undone. |
-| `Panel` | restyle | stays the docked column. Its head, body and foot take `Overlay`'s spacing and type, so a docked panel and a sheet look alike. Its raw `z-index: 1` moves to a token. |
+| `Overlay` | new | the one pop-up, with two kinds. Both have a scrim in `--scrim`, a header with the title and an `IconButton` close, a scrolling body, and a footer under a `--line` divider. Both take focus on open, return it on close, shut on Escape and on the scrim, and stack on `--z-sheet`. |
+| | | **`panel`** slides in from the right, full height, from 700px (`RAIL_MIN_WIDTH`). Its left edge is a resize handle: a `separator` with `aria-valuenow`, dragged with a pointer, or focused and moved with ← and → in 16px steps (Home and End for the limits). A double-click resets it. Width limits and memory come from `#lib/panel-width`: at least 360px, 460px by default, remembered per panel id. Below 700px the same panel is a **sheet** from the bottom: top corners rounded, content height up to 85%, with a grab handle. Dragging the handle up past 70% of the screen snaps it to full height; dragging it down 100px closes it; a tap, or ↑ and ↓ when focused, toggles full height. The panel switches between side and sheet when the window crosses 700px, without closing. |
+| | | **`dialog`** is centred, for an important answer only. A `danger` flag outlines it and casts its shadow in `--danger`, for confirming what cannot be undone. |
+| `Panel` | restyle | stays the docked column from 1100px, with its resize edge styled like `Overlay`'s. Its head, body and foot take `Overlay`'s spacing and type, so a docked panel, a side panel and a sheet look alike. Its raw `z-index: 1` moves to a token. |
 | `SettingsRow` | restyle | a `Surface` row. When open, the body sits under a dashed `--line` divider, with `--gap` above and `--pad` below. |
 | `CodeDisplay` | restyle | uses `CodeTiles`. |
 | `Field` | restyle | label in `--font-ui`; input sunken with an outline, a 3px accent ring on focus. |
@@ -161,15 +165,17 @@ Tiers follow `tests/components/atomic.test.ts`.
 
 ### Organisms and the frame
 
-- `CombiFilter` drops its own `.sheet*` markup and opens in `Overlay place="sheet"` below
-  1100px.
+- `CombiFilter` and `CombiEditor` dock as a `Panel` from 1100px. Below 1100px each opens
+  as an `Overlay` `panel`: a side panel from 700px, a sheet below. `CombiFilter` drops its
+  own `.sheet*` markup. Each keeps its own panel id, so the docked and the overlay width
+  are remembered apart.
 - `CombiList` rows become `Surface` rows with `Tag`s. The current row turns `--pick` at
   30% over `--surface`. Its raw colours and `px` values move to tokens.
 - `ShareBox`, `StorageBox`, `BackupBox`, `RestoreBox`, `DeleteAllBox` and `HomeSaved` use
   `Surface`. Their behaviour does not change.
 - `TopBar` and `Sidebar` get the `--ink` bottom or side edge, Mitr for the site name, and
-  lose `Sidebar`'s hardcoded colours. The sidebar drawer is an `Overlay place="side"` only
-  if that keeps its current behaviour; otherwise it keeps its own markup and the tokens.
+  lose `Sidebar`'s hardcoded colours. The sidebar drawer keeps its own markup (it
+  opens from the left and is not resizable) and takes the tokens.
 - `BaseLayout`'s body gets the dot grid:
   `radial-gradient(var(--line) 1.6px, transparent 1.9px) 0 0 / 22px 22px`.
 
@@ -182,8 +188,9 @@ Tiers follow `tests/components/atomic.test.ts`.
 3. No `border-radius` or `box-shadow` value that is not a token, `0` or `none`.
 
 `tests/components/atomic.test.ts` keeps the tiers honest for the new parts. Each new atom
-and `Overlay` gets a Testing Library test. `Overlay` is tested on focus, Escape, the scrim
-and each `place`.
+and `Overlay` gets a Testing Library test. `Overlay` is tested on focus, Escape, the
+scrim, the switch between side and sheet at 700px, the resize edge's keys and stored
+width, and the sheet handle's toggle.
 
 Colour, shadow and layout cannot be tested headless. Each pull request lists them as
 preview checks, in both themes, at 390px and at 1280px.
@@ -196,8 +203,8 @@ Each piece is its own pull request against `main`.
    (with an allow-list of today's offenders that later pieces empty).
 2. **Atoms.** `Surface`, `IconButton`, `Tag`, `CodeTiles`, and the restyled `Button`,
    `Segmented`, `Chips`, `Tabs`, `Toast`.
-3. **Overlay and Panel.** `Overlay`, then `CombiFilter`'s sheet on it, and `Panel`
-   matched to it.
+3. **Overlay and Panel.** `Overlay` with its resize edge and sheet handle, `Panel`
+   matched to it, then `CombiFilter` and `CombiEditor` on them below 1100px.
 4. **Combi page.** `CombiList`, `CombiEditor` and its tabs, `TreasureSlot`, `ShareBox`,
    `CodeDisplay`, `EntryPicker`.
 5. **Home, Settings and the frame.** `HomeSaved`, `ToolCard`, `SettingsRow` and the four
@@ -205,5 +212,5 @@ Each piece is its own pull request against `main`.
 
 ## Open questions
 
-- Should Delete all confirm in an `Overlay place="dialog"` instead of in place? The look
+- Should Delete all confirm in an `Overlay` `dialog` instead of in place? The look
   allows it. This spec does not change it.
