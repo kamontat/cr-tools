@@ -2,6 +2,29 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-26: Sugar Rush look planned
+
+### Improvements
+
+- `docs/superpowers/specs/2026-11-25-sugar-rush-look-design.md` plans one look for every
+  page, panel and pop-up: a muted candy-sticker style with thin outlines, hard offset
+  shadows, yellow for the picked option, and Mitr, IBM Plex Sans Thai and JetBrains Mono.
+  The site does not change yet; five pieces build it.
+- The spec gives every action a kind: `primary` fills with the primary colour, `secondary`
+  is outlined in the secondary colour, with `danger` and `ghost` for deleting and
+  cancelling.
+- It plans one `Overlay`: a side panel that can be resized and remembers its width, which
+  becomes a sheet that slides up below 700px, and a centred dialog for important answers.
+
+### Decisions
+
+- Sugar Rush was picked from four interactive directions (Sugar Rush, Night Run, Frosting,
+  Tray), then made compact, less vivid and thinner-edged at the owner's request.
+- Below 1100px the editor keeps filling the main container instead of opening as a side
+  panel or sheet; only the filter becomes a pop-up there.
+- Fonts are self-hosted from `@fontsource` rather than loaded from Google Fonts, so no
+  third party sees each page view.
+
 ## 2026-11-25: Clean-ups after the redesign, saved rows by goal, and filter and sort
 
 ### Features
