@@ -31,7 +31,7 @@ one site, and wants that look to be more than a tidy-up of today's.
    literals.
 2. One overlay with three placements (sheet, side, dialog) behind every pop-up.
 3. One surface for every card, box and row.
-4. The Sugar Rush look in both themes: thick outlines, a hard offset shadow that presses
+4. The Sugar Rush look in both themes: thin outlines, a hard offset shadow that presses
    in, yellow for the picked option, Mitr headings.
 5. Compact: the density the owner approved, with full tap targets on touch screens.
 
@@ -52,7 +52,7 @@ one site, and wants that look to be more than a tidy-up of today's.
 
 ## The look
 
-Candy stickers. Every surface has a thick outline in `--ink` and a hard shadow offset down
+Candy stickers. Every surface has a thin outline in `--ink` and a hard shadow offset down
 and right in the same colour, so it reads as a sticker on the page. A button's shadow is
 smaller and disappears when pressed: the button moves into the space the shadow held. The
 picked option in a segmented control, a chip or the current saved code turns yellow
@@ -69,26 +69,30 @@ divider; the outline colour is the new `--ink`.
 
 | Token | Dark (default) | Light | Use |
 | --- | --- | --- | --- |
-| `--bg` | `#1d1129` | `#fff4f9` | page |
-| `--surface` | `#2a1a3a` | `#ffffff` | cards, rows, pop-ups |
-| `--surface-2` | `#231432` | `#ffe6f1` | sunken: inputs, segmented track, code tiles |
-| `--hover` | `#34214a` | `#fff0f7` | hovered surface |
-| `--text` | `#fbeaff` | `#2b1638` | |
-| `--muted` | `#bda6ca` | `#7a5f86` | secondary text |
-| `--line` | `#3d2952` | `#f3cfe0` | dividers, dot grid |
-| `--ink` | `#7c5a99` | `#2b1638` | outlines and sticker shadows |
-| `--accent` | `#ff5c95` | `#ff3d7f` | primary button, current-item mark, focus ring |
-| `--on-accent` | `#1d1129` | `#2b1638` | text on `--accent` |
-| `--pick` | `#ffd23f` | `#ffd23f` | picked option |
-| `--on-pick` | `#2b1638` | `#2b1638` | text on `--pick` |
-| `--code` | `#c9a7ff` | `#6b25d9` | combi codes |
-| `--danger` | `#ff6b7e` | `#d92d4a` | |
-| `--on-danger` | `#1d1129` | `#ffffff` | text on `--danger` |
+| `--bg` | `#1c1620` | `#faf6f8` | page |
+| `--surface` | `#262029` | `#ffffff` | cards, rows, pop-ups |
+| `--surface-2` | `#201a23` | `#f4ecf0` | sunken: inputs, segmented track, code tiles |
+| `--hover` | `#2f2833` | `#f8f1f4` | hovered surface |
+| `--text` | `#f1e9f2` | `#2e2433` | |
+| `--muted` | `#ab9eb0` | `#75687b` | secondary text |
+| `--line` | `#372e3b` | `#ecdfe5` | dividers, dot grid |
+| `--ink` | `#5d4f63` | `#4b3d52` | outlines and sticker shadows |
+| `--accent` | `#e27a9a` | `#c9466f` | the primary colour: primary button fill, current-item mark, focus ring |
+| `--accent-deep` | `#a8506d` | `#8e2f4e` | the primary button's shadow |
+| `--on-accent` | `#1c1620` | `#ffffff` | text on `--accent` |
+| `--secondary` | `#6cc7b2` | `#3f9f8a` | the secondary colour: secondary button outline and shadow |
+| `--pick` | `#e6c66e` | `#f2d27a` | picked option |
+| `--on-pick` | `#1c1620` | `#2e2433` | text on `--pick` |
+| `--code` | `#c2b0ec` | `#6a4bb0` | combi codes |
+| `--danger` | `#f07c86` | `#c9424f` | |
+| `--on-danger` | `#1c1620` | `#ffffff` | text on `--danger` |
 | `--success` | unchanged | unchanged | |
-| `--scrim` | `rgb(5 2 10 / 0.6)` | `rgb(43 22 56 / 0.35)` | behind a pop-up |
+| `--scrim` | `rgb(5 2 10 / 0.6)` | `rgb(46 36 51 / 0.35)` | behind a pop-up |
 
-`--evolved`, `--blessed` and the `--env` colours stay as they are. The kit's `--accent-2`
-mint had no use outside the kit and is dropped.
+The palette is muted on purpose: the owner asked for Sugar Rush less vivid than the kit's
+first version. Pink, yellow and teal stay recognisable but sit closer to the neutrals.
+
+`--evolved`, `--blessed` and the `--env` colours stay as they are.
 
 ### Type
 
@@ -113,10 +117,10 @@ Sizes: body 14px with line height 1.45, labels 13px, tags 11px, headings 15–16
 | `--radius` | 14px | cards, rows, pop-ups |
 | `--radius-sm` | 10px | inputs, list rows, tiles |
 | `--radius-ctl` | 999px | buttons, segmented, chips, tags, toast |
-| `--border` | 2.5px | outline width |
-| `--shadow` | `3px 3px 0 var(--ink)` | surfaces |
-| `--shadow-pop` | `5px 5px 0 var(--ink)` | pop-ups, toast |
-| `--shadow-btn` | `2px 2px 0 var(--ink)` | buttons; `none` when pressed, with `translate(2px, 2px)` |
+| `--border` | 1.5px | outline width |
+| `--shadow` | `2px 2px 0 var(--ink)` | surfaces |
+| `--shadow-pop` | `4px 4px 0 var(--ink)` | pop-ups, toast |
+| `--shadow-btn` | `2px 2px 0` in the button's own colour | buttons; `none` when pressed, with `translate(2px, 2px)` |
 | `--pad` | 12px | inside a surface |
 | `--gap` | 10px | between items in a surface |
 | `--stack` | 8px | between sibling surfaces in a list |
@@ -135,9 +139,9 @@ Tiers follow `tests/components/atomic.test.ts`.
 | Part | Status | What it is |
 | --- | --- | --- |
 | `Surface` | new | the sticker container: `kind` = `card` (outline + shadow), `sunken` (`--surface-2`, no shadow) or `row` (smaller shadow). Every card, box and row uses it. |
-| `Button` | restyle | Every action is `primary` or `secondary`. `primary` (`--accent` fill, `--on-accent` text) is the one main action of a group: Save, Copy name, Show 6 codes. `secondary` (`--surface` fill, `--ink` outline) is every other action beside it, and the default. `secondary` replaces today's `plain`. Two more for special cases: `danger` (`--danger` fill) for an action that deletes, and `ghost` (no fill, no outline, `--muted`) for Cancel or Clear. Pill, `--shadow-btn`, presses in. A group has at most one `primary`; a row of equals is all `secondary`. |
+| `Button` | restyle | Every action is `primary` or `secondary`. `primary` is the primary colour on the background: `--accent` fill and outline, `--on-accent` text, shadow in `--accent-deep`. It is the one main action of a group: Save, Copy name, Show 6 codes. `secondary` is outlined in the secondary colour: `--surface` fill, `--secondary` outline and shadow, `--text` text. It is every other action beside the primary, and the default; it replaces today's `plain`. Two more for special cases: `danger` (`--danger` fill and outline) for an action that deletes, and `ghost` (no fill, no outline, `--muted`) for Cancel or Clear. Pill shape, presses in. A group has at most one `primary`; a row of equals is all `secondary`. |
 | `IconButton` | new | square, no outline, `--muted` until hovered. Close, back and "more" buttons. |
-| `Segmented` | restyle | sunken outlined track; the picked option is `--pick` with an inner `--ink` outline. |
+| `Segmented` | restyle | sunken outlined track; the picked option is `--pick` with a 1.5px inner `--ink` outline. |
 | `Chips` | restyle | outlined pills; a picked chip is `--pick` and starts with a check mark. |
 | `Tabs` | restyle | underline in `--accent`, 4px, rounded top. |
 | `Tag` | new | the small sunken pill on a saved-list row (mode, goal, episode). |
