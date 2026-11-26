@@ -141,7 +141,7 @@ Tiers follow `tests/components/atomic.test.ts`.
 | Part | Status | What it is |
 | --- | --- | --- |
 | `Surface` | new | the sticker container: `kind` = `card` (outline + shadow), `sunken` (`--surface-2`, no shadow) or `row` (smaller shadow). Every card, box and row uses it. |
-| `Button` | restyle | Every action is `primary` or `secondary`. `primary` is the primary colour on the background: `--accent` fill and outline, `--on-accent` text, shadow in `--accent-deep`. It is the one main action of a group: Save, Copy name, Show 6 codes. `secondary` is outlined in the secondary colour: `--surface` fill, `--secondary` outline and shadow, `--text` text. It is every other action beside the primary, and the default; it replaces today's `plain`. Two more for special cases: `danger` (`--danger` fill and outline) for an action that deletes, and `ghost` (no fill, no outline, `--muted`) for Cancel or Clear. Pill shape, presses in. A group has at most one `primary`; a row of equals is all `secondary`. |
+| `Button` | restyle | Every action is `primary` or `secondary`. `primary` is the primary colour on the background: `--accent` fill and outline, `--on-accent` text, shadow in `--accent-deep`. It is the one main action of a group: Save, Copy name, Show 6 codes. `secondary` is outlined in the secondary colour: `--surface` fill, `--secondary` outline and shadow, `--text` text. It is every other action beside the primary, and the default; it replaces today's `plain`. Two more for special cases: `danger` (`--danger` fill and outline) for an action that deletes, and `ghost` (no fill, no outline, `--muted`) for Cancel or Clear. Pill shape, presses in. A group has at most one `primary`; a row of equals is all `secondary`. On hover the text keeps its colour and contrast: `primary` and `danger` darken their fill, `secondary` tints its fill with 12% of `--secondary`, `ghost` takes `--hover`. No kind's hover may swap its fill for `--hover`, which would leave light text on a light fill. |
 | `IconButton` | new | square, no outline, `--muted` until hovered. Close, back and "more" buttons. |
 | `Segmented` | restyle | sunken outlined track; the picked option is `--pick` with a 1.5px inner `--ink` outline. |
 | `Chips` | restyle | outlined pills; a picked chip is `--pick` and starts with a check mark. |
@@ -160,7 +160,7 @@ Tiers follow `tests/components/atomic.test.ts`.
 | `Panel` | restyle | stays the docked column from 1100px, with its resize edge styled like `Overlay`'s. Its head, body and foot take `Overlay`'s spacing and type, so a docked panel, a side panel and a sheet look alike. Its raw `z-index: 1` moves to a token. |
 | `SettingsRow` | restyle | a `Surface` row. When open, the body sits under a dashed `--line` divider, with `--gap` above and `--pad` below. |
 | `CodeDisplay` | restyle | uses `CodeTiles`. |
-| `Field` | restyle | label in `--font-ui`; input sunken with an outline, a 3px accent ring on focus. |
+| `Field` | restyle | label in `--font-ui`; input sunken with an outline, a 3px accent ring on focus. A multi-line field (the note) is a `textarea` with the same look, 3 rows, resizable up and down only, with its character count under it on the right. |
 | `EntryPicker`, `LoadoutIcons`, `ToolCard` | restyle | read the new tokens; `ToolCard` is a `Surface`. |
 
 ### Organisms and the frame
