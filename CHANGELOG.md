@@ -2,7 +2,7 @@
 
 What changed in this project and why, newest first.
 
-## 2026-11-27: Sugar Rush buttons, choices, tabs and notices
+## 2026-11-27: Sugar Rush buttons, choices, tabs and notices, and one pop-up for every panel
 
 ### BREAKING CHANGES
 
@@ -16,6 +16,12 @@ What changed in this project and why, newest first.
 - `Tag` is a small pill (`muted`, `outlined`, `filled`) for what a row is.
 - `CodeTiles` draws a combi name as one tile per character. A screen reader reads it once as
   the code, and the characters still select and copy as the code.
+- `Overlay` is the one pop-up. As a panel it is a side panel from the right at 700px and
+  wider, resized by dragging its edge or with the arrow keys, Home and End, and it
+  remembers its width. Below 700px it is a sheet from the bottom whose handle toggles full
+  height, or closes the sheet when dragged down. As a dialog it is centred, outlined in red
+  when it confirms something that cannot be undone.
+- `ResizeEdge` is the drag edge that `Panel` and `Overlay` share.
 
 ### Improvements
 
@@ -28,6 +34,19 @@ What changed in this project and why, newest first.
 - Notices are yellow stickers; a warning is plain and an error red.
 - `Segmented`, `Chips`, `Tabs` and `Toast` read only tokens, so they leave the look test's
   allow-list.
+- Filter and Sort on the combi page open as a resizable side panel between 700px and 1100px
+  instead of a bottom sheet, and as an `Overlay` sheet below 700px. From 1100px they still
+  sit beside the list.
+- The docked panel takes the Sugar Rush look, with the same header, body and footer as the
+  pop-up, so a docked panel, a side panel and a sheet look alike. `Panel` and
+  `CombiFilter` leave the look test's allow-list.
+
+### Decisions
+
+- The side panel and the sheet are one `Overlay` that switches at 700px without closing,
+  rather than two components, so a window resized while Filter is open keeps it open.
+- The danger dialog's red shadow reuses the pop shadow's offset through a new
+  `--shadow-pop-at` token, because the look test allows only shadows built from tokens.
 
 ## 2026-11-26: Sugar Rush look planned, and its colours, fonts and style checks
 
