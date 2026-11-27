@@ -34,15 +34,15 @@ test("a press calls onclick, and a disabled button does not", async () => {
 	expect(onclick).toHaveBeenCalledTimes(1)
 })
 
-test("the variant is a class: plain by default, then primary and danger", async () => {
+test("the variant is a class: secondary by default, then primary, danger and ghost", async () => {
 	const { rerender } = render(Button, { props: { children } })
 	const button = screen.getByRole("button")
-	expect(button.classList.contains("plain")).toBe(true)
-	await rerender({ variant: "primary" })
-	expect(button.classList.contains("primary")).toBe(true)
-	expect(button.classList.contains("plain")).toBe(false)
-	await rerender({ variant: "danger" })
-	expect(button.classList.contains("danger")).toBe(true)
+	expect(button.classList.contains("secondary")).toBe(true)
+	for (const variant of ["primary", "danger", "ghost"] as const) {
+		await rerender({ variant })
+		expect(button.classList.contains(variant)).toBe(true)
+		expect(button.classList.contains("secondary")).toBe(false)
+	}
 })
 
 test("other attributes reach the button", () => {

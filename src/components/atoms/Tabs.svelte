@@ -54,7 +54,7 @@ function onkeydown(event: KeyboardEvent, from: number) {
 	flex-flow: row nowrap;
 	align-items: stretch;
 	overflow-x: auto;
-	box-shadow: inset 0 -1px var(--line);
+	border-bottom: 1px solid var(--line);
 }
 
 button {
@@ -62,12 +62,13 @@ button {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	min-height: 38px;
-	padding: 8px 14px;
+	min-height: 34px;
+	padding: 5px 12px;
 	border: 0;
 	background: none;
 	color: var(--muted);
-	font: inherit;
+	font-family: var(--font-ui);
+	font-size: 13px;
 	font-weight: 500;
 	white-space: nowrap;
 	cursor: pointer;
@@ -101,8 +102,19 @@ button:focus-visible {
 }
 
 button[aria-selected="true"] {
-	box-shadow: inset 0 -2px var(--accent);
 	color: var(--text);
+}
+
+/* The selected tab's mark: a thick rounded bar in the primary colour on the line. */
+button[aria-selected="true"]::after {
+	position: absolute;
+	right: 8px;
+	bottom: 0;
+	left: 8px;
+	height: 4px;
+	border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+	background: var(--accent);
+	content: "";
 }
 
 button:disabled {
@@ -112,8 +124,8 @@ button:disabled {
 
 .badge {
 	padding: 0 6px;
-	border-radius: 999px;
-	background: var(--hover);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 	color: var(--text);
 	font-size: 0.75rem;
 }
