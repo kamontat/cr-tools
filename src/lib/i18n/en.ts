@@ -348,7 +348,6 @@ export const en = {
 			typeHint: "Type or paste a code.",
 			typeCount: (n: number, total: number) => `${n} of ${total} characters.`,
 			sections: "Editor sections",
-			verdictAuto: "Plays itself all the way: full auto.",
 			verdictSemi: (reasons: string) => `Plays as semi-auto because of ${reasons}.`,
 			reasonsJoin: ", ",
 			takesNoBoosts: (episode: string) => `${episode} takes no boosts.`,

@@ -101,11 +101,10 @@ function reasonText(reason: ReasonId, draft: Draft, m: Messages): string {
 	return m.combi.editor.relayReason
 }
 
-/** The line under Mode: why an auto run needs a hand, or that it needs none; empty for a manual run. */
+/** The line under Mode: why an auto run needs a hand; empty for full auto, which the mode already says, and for a manual run. */
 export function verdictText(draft: Draft, m: Messages): string {
 	const verdict = verdictOf(draft)
-	if (verdict === null) return ""
-	if (!verdict.semi) return m.combi.editor.verdictAuto
+	if (verdict === null || !verdict.semi) return ""
 	const reasons = verdict.reasons.map((reason) => reasonText(reason, draft, m))
 	return m.combi.editor.verdictSemi(reasons.join(m.combi.editor.reasonsJoin))
 }

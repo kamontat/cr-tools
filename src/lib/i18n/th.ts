@@ -332,7 +332,6 @@ export const th: Messages = {
 			typeHint: "พิมพ์หรือวางโค้ด",
 			typeCount: (n: number, total: number) => `${n} จาก ${total} ตัวอักษร`,
 			sections: "ส่วนของตัวแก้ไข",
-			verdictAuto: "เกมเล่นให้ตลอดทาง: ออโต้เต็มรูปแบบ",
 			verdictSemi: (reasons: string) => `เป็นกึ่งออโต้เพราะมี ${reasons}`,
 			reasonsJoin: ", ",
 			takesNoBoosts: (episode: string) => `${episode} ไม่ใช้บูสต์`,

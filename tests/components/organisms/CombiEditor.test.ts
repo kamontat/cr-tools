@@ -108,8 +108,8 @@ const roleChip = (field: string) => screen.getByRole("button", { name: new RegEx
 const pickerOf = (field: string) => screen.getAllByRole("group", { name: field }).at(-1) as HTMLElement
 
 test("choosing a relay on an auto run shows the semi-auto verdict", async () => {
-	setup(setMode(newDraft(), "auto"))
-	expect(screen.getByText(en.combi.editor.verdictAuto)).toBeTruthy()
+	const { container } = setup(setMode(newDraft(), "auto"))
+	expect(container.querySelector(".verdict")?.textContent).toBe("")
 	await fireEvent.click(tab(en.combi.editor.tabs.cookies))
 	await fireEvent.click(roleChip(en.combi.describe.fields.relay))
 	const options = within(pickerOf(en.combi.describe.fields.relay)).getAllByRole("button", { pressed: false })

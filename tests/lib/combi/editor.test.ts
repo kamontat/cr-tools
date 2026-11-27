@@ -20,10 +20,11 @@ test("a carried id the list does not offer is appended, once", () => {
 	expect(options.some((option) => option.id === anyIdFor("pets"))).toBe(false)
 })
 
-test("the verdict is empty by hand, full auto alone, and names what needs a hand", () => {
+test("the verdict is empty by hand and on full auto, and names what needs a hand", () => {
 	expect(verdictText(newDraft(), en)).toBe("")
 	const auto = setMode(newDraft(), "auto")
-	expect(verdictText(auto, en)).toBe(en.combi.editor.verdictAuto)
+	// The mode already says auto; a line repeating it is noise.
+	expect(verdictText(auto, en)).toBe("")
 	const semi = setRole(setRandomBoost(auto, "doubleCoins"), "relay", "01")
 	expect(verdictText(semi, en)).toBe(
 		en.combi.editor.verdictSemi(`${RANDOM_BOOST_LABELS.doubleCoins}, ${en.combi.editor.relayReason}`),
