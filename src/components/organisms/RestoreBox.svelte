@@ -309,7 +309,15 @@ const typed = (event: KeyboardEvent) => {
 .preview {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--gap);
+}
+
+/* What a restore would bring, sunken under the row like a sunken Surface. */
+.preview {
+	padding: var(--pad);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 }
 
 .notice,
@@ -333,12 +341,17 @@ const typed = (event: KeyboardEvent) => {
 
 .input {
 	width: 100%;
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	padding: 8px var(--pad);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 	color: var(--text);
 	font: inherit;
+}
+
+.input:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+	border-color: var(--accent);
 }
 
 .text {
@@ -360,6 +373,6 @@ a {
 
 .acts {
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--stack);
 }
 </style>

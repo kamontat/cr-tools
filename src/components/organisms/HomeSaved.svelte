@@ -1,6 +1,9 @@
 <script lang="ts">
 import { onDestroy } from "svelte"
 
+import Button from "#components/atoms/Button.svelte"
+import CodeTiles from "#components/atoms/CodeTiles.svelte"
+import Surface from "#components/atoms/Surface.svelte"
 import Toast from "#components/atoms/Toast.svelte"
 import LoadoutIcons from "#components/molecules/LoadoutIcons.svelte"
 import { copyText } from "#lib/clipboard"
@@ -45,19 +48,16 @@ const copy = async (code: string) => {
 		</div>
 		<ul>
 			{#each latest as entry (entry.code)}
-				<li>
-					<span class="code">{combiSectionOf(entry.code)}</span>
+				<Surface element="li" class="entry">
+					<CodeTiles code={combiSectionOf(entry.code)} />
 					<LoadoutIcons loadout={rowLoadout(entry.code)} size={24} />
 					{#if descriptionTitle(entry.description) !== ""}
 						<span class="note">{descriptionTitle(entry.description)}</span>
 					{/if}
-					<button
-						type="button"
-						aria-label={m.combi.share.copyFull(combiSectionOf(entry.code))}
-						onclick={() => copy(entry.code)}>
+					<Button aria-label={m.combi.share.copyFull(combiSectionOf(entry.code))} onclick={() => copy(entry.code)}>
 						{m.combi.share.copy}
-					</button>
-				</li>
+					</Button>
+				</Surface>
 			{/each}
 		</ul>
 	</section>
@@ -66,19 +66,21 @@ const copy = async (code: string) => {
 
 <style>
 .saved {
-	margin: 0 0 20px;
+	margin: 0 0 calc(var(--pad) * 1.5);
 }
 
 .head {
 	align-items: baseline;
 	justify-content: space-between;
-	gap: 12px;
-	margin-bottom: 8px;
+	gap: var(--gap);
+	margin-bottom: var(--stack);
 }
 
 h2 {
 	margin: 0;
+	font-family: var(--font-head);
 	font-size: 1rem;
+	font-weight: 500;
 }
 
 a {
@@ -89,27 +91,19 @@ a {
 ul {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-	gap: 12px;
+	gap: var(--gap);
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-li {
-	display: flex;
-	flex-direction: column;
+ul > :global(.entry) {
 	align-items: flex-start;
-	gap: 8px;
-	padding: 12px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
+	min-width: 0;
 }
 
-.code {
-	color: var(--code);
-	font-family: var(--mono);
-	font-weight: 600;
-	letter-spacing: 0.1em;
+ul > :global(.entry > .tiles) {
+	width: 100%;
 }
 
 .note {
@@ -119,27 +113,5 @@ li {
 	font-size: 0.875rem;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-}
-
-button {
-	min-height: 32px;
-	padding: 4px 12px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 600;
-	cursor: pointer;
-}
-
-button:hover {
-	background: var(--hover);
-}
-
-@media (pointer: coarse) {
-	button {
-		min-height: var(--tap);
-	}
 }
 </style>

@@ -1,6 +1,8 @@
 <script lang="ts">
 import type { Snippet } from "svelte"
 
+import Surface from "#components/atoms/Surface.svelte"
+
 interface Props {
 	label: string
 	/** Muted, on the right of the row. */
@@ -19,7 +21,7 @@ const uid = $props.id()
 </script>
 
 <!-- A row that opens in place: no pop-up, no dialog, a second press folds it. -->
-<section class="item">
+<Surface kind="row" element="section" class="item">
 	<button
 		type="button"
 		class="row"
@@ -39,20 +41,9 @@ const uid = $props.id()
 	{#if open}
 		<section class="body" id="{uid}-body" aria-labelledby="{uid}-label">{@render children()}</section>
 	{/if}
-</section>
+</Surface>
 
 <style>
-/* A section, not a div: the reset lays out only divs as columns, so this says it itself. */
-.item {
-	display: flex;
-	flex-direction: column;
-	border-bottom: 1px solid var(--line);
-}
-
-.item:last-child {
-	border-bottom: 0;
-}
-
 .row {
 	display: flex;
 	flex-flow: row nowrap;
@@ -60,18 +51,24 @@ const uid = $props.id()
 	gap: 12px;
 	width: 100%;
 	min-height: 44px;
-	padding: 10px 14px;
+	padding: var(--gap) var(--pad);
 	border: 0;
-	border-radius: var(--radius);
+	border-radius: calc(var(--radius-sm) - 2px);
 	background: none;
 	color: var(--text);
 	font: inherit;
+	font-family: var(--font-ui);
 	text-align: left;
 	cursor: pointer;
 }
 
 .row:hover {
 	background: var(--hover);
+}
+
+.row:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
 }
 
 .label {
@@ -96,13 +93,16 @@ const uid = $props.id()
 }
 
 .aside {
-	padding: 0 14px 10px;
+	padding: 0 var(--pad) var(--gap);
 }
 
+/* The open body, under a dashed divider. */
 .body {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
-	padding: 4px 14px 14px;
+	gap: var(--gap);
+	margin: 0 var(--pad);
+	padding: var(--gap) 0 var(--pad);
+	border-top: 1px dashed var(--line);
 }
 </style>
