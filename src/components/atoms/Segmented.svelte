@@ -24,24 +24,27 @@ let { label, options, value, onchange }: Props = $props()
 </div>
 
 <style>
+/* A sunken, outlined track; the picked option is a yellow pill outlined in ink. */
 .seg {
 	display: inline-flex;
 	flex-flow: row wrap;
-	gap: 2px;
-	padding: 2px;
-	border-radius: 9px;
-	background: var(--hover);
+	gap: 3px;
+	padding: 3px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 }
 
 /* Compact under a mouse; a finger gets the full tap height. */
 button {
-	min-height: 32px;
-	padding: 4px 12px;
+	min-height: 26px;
+	padding: 2px 10px;
 	border: 0;
-	border-radius: 7px;
+	border-radius: var(--radius-ctl);
 	background: none;
 	color: var(--muted);
-	font: inherit;
+	font-family: var(--font-ui);
+	font-size: 13px;
 	font-weight: 500;
 	cursor: pointer;
 }
@@ -52,9 +55,19 @@ button {
 	}
 }
 
-button[aria-pressed="true"] {
-	background: var(--surface);
+button:hover {
 	color: var(--text);
-	box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+}
+
+button[aria-pressed="true"] {
+	outline: var(--border) solid var(--ink);
+	outline-offset: calc(var(--border) * -1);
+	background: var(--pick);
+	color: var(--on-pick);
+}
+
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
 }
 </style>

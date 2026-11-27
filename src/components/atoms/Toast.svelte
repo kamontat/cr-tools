@@ -45,16 +45,19 @@ const float = (node: HTMLElement) => {
 	pointer-events: none;
 }
 
+/* A sticker note: yellow with an ink outline and shadow; a warning is plain, an error red. */
 button {
 	pointer-events: auto;
-	min-height: 40px;
-	padding: 9px 16px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	background: var(--text);
-	color: var(--bg);
-	font: inherit;
-	font-weight: 600;
+	min-height: 34px;
+	padding: 6px 14px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--pick);
+	box-shadow: var(--shadow-pop);
+	color: var(--on-pick);
+	font-family: var(--font-ui);
+	font-size: 13px;
+	font-weight: 500;
 	cursor: pointer;
 }
 
@@ -64,11 +67,18 @@ button {
 	}
 }
 
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
 button.warn {
-	background: var(--code);
+	background: var(--surface);
+	color: var(--text);
 }
 
 button.error {
+	border-color: var(--danger);
 	background: var(--danger);
 	color: var(--on-danger);
 }

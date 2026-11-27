@@ -2,6 +2,33 @@
 
 What changed in this project and why, newest first.
 
+## 2026-11-27: Sugar Rush buttons, choices, tabs and notices
+
+### BREAKING CHANGES
+
+- `Button`'s `plain` variant is now `secondary`, and the default. A call that passed
+  `variant="plain"` must pass `secondary` or nothing.
+
+### Features
+
+- `IconButton` is a quiet square button for close, back and more, named by its `label`.
+- `Surface` is the sticker container for cards, sunken boxes and list rows.
+- `Tag` is a small pill (`muted`, `outlined`, `filled`) for what a row is.
+- `CodeTiles` draws a combi name as one tile per character. A screen reader reads it once as
+  the code, and the characters still select and copy as the code.
+
+### Improvements
+
+- Buttons are sticker pills that press in when clicked. Every action is `primary` (rose)
+  or `secondary` (outlined in teal), with `danger` for deleting and a new `ghost` for
+  cancelling. Hovering keeps the text readable: outlined buttons tint, filled ones darken.
+- A segmented control is a sunken outlined track whose picked option is a yellow pill.
+- Filter chips are outlined pills; a picked chip turns yellow and leads with a check mark.
+- The selected tab has a thick rose bar under it.
+- Notices are yellow stickers; a warning is plain and an error red.
+- `Segmented`, `Chips`, `Tabs` and `Toast` read only tokens, so they leave the look test's
+  allow-list.
+
 ## 2026-11-26: Sugar Rush look planned, and its colours, fonts and style checks
 
 ### Improvements

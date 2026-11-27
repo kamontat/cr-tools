@@ -27,6 +27,9 @@ function pick(option: string) {
 			{#if option.icon}
 				<img width="20" height="20" src={option.icon} alt="" loading="lazy">
 			{/if}
+			{#if value.includes(option.value)}
+				<span class="check" aria-hidden="true">✓</span>
+			{/if}
 			<span>{option.label}</span>
 			{#if option.count !== undefined}
 				<span class="count" aria-hidden="true">{option.count}</span>
@@ -39,20 +42,22 @@ function pick(option: string) {
 .chips {
 	display: flex;
 	flex-flow: row wrap;
-	gap: 8px;
+	gap: 6px;
 }
 
+/* Outlined pills; a picked one turns yellow and leads with a check mark. */
 button {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	min-height: 32px;
-	padding: 4px 12px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
+	min-height: 26px;
+	padding: 2px 10px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
 	background: var(--surface);
-	color: var(--muted);
-	font: inherit;
+	color: var(--text);
+	font-family: var(--font-ui);
+	font-size: 13px;
 	cursor: pointer;
 }
 
@@ -62,10 +67,18 @@ button {
 	}
 }
 
+button:hover:not(:disabled, [aria-pressed="true"]) {
+	background: var(--hover);
+}
+
 button[aria-pressed="true"] {
-	border-color: var(--accent);
-	color: var(--text);
-	box-shadow: inset 0 0 0 1px var(--accent);
+	background: var(--pick);
+	color: var(--on-pick);
+}
+
+button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
 }
 
 button:disabled {
@@ -73,9 +86,13 @@ button:disabled {
 	cursor: not-allowed;
 }
 
+.check {
+	font-weight: 600;
+}
+
 /* How many the option would show: quieter than the label, digits in step down a list. */
 .count {
-	color: var(--muted);
+	opacity: 0.7;
 	font-size: 0.75rem;
 	font-variant-numeric: tabular-nums;
 }
@@ -83,7 +100,7 @@ button:disabled {
 img {
 	width: 20px;
 	height: 20px;
-	border-radius: 4px;
+	border-radius: calc(var(--radius-sm) - 6px);
 	object-fit: contain;
 }
 </style>

@@ -54,3 +54,10 @@ test("an option's count shows beside its label, out of its name", () => {
 	const alpha = screen.getByRole("button", { name: "Alpha" })
 	expect(alpha.querySelector(".count")?.textContent).toBe("3")
 })
+
+test("a picked chip starts with a check mark, which is not part of its name", () => {
+	render(Chips, { props: { label: "Pick", options, value: ["b"], onchange: vi.fn() } })
+	const beta = screen.getByRole("button", { name: "Beta" })
+	expect(beta.querySelector(".check")?.getAttribute("aria-hidden")).toBe("true")
+	expect(screen.getByRole("button", { name: "Alpha" }).querySelector(".check")).toBeNull()
+})
