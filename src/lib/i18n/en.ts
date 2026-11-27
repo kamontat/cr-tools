@@ -109,7 +109,15 @@ export const en = {
 		name: "Cookie Run tools",
 		intro: "Small tools for what the game doesn't write down. Everything stays in your browser.",
 	},
-	frame: { menu: "Menu", nav: "Site", home: "Home", settings: "Settings", close: "Close", resize: "Resize panel" },
+	frame: {
+		menu: "Menu",
+		nav: "Site",
+		home: "Home",
+		settings: "Settings",
+		close: "Close",
+		resize: "Resize panel",
+		expand: "Full height",
+	},
 	home: { saved: { title: "Latest saved codes", seeAll: "See all" } },
 	tools,
 	settings: {

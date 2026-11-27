@@ -509,7 +509,7 @@ const copy = async (code: string) => {
 			{filter}
 			{sort}
 			tab={view}
-			sheet={!docked}
+			overlay={!docked}
 			{shown}
 			onfilter={(next) => (filter = next)}
 			onsort={pickSort}

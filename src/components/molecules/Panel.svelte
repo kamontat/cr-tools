@@ -1,7 +1,9 @@
 <script lang="ts">
 import type { Snippet } from "svelte"
 
-import { clampWidth, defaultWidth, MIN_WIDTH, maxRatio, readWidth, STEP, writeWidth } from "#lib/panel-width"
+import IconButton from "#components/atoms/IconButton.svelte"
+import ResizeEdge from "#components/atoms/ResizeEdge.svelte"
+import { clampWidth, defaultWidth, MIN_WIDTH, maxRatio, readWidth, writeWidth } from "#lib/panel-width"
 import { localStore } from "#lib/storage"
 
 interface Props {
@@ -67,49 +69,13 @@ const dock = (node: HTMLElement) => {
 /** The panel's right edge, which a drag measures from. */
 const rightEdge = () => section?.getBoundingClientRect().right || viewport
 
-const onpointerdown = (event: PointerEvent) => {
-	if (event.button !== 0) return
-	event.preventDefault()
-	dragging = true
-	try {
-		;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
-	} catch {
-		// Without capture the drag still follows moves over the handle.
-	}
-}
-
-const onpointermove = (event: PointerEvent) => {
-	// The handle is the left edge, so the width is the distance to the right one.
-	if (dragging) resize(rightEdge() - event.clientX)
-}
-
-/** Ends a drag wherever the button comes up, or when the handle loses the pointer. */
-const onpointerup = () => {
-	if (!dragging) return
-	dragging = false
-	writeWidth(store, id, width)
-}
-
-const onseparatorkeydown = (event: KeyboardEvent) => {
-	// The handle is the panel's left edge: left widens, right narrows.
-	const delta = event.key === "ArrowLeft" ? STEP : event.key === "ArrowRight" ? -STEP : 0
-	if (delta === 0) return
-	event.preventDefault()
-	resize(width + delta)
-	writeWidth(store, id, width)
-}
-
-const ondblclick = () => {
+const reset = () => {
 	chosen = null
 	writeWidth(store, id, null)
 }
 </script>
 
-<svelte:window
-	onresize={() => (viewport = window.innerWidth)}
-	{onpointerup}
-	onpointercancel={onpointerup}
-	onblur={onpointerup} />
+<svelte:window onresize={() => (viewport = window.innerWidth)} />
 
 {#if open}
 	<section
@@ -121,14 +87,14 @@ const ondblclick = () => {
 		{@attach dock}>
 		<header class="panel-head">
 			{#if back}
-				<button type="button" class="panel-close panel-back" aria-label={closeLabel} onclick={onclose}>←</button>
+				<IconButton label={closeLabel} onclick={onclose}>←</IconButton>
 			{/if}
 			<h2 id={titleId}>{title}</h2>
 			{#if actions}
 				<div row class="panel-actions">{@render actions()}</div>
 			{/if}
 			{#if !back}
-				<button type="button" class="panel-close" aria-label={closeLabel} onclick={onclose}>✕</button>
+				<IconButton label={closeLabel} onclick={onclose}>✕</IconButton>
 			{/if}
 		</header>
 		<div class="panel-body">{@render children()}</div>
@@ -136,30 +102,22 @@ const ondblclick = () => {
 			<footer class="panel-foot">{@render footer()}</footer>
 		{/if}
 		{#if !back}
-			<!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-			<!-- biome-ignore lint/a11y/useSemanticElements: a focusable splitter is a widget; <hr> cannot take focus or keys -->
-			<div
-				class="panel-resize"
-				role="separator"
-				aria-orientation="vertical"
-				aria-label={resizeLabel}
-				aria-valuemin={MIN_WIDTH}
-				aria-valuemax={Math.round(viewport * maxRatio(id))}
-				aria-valuenow={width}
-				tabindex="0"
-				{onpointerdown}
-				{onpointermove}
-				{onpointerup}
-				onpointercancel={onpointerup}
-				onlostpointercapture={onpointerup}
-				onkeydown={onseparatorkeydown}
-				{ondblclick}></div>
+			<ResizeEdge
+				label={resizeLabel}
+				value={width}
+				min={MIN_WIDTH}
+				max={Math.round(viewport * maxRatio(id))}
+				onresize={resize}
+				oncommit={() => writeWidth(store, id, width)}
+				onreset={reset}
+				{rightEdge}
+				bind:dragging />
 		{/if}
 	</section>
 {/if}
 
 <style>
-/* A column beside the page, not over it. */
+/* A column beside the page, not over it, with Overlay's head, body and foot. */
 .panel {
 	container: panel / inline-size;
 	position: relative;
@@ -170,13 +128,14 @@ const ondblclick = () => {
 	height: 100%;
 	background: var(--surface);
 	color: var(--text);
-	border-left: 1px solid var(--line);
+	border-left: var(--border) solid var(--ink);
 	outline: none;
 }
 
 /* Below the dock breakpoint the editor is the page, as wide as it. */
 .panel[data-layout="view"] {
 	width: 100%;
+	border-left: 0;
 }
 
 .panel.resizing {
@@ -186,9 +145,10 @@ const ondblclick = () => {
 
 .panel-head {
 	display: flex;
+	flex: none;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 12px 10px 20px;
+	gap: var(--stack);
+	padding: var(--pad) var(--pad) var(--stack) calc(var(--pad) + 4px);
 }
 
 .panel-head h2 {
@@ -196,7 +156,9 @@ const ondblclick = () => {
 	min-width: 0;
 	margin: 0;
 	overflow: hidden;
-	font-size: 17px;
+	font-family: var(--font-head);
+	font-size: 16px;
+	font-weight: 600;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
@@ -207,74 +169,26 @@ const ondblclick = () => {
 	gap: 6px;
 }
 
-.panel-close {
-	display: grid;
-	place-items: center;
-	flex: none;
-	width: var(--tap);
-	height: var(--tap);
-	border: 0;
-	border-radius: var(--radius);
-	background: none;
-	color: var(--muted);
-	font-size: 18px;
-	cursor: pointer;
-}
-
-.panel-close:hover {
-	background: var(--hover);
-	color: var(--text);
-}
-
 .panel-body {
 	flex: 1;
 	min-height: 0;
 	overflow: auto;
-	gap: 14px;
-	padding: 0 20px 24px;
+	gap: var(--gap);
+	padding: 0 calc(var(--pad) + 4px) var(--pad);
 }
 
 .panel-foot {
 	display: flex;
-	gap: 8px;
-	padding: 12px 20px;
+	flex: none;
+	align-items: center;
+	gap: var(--stack);
+	padding: var(--pad) calc(var(--pad) + 4px);
 	border-top: 1px solid var(--line);
 }
 
-.panel-resize {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	left: -5px;
-	z-index: 1;
-	width: 10px;
-	cursor: ew-resize;
-	touch-action: none;
-	outline: none;
-}
-
-.panel-resize::after {
-	content: "";
-	position: absolute;
-	top: 50%;
-	left: 3px;
-	width: 4px;
-	height: 44px;
-	margin-top: -22px;
-	border-radius: 999px;
-	background: var(--line);
-	transition: background 0.15s;
-}
-
-.panel-resize:hover::after,
-.panel-resize:focus-visible::after,
-.resizing .panel-resize::after {
-	background: var(--accent);
-}
-
 /* A view's arrow sits at the header's start. */
-.panel-back {
-	margin: 0 4px 0 -6px;
+[data-layout="view"] .panel-head {
+	padding-left: var(--pad);
 }
 
 /* A narrow panel, such as the editor on a phone: the title keeps its line with ← or ✕, and the actions take the row under it. */
@@ -283,7 +197,7 @@ const ondblclick = () => {
 		flex-wrap: wrap;
 	}
 
-	.panel-close {
+	.panel-head > :global(.icon-btn) {
 		order: 2;
 	}
 
@@ -293,7 +207,7 @@ const ondblclick = () => {
 		justify-content: flex-end;
 	}
 
-	.panel-back {
+	[data-layout="view"] .panel-head > :global(.icon-btn) {
 		order: 0;
 	}
 }

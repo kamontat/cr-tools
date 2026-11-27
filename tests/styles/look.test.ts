@@ -94,21 +94,15 @@ const looseShapes = (css: string): string[] =>
  * longer breaks a check must leave its list, so the lists only shrink.
  */
 const allowed: Record<"colour" | "layer" | "shape", string[]> = {
-	colour: ["src/components/organisms/CombiFilter.svelte", "src/components/organisms/Sidebar.astro"],
-	layer: [
-		"src/components/molecules/Panel.svelte",
-		"src/components/organisms/CombiEditor.svelte",
-		"src/components/organisms/CombiFilter.svelte",
-	],
+	colour: ["src/components/organisms/Sidebar.astro"],
+	layer: ["src/components/organisms/CombiEditor.svelte"],
 	shape: [
 		"src/components/atoms/EntryIcon.svelte",
 		"src/components/molecules/CodeDisplay.svelte",
 		"src/components/molecules/EntryPicker.svelte",
 		"src/components/molecules/LoadoutIcons.svelte",
-		"src/components/molecules/Panel.svelte",
 		"src/components/organisms/CombiApp.svelte",
 		"src/components/organisms/CombiEditor.svelte",
-		"src/components/organisms/CombiFilter.svelte",
 		"src/components/organisms/CombiList.svelte",
 		"src/components/organisms/EditorMainTab.svelte",
 		"src/components/organisms/EditorTreasuresTab.svelte",

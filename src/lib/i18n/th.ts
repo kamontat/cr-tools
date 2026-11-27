@@ -90,7 +90,15 @@ export const th: Messages = {
 		name: "เครื่องมือ Cookie Run",
 		intro: "เครื่องมือเล็ก ๆ สำหรับสิ่งที่เกมไม่ได้จดไว้ให้ ทุกอย่างเก็บอยู่ในเบราว์เซอร์ของคุณ",
 	},
-	frame: { menu: "เมนู", nav: "เมนูหลัก", home: "หน้าแรก", settings: "ตั้งค่า", close: "ปิด", resize: "ปรับขนาดแผง" },
+	frame: {
+		menu: "เมนู",
+		nav: "เมนูหลัก",
+		home: "หน้าแรก",
+		settings: "ตั้งค่า",
+		close: "ปิด",
+		resize: "ปรับขนาดแผง",
+		expand: "ขยายเต็มจอ",
+	},
 	home: { saved: { title: "โค้ดที่บันทึกล่าสุด", seeAll: "ดูทั้งหมด" } },
 	tools: {
 		"combi-name": {
