@@ -94,9 +94,9 @@ const labels = $derived({
 	flex: none;
 	width: 34px;
 	height: 20px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	background: var(--hover);
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 	transition: background 0.15s;
 }
 
@@ -108,7 +108,7 @@ const labels = $derived({
 	width: 14px;
 	height: 14px;
 	border-radius: 50%;
-	background: var(--muted);
+	background: var(--ink);
 	transition: transform 0.15s;
 }
 

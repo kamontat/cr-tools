@@ -4,6 +4,7 @@ import type { Round } from "#lib/combi/rounds"
 import { onDestroy } from "svelte"
 
 import Button from "#components/atoms/Button.svelte"
+import Surface from "#components/atoms/Surface.svelte"
 import Toast from "#components/atoms/Toast.svelte"
 import { copyText } from "#lib/clipboard"
 import { combiSectionOf } from "#lib/combi/full-code"
@@ -78,7 +79,7 @@ let codeValue = $state<HTMLElement>()
 </script>
 
 <!-- In place, where Share was pressed: the editor's header, or a saved row. Never a pop-up. -->
-<section class="share" aria-labelledby="{uid}-title">
+<Surface element="section" class="share" aria-labelledby="{uid}-title">
 	<h3 id="{uid}-title" class="title">{m.combi.share.title}</h3>
 	<section class="box" aria-labelledby="{uid}-link">
 		<h4 id="{uid}-link">{m.combi.share.link}</h4>
@@ -105,20 +106,10 @@ let codeValue = $state<HTMLElement>()
 		</div>
 	</section>
 	<Toast message={toast?.message ?? null} tone={toast?.tone ?? "info"} ondismiss={() => (toast = null)} />
-</section>
+</Surface>
 
 <style>
-/* Sections, not divs: the reset lays out only divs as columns, so these say it themselves. */
-.share {
-	display: flex;
-	flex-direction: column;
-	gap: 18px;
-	padding: 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-}
-
+/* The card is a Surface; the sections in it are not divs, so they lay themselves out as columns. */
 .title {
 	margin: 0;
 	font-size: 0.9375rem;
@@ -127,7 +118,7 @@ let codeValue = $state<HTMLElement>()
 .box {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--stack);
 }
 
 h4 {
@@ -139,9 +130,10 @@ h4 {
 
 .value {
 	margin: 0;
-	padding: 10px;
-	border-radius: var(--radius);
-	background: var(--hover);
+	padding: var(--stack) var(--gap);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 	color: var(--text);
 	font-size: 0.8125rem;
 	overflow-wrap: anywhere;
@@ -154,6 +146,6 @@ h4 {
 
 .acts {
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--stack);
 }
 </style>

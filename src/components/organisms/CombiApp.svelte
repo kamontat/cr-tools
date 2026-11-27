@@ -367,7 +367,7 @@ const focusList = async () => {
 	await tick()
 	const active = document.activeElement
 	if (active === null || active === document.body || !active.isConnected)
-		listBox?.querySelector<HTMLElement>("button.new")?.focus()
+		listBox?.querySelector<HTMLElement>(".tools > button.primary")?.focus()
 }
 
 const close = () => {
@@ -544,7 +544,7 @@ const copy = async (code: string) => {
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
-	gap: 24px;
+	gap: var(--pad);
 	min-width: 0;
 }
 
@@ -560,8 +560,9 @@ const copy = async (code: string) => {
 
 /* Below the dock breakpoint the editor takes the list's place, the page's whole width. */
 .viewing :global(.panel[data-layout="view"]) {
-	border: 1px solid var(--line);
-	border-radius: 10px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
 }
 
 /*
@@ -576,8 +577,9 @@ const copy = async (code: string) => {
 	align-self: flex-start;
 	height: calc(100dvh - var(--dock-top, 68px) - 16px);
 	max-height: calc(100dvh - var(--dock-top, 68px) - 16px);
-	max-width: calc(100% - var(--list-min) - 24px);
-	border: 1px solid var(--line);
-	border-radius: 10px;
+	max-width: calc(100% - var(--list-min) - var(--pad));
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
 }
 </style>

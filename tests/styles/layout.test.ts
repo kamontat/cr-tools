@@ -28,16 +28,18 @@ test("the docked editor stays in view and keeps its footer on screen", () => {
 
 test("an open row's details stand apart from its head, whose hover colour reaches its bottom edge", () => {
 	const details = rule(read("src/components/organisms/CombiList.svelte"), ".details")
-	expect(details).toMatch(/margin:\s*1\dpx 16px 14px/)
+	expect(details).toMatch(/margin:\s*var\(--stack\) var\(--pad\) var\(--pad\)/)
 })
 
 test("the Share box spaces its parts: its sections are columns, since the reset makes only divs one", () => {
 	const share = read("src/components/organisms/ShareBox.svelte")
-	for (const selector of [".share", ".box"]) {
-		expect(rule(share, selector), selector).toMatch(/display:\s*flex/)
-		expect(rule(share, selector), selector).toMatch(/flex-direction:\s*column/)
-		expect(rule(share, selector), selector).toMatch(/gap:\s*\d+px/)
-	}
+	// The card itself is a Surface, a flex column with a gap.
+	expect(share).toMatch(/<Surface element="section" class="share"/)
+	expect(rule(read("src/components/atoms/Surface.svelte"), ".surface")).toMatch(/flex-direction:\s*column/)
+	const box = rule(share, ".box")
+	expect(box).toMatch(/display:\s*flex/)
+	expect(box).toMatch(/flex-direction:\s*column/)
+	expect(box).toMatch(/gap:\s*var\(--stack\)/)
 })
 
 test("beside the editor, the list keeps room for its rows however wide the editor is dragged", () => {

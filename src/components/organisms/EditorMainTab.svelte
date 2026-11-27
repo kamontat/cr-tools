@@ -166,8 +166,8 @@ fieldset {
 	min-width: 0;
 	min-height: 76px;
 	padding: 6px 4px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
 	background: var(--surface);
 	color: var(--muted);
 	font: inherit;
@@ -180,9 +180,9 @@ fieldset {
 }
 
 .cell[aria-pressed="true"] {
-	border-color: var(--accent);
-	color: var(--text);
-	box-shadow: inset 0 0 0 1px var(--accent);
+	border-color: var(--ink);
+	background: var(--pick);
+	color: var(--on-pick);
 }
 
 .name {
@@ -193,11 +193,11 @@ fieldset {
 
 .floor {
 	width: 10rem;
-	min-height: 36px;
-	padding: 6px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	min-height: var(--ctl);
+	padding: 3px 14px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 	color: var(--text);
 	font: inherit;
 }

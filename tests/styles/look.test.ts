@@ -95,21 +95,8 @@ const looseShapes = (css: string): string[] =>
  */
 const allowed: Record<"colour" | "layer" | "shape", string[]> = {
 	colour: ["src/components/organisms/Sidebar.astro"],
-	layer: ["src/components/organisms/CombiEditor.svelte"],
-	shape: [
-		"src/components/atoms/EntryIcon.svelte",
-		"src/components/molecules/CodeDisplay.svelte",
-		"src/components/molecules/EntryPicker.svelte",
-		"src/components/molecules/LoadoutIcons.svelte",
-		"src/components/organisms/CombiApp.svelte",
-		"src/components/organisms/CombiEditor.svelte",
-		"src/components/organisms/CombiList.svelte",
-		"src/components/organisms/EditorMainTab.svelte",
-		"src/components/organisms/EditorTreasuresTab.svelte",
-		"src/components/organisms/Sidebar.astro",
-		"src/components/organisms/TopBar.astro",
-		"src/components/organisms/TreasureSlot.svelte",
-	],
+	layer: [],
+	shape: ["src/components/organisms/Sidebar.astro", "src/components/organisms/TopBar.astro"],
 }
 
 const checks = { colour: colourLiterals, layer: numericLayers, shape: looseShapes } as const
