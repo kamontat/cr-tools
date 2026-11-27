@@ -92,7 +92,7 @@ const copy = async () => {
 .rows {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--gap);
 }
 
 .notice {
@@ -112,7 +112,7 @@ const copy = async () => {
 	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
+	gap: var(--stack);
 }
 
 .what {
@@ -122,18 +122,23 @@ const copy = async () => {
 
 .acts {
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--stack);
 }
 
 .text {
 	width: 100%;
-	padding: 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--hover);
+	padding: var(--gap);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 	color: var(--text);
 	font-family: var(--mono);
 	font-size: 0.8125rem;
 	resize: vertical;
+}
+
+.text:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+	border-color: var(--accent);
 }
 </style>

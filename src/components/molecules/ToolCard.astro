@@ -21,21 +21,26 @@ const { slug, icon } = Astro.props
 .tool-card {
 	display: grid;
 	grid-template-columns: auto 1fr;
-	column-gap: 12px;
+	column-gap: var(--pad);
 	row-gap: 4px;
 	align-items: center;
-	padding: 16px;
+	padding: var(--pad) calc(var(--pad) + 4px);
 	color: var(--text);
 	text-decoration: none;
+	/* A Surface card's look: a link card in an .astro file cannot be the Svelte Surface. */
 	background: var(--surface);
-	border: 1px solid var(--line);
+	border: var(--border) solid var(--ink);
 	border-radius: var(--radius);
-	transition: border-color 0.15s;
+	box-shadow: var(--shadow);
+	transition:
+		box-shadow 0.15s,
+		transform 0.15s;
 }
 
+/* Lifts like a sticker peeled up. */
 .tool-card:hover {
-	background: var(--hover);
-	border-color: var(--accent);
+	box-shadow: var(--shadow-pop);
+	transform: translate(-1px, -1px);
 }
 
 .tool-card:focus-visible {
@@ -49,7 +54,8 @@ const { slug, icon } = Astro.props
 }
 
 .name {
-	font-weight: 600;
+	font-family: var(--font-head);
+	font-weight: 500;
 }
 
 .tagline {

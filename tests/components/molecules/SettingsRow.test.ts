@@ -48,6 +48,13 @@ test("it can start open, and the aside shows under the label", () => {
 	expect(screen.getByText("Inside the row")).toBeTruthy()
 })
 
+test("it is a Surface row, so rows stand apart as cards", () => {
+	const { container } = render(SettingsRow, { props: { label: "Storage", children } })
+	const item = container.querySelector(".item")
+	expect(item?.classList.contains("surface")).toBe(true)
+	expect(item?.classList.contains("row")).toBe(true)
+})
+
 test("two rows have different body ids", async () => {
 	render(SettingsRow, { props: { label: "One", open: true, children } })
 	render(SettingsRow, { props: { label: "Two", open: true, children } })

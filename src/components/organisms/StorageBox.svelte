@@ -115,9 +115,13 @@ const day = (time: number | null) =>
 	display: flex;
 	flex-flow: row wrap;
 	justify-content: space-between;
-	gap: 12px;
+	gap: var(--gap);
 	padding: 6px 0;
 	border-bottom: 1px solid var(--line);
+}
+
+.item:last-child {
+	border-bottom: 0;
 }
 
 dt {

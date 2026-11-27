@@ -214,5 +214,6 @@ Each piece is its own pull request against `main`.
 
 ## Open questions
 
-- Should Delete all confirm in an `Overlay` `dialog` instead of in place? The look
-  allows it. This spec does not change it.
+- Should Delete all confirm in an `Overlay` `dialog` instead of in place? Answered in
+  piece 5: yes. Delete all opens a danger dialog that starts on Cancel, in place of the
+  typed word.

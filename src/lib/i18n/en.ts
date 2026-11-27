@@ -117,6 +117,7 @@ export const en = {
 		close: "Close",
 		resize: "Resize panel",
 		expand: "Full height",
+		cancel: "Cancel",
 	},
 	home: { saved: { title: "Latest saved codes", seeAll: "See all" } },
 	tools,
@@ -200,8 +201,7 @@ export const en = {
 			},
 			deleteWarning: (n: number) =>
 				`This deletes all ${n} saved ${n === 1 ? "code" : "codes"} from this browser. It cannot be undone. Back up first.`,
-			deleteWord: "delete",
-			deletePrompt: (word: string) => `Type ${word} to confirm`,
+			deleteTitle: (n: number) => `Delete all ${n} saved ${n === 1 ? "code" : "codes"}?`,
 			deleteButton: "Delete all",
 			deleted: (n: number) => `Deleted ${n} ${n === 1 ? "code" : "codes"}.`,
 			nothingSaved: "No codes are saved yet.",

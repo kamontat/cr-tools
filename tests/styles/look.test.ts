@@ -88,24 +88,12 @@ const looseShapes = (css: string): string[] =>
 		)
 		.map(([property, value]) => `${property}: ${value}`)
 
-/**
- * Sources that still break a check, from before the Sugar Rush look. Each
- * later piece of that work empties its part of these lists. A file that no
- * longer breaks a check must leave its list, so the lists only shrink.
- */
-const allowed: Record<"colour" | "layer" | "shape", string[]> = {
-	colour: ["src/components/organisms/Sidebar.astro"],
-	layer: [],
-	shape: ["src/components/organisms/Sidebar.astro", "src/components/organisms/TopBar.astro"],
-}
-
 const checks = { colour: colourLiterals, layer: numericLayers, shape: looseShapes } as const
 
+// Every source reads its colours, layers and shapes from the tokens: no exceptions.
 describe.each(Object.keys(checks) as (keyof typeof checks)[])("the %s check", (name) => {
 	test.each(sources.filter((path) => path !== "src/styles/tokens.css"))("%s", (path) => {
-		const found = checks[name](styles(path, readFileSync(join(root, path), "utf8")))
-		if (allowed[name].includes(path)) expect(found, "fixed: take it off the allow-list").not.toEqual([])
-		else expect(found).toEqual([])
+		expect(checks[name](styles(path, readFileSync(join(root, path), "utf8")))).toEqual([])
 	})
 })
 

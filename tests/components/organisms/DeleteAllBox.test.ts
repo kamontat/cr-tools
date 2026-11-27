@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte"
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/svelte"
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
 import DeleteAllBox from "#components/organisms/DeleteAllBox.svelte"
@@ -27,45 +27,60 @@ const open = (m = en, store: Storage = window.localStorage, count = 2) => {
 	return ondeleted
 }
 
-const field = (m = en) =>
-	screen.getByRole("textbox", { name: m.settings.data.deletePrompt(m.settings.data.deleteWord) })
-const button = (m = en) => screen.getByRole("button", { name: m.settings.data.deleteButton }) as HTMLButtonElement
+/** The button in the row, which asks first. */
+const ask = (m = en) => screen.getByRole("button", { name: m.settings.data.deleteButton })
+const dialog = (m = en, n = 2) => screen.getByRole("dialog", { name: m.settings.data.deleteTitle(n) })
+const confirm = (m = en) => within(dialog(m)).getByRole("button", { name: m.settings.data.deleteButton })
 
-test("says it cannot be undone and starts disabled", () => {
-	open()
-	expect(screen.getByText(en.settings.data.deleteWarning(2))).toBeTruthy()
-	expect(button().disabled).toBe(true)
-})
-
-for (const typed of ["delete", "Delete", " delete ", "DELETE"]) {
-	test(`English: "${typed}" enables the button`, async () => {
-		open()
-		await fireEvent.input(field(), { target: { value: typed } })
-		expect(button().disabled).toBe(false)
-	})
-}
-
-for (const typed of ["delet", "deletee", "ลบ", ""]) {
-	test(`English: "${typed}" does not`, async () => {
-		open()
-		await fireEvent.input(field(), { target: { value: typed } })
-		expect(button().disabled).toBe(true)
-	})
-}
-
-test("Thai: ลบ enables, with spaces too; delete does not", async () => {
-	open(th)
-	await fireEvent.input(field(th), { target: { value: "delete" } })
-	expect(button(th).disabled).toBe(true)
-	await fireEvent.input(field(th), { target: { value: " ลบ " } })
-	expect(button(th).disabled).toBe(false)
-})
-
-test("pressing clears the saved codes, says so and tells the page", async () => {
+test("says it cannot be undone and deletes nothing until confirmed", async () => {
 	const ondeleted = open()
-	await fireEvent.input(field(), { target: { value: "delete" } })
-	await fireEvent.click(button())
+	expect(screen.getByText(en.settings.data.deleteWarning(2))).toBeTruthy()
+	expect(screen.queryByRole("dialog")).toBeNull()
+	await fireEvent.click(ask())
+	expect(dialog()).toBeTruthy()
+	expect(readSaved(window.localStorage)).toHaveLength(2)
+	expect(ondeleted).not.toHaveBeenCalled()
+})
+
+test("the confirm dialog is the danger kind, in the page's language", async () => {
+	open(th)
+	await fireEvent.click(ask(th))
+	expect(dialog(th).getAttribute("data-layout")).toBe("dialog")
+	expect(dialog(th).classList.contains("danger")).toBe(true)
+	expect(within(dialog(th)).getByText(th.settings.data.deleteWarning(2))).toBeTruthy()
+})
+
+test("Cancel closes the dialog and keeps the codes", async () => {
+	const ondeleted = open()
+	await fireEvent.click(ask())
+	await fireEvent.click(within(dialog()).getByRole("button", { name: en.frame.cancel }))
+	expect(screen.queryByRole("dialog")).toBeNull()
+	expect(readSaved(window.localStorage)).toHaveLength(2)
+	expect(ondeleted).not.toHaveBeenCalled()
+})
+
+test("Escape closes the dialog and keeps the codes", async () => {
+	open()
+	await fireEvent.click(ask())
+	await fireEvent.keyDown(dialog(), { key: "Escape" })
+	expect(screen.queryByRole("dialog")).toBeNull()
+	expect(readSaved(window.localStorage)).toHaveLength(2)
+})
+
+test("the dialog starts on Cancel, so Enter does not delete", async () => {
+	open()
+	await fireEvent.click(ask())
+	await waitFor(() =>
+		expect(document.activeElement).toBe(within(dialog()).getByRole("button", { name: en.frame.cancel })),
+	)
+})
+
+test("confirming clears the saved codes, closes the dialog, says so and tells the page", async () => {
+	const ondeleted = open()
+	await fireEvent.click(ask())
+	await fireEvent.click(confirm())
 	expect(readSaved(window.localStorage)).toEqual([])
+	expect(screen.queryByRole("dialog")).toBeNull()
 	expect(await screen.findByText(en.settings.data.deleted(2))).toBeTruthy()
 	expect(ondeleted).toHaveBeenCalledTimes(1)
 })
@@ -78,8 +93,8 @@ test("a browser that refuses keeps the entries and says so", async () => {
 		},
 	} as unknown as Storage
 	const ondeleted = open(en, refusing)
-	await fireEvent.input(field(), { target: { value: "delete" } })
-	await fireEvent.click(button())
+	await fireEvent.click(ask())
+	await fireEvent.click(confirm())
 	expect(await screen.findByText(en.settings.data.notStored)).toBeTruthy()
 	expect(ondeleted).not.toHaveBeenCalled()
 	expect(readSaved(window.localStorage)).toHaveLength(2)
@@ -89,14 +104,13 @@ test("with nothing saved it says so and offers nothing", () => {
 	open(en, window.localStorage, 0)
 	expect(screen.getByText(en.settings.data.nothingSaved)).toBeTruthy()
 	expect(screen.queryByRole("button")).toBeNull()
-	expect(screen.queryByRole("textbox")).toBeNull()
 })
 
 test("the Deleted notice goes when codes are saved again", async () => {
 	const ondeleted = vi.fn()
 	const { rerender } = render(DeleteAllBox, { props: { store: window.localStorage, count: 2, m: en, ondeleted } })
-	await fireEvent.input(field(), { target: { value: "delete" } })
-	await fireEvent.click(button())
+	await fireEvent.click(ask())
+	await fireEvent.click(confirm())
 	await rerender({ store: window.localStorage, count: 0, m: en, ondeleted })
 	expect(screen.getByText(en.settings.data.deleted(2))).toBeTruthy()
 	await rerender({ store: window.localStorage, count: 3, m: en, ondeleted })

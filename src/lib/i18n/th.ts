@@ -98,6 +98,7 @@ export const th: Messages = {
 		close: "ปิด",
 		resize: "ปรับขนาดแผง",
 		expand: "ขยายเต็มจอ",
+		cancel: "ยกเลิก",
 	},
 	home: { saved: { title: "โค้ดที่บันทึกล่าสุด", seeAll: "ดูทั้งหมด" } },
 	tools: {
@@ -185,8 +186,7 @@ export const th: Messages = {
 				},
 			},
 			deleteWarning: (n: number) => `จะลบโค้ดที่บันทึกไว้ทั้ง ${n} โค้ดจากเบราว์เซอร์นี้ และย้อนกลับไม่ได้ สำรองข้อมูลก่อน`,
-			deleteWord: "ลบ",
-			deletePrompt: (word: string) => `พิมพ์ ${word} เพื่อยืนยัน`,
+			deleteTitle: (n: number) => `ลบโค้ดทั้ง ${n} โค้ด?`,
 			deleteButton: "ลบทั้งหมด",
 			deleted: (n: number) => `ลบแล้ว ${n} โค้ด`,
 			nothingSaved: "ยังไม่มีโค้ดที่บันทึกไว้",

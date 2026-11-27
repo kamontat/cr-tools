@@ -2,6 +2,7 @@
 import type { Messages } from "#lib/i18n/messages"
 
 import Button from "#components/atoms/Button.svelte"
+import Overlay from "#components/molecules/Overlay.svelte"
 import { clearSaved } from "#lib/combi/saved"
 
 interface Props {
@@ -14,10 +15,10 @@ interface Props {
 
 let { store, count, m, ondeleted }: Props = $props()
 
-const uid = $props.id()
 const t = $derived(m.settings.data)
 
-let typed = $state("")
+/** The confirm dialog is open. */
+let asking = $state(false)
 let notice = $state<{ text: string; tone: "info" | "error" } | null>(null)
 
 // The result belongs to the list it was about: codes saved again drop it.
@@ -27,17 +28,14 @@ $effect(() => {
 	before = count
 })
 
-const ready = $derived(typed.trim().toLowerCase() === t.deleteWord.toLowerCase())
-
 const remove = () => {
-	if (!ready) return
+	asking = false
 	const was = count
 	const result = clearSaved(store)
 	if (!result.stored) {
 		notice = { text: t.notStored, tone: "error" }
 		return
 	}
-	typed = ""
 	notice = { text: t.deleted(was), tone: "info" }
 	ondeleted()
 }
@@ -48,18 +46,8 @@ const remove = () => {
 		<p class="line" role={notice === null ? undefined : "status"}>{notice?.text ?? t.nothingSaved}</p>
 	{:else}
 		<p class="line">{t.deleteWarning(count)}</p>
-		<label class="field" for="{uid}-word">{t.deletePrompt(t.deleteWord)}</label>
-		<input
-			id="{uid}-word"
-			name="delete-word"
-			type="text"
-			class="input"
-			autocomplete="off"
-			autocapitalize="off"
-			spellcheck="false"
-			bind:value={typed}>
 		<div row class="acts">
-			<Button variant="danger" disabled={!ready} onclick={remove}>{t.deleteButton}</Button>
+			<Button variant="danger" onclick={() => (asking = true)}>{t.deleteButton}</Button>
 		</div>
 		{#if notice !== null}
 			<p class="line" class:error={notice.tone === "error"} role={notice.tone === "error" ? "alert" : "status"}>
@@ -69,12 +57,31 @@ const remove = () => {
 	{/if}
 </section>
 
+<!-- Cannot be undone, so it asks in the danger dialog, which starts on Cancel. -->
+{#if asking}
+	<Overlay
+		kind="dialog"
+		danger
+		id="delete-all"
+		title={t.deleteTitle(count)}
+		open={true}
+		onclose={() => (asking = false)}
+		closeLabel={m.frame.close}
+		focus=".overlay-foot .btn.ghost">
+		<p class="line">{t.deleteWarning(count)}</p>
+		{#snippet footer()}
+			<Button variant="ghost" onclick={() => (asking = false)}>{m.frame.cancel}</Button>
+			<Button variant="danger" onclick={remove}>{t.deleteButton}</Button>
+		{/snippet}
+	</Overlay>
+{/if}
+
 <style>
 /* A section, not a div: the reset lays out only divs as columns, so this says it itself. */
 .delete {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: var(--gap);
 }
 
 .line {
@@ -86,22 +93,8 @@ const remove = () => {
 	color: var(--danger);
 }
 
-.field {
-	font-weight: 600;
-}
-
-.input {
-	width: 100%;
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-}
-
 .acts {
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: var(--stack);
 }
 </style>

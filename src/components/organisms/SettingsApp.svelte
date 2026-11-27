@@ -1,5 +1,6 @@
 <script lang="ts">
 import Segmented from "#components/atoms/Segmented.svelte"
+import Surface from "#components/atoms/Surface.svelte"
 import SettingsRow from "#components/molecules/SettingsRow.svelte"
 import BackupBox from "#components/organisms/BackupBox.svelte"
 import DeleteAllBox from "#components/organisms/DeleteAllBox.svelte"
@@ -82,14 +83,18 @@ const shown = (row: AboutRow) => {
 	<section aria-labelledby="set-appearance">
 		<h2 id="set-appearance">{m.settings.appearance}</h2>
 		<div class="rows">
-			<div class="row">
-				<span>{m.settings.language}</span>
-				<Segmented label={m.settings.language} options={langs} value={lang} onchange={pickLang} />
-			</div>
-			<div class="row">
-				<span>{m.settings.theme}</span>
-				<Segmented label={m.settings.theme} options={themes} value={theme} onchange={pick} />
-			</div>
+			<Surface kind="row">
+				<div class="row">
+					<span>{m.settings.language}</span>
+					<Segmented label={m.settings.language} options={langs} value={lang} onchange={pickLang} />
+				</div>
+			</Surface>
+			<Surface kind="row">
+				<div class="row">
+					<span>{m.settings.theme}</span>
+					<Segmented label={m.settings.theme} options={themes} value={theme} onchange={pick} />
+				</div>
+			</Surface>
 		</div>
 	</section>
 
@@ -143,21 +148,23 @@ const shown = (row: AboutRow) => {
 
 <style>
 .settings {
-	gap: 20px;
+	gap: calc(var(--pad) * 1.5);
 	max-width: 640px;
 }
 
 h2 {
-	margin: 0 0 8px;
+	margin: 0 0 var(--stack);
 	color: var(--muted);
-	font-size: 13px;
-	font-weight: 600;
+	font-family: var(--font-head);
+	font-size: 0.875rem;
+	font-weight: 500;
 }
 
+/* Each row is its own Surface; the rows stack apart. */
 .rows {
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	display: flex;
+	flex-direction: column;
+	gap: var(--stack);
 }
 
 .row {
@@ -165,13 +172,9 @@ h2 {
 	flex-flow: row wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 14px;
-	border-bottom: 1px solid var(--line);
-}
-
-.row:last-child {
-	border-bottom: 0;
+	gap: var(--gap);
+	padding: var(--gap) var(--pad);
+	font-family: var(--font-ui);
 }
 
 .bar {
@@ -181,16 +184,19 @@ h2 {
 
 .about {
 	margin: 0;
-	padding: 0 14px 6px;
 }
 
 .item {
 	display: flex;
 	flex-flow: row wrap;
 	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 0;
+	gap: var(--gap);
+	padding: var(--stack) 0;
 	border-bottom: 1px solid var(--line);
+}
+
+.item:last-child {
+	border-bottom: 0;
 }
 
 dt {

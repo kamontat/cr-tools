@@ -52,6 +52,15 @@ test("five saved codes show three, newest first, with the note's first line", ()
 	expect(items[2]?.textContent).toContain("Note 2")
 })
 
+test("each code is a card with its 10 characters as tiles and the shared Copy button", () => {
+	seed(1)
+	render(HomeSaved)
+	expect(screen.getByRole("listitem").classList.contains("surface")).toBe(true)
+	expect(screen.getByRole("img", { name: "MS0A000000" }).querySelectorAll(".tile")).toHaveLength(10)
+	const copy = screen.getByRole("button", { name: en.combi.share.copyFull("MS0A000000") })
+	expect(copy.classList.contains("btn")).toBe(true)
+})
+
 test("Copy copies the 10 characters", async () => {
 	seed(2)
 	const writeText = vi.fn().mockResolvedValue(undefined)
