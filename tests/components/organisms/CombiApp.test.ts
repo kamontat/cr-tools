@@ -537,15 +537,22 @@ test("the sort orders the list and is remembered", async () => {
 	expect(rows()[0]?.textContent).toContain(combiSectionOf(moneyCode))
 })
 
-test("below 1100px Filter opens a sheet over the bottom of the page, and Show N codes closes it", async () => {
+test("below 1100px Filter opens a side panel over the page, and Show N codes closes it", async () => {
 	viewport(800)
 	render(CombiApp)
 	await fireEvent.click(filterButton())
 	expect(viewPanel()).toBeNull()
-	const sheet = screen.getByRole("region", { name: list.filter })
-	expect(sheet.matches("section.sheet")).toBe(true)
-	await fireEvent.click(within(sheet).getByRole("button", { name: list.showCodes(2) }))
-	expect(screen.queryByRole("region", { name: list.filter })).toBeNull()
+	const overlay = screen.getByRole("dialog", { name: list.filter })
+	expect(overlay.getAttribute("data-layout")).toBe("side")
+	await fireEvent.click(within(overlay).getByRole("button", { name: list.showCodes(2) }))
+	expect(screen.queryByRole("dialog", { name: list.filter })).toBeNull()
+})
+
+test("below 700px Filter opens a sheet from the bottom", async () => {
+	viewport(400)
+	render(CombiApp)
+	await fireEvent.click(filterButton())
+	expect(screen.getByRole("dialog", { name: list.filter }).getAttribute("data-layout")).toBe("sheet")
 })
 
 test("the docked editor and the filter panel take turns: Filter sets the editor aside, its edits kept, and a row brings the editor back", async () => {

@@ -16,6 +16,7 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `Segmented` | atom | `.svelte` | Segmented buttons: `label` (the group's name), `options` (`{ value, label, lang? }[]`), `value`, `onchange`. Each option is a `button` with `aria-pressed`; an option's `lang` goes on its button, for a label in another language than the page's (a language's own name). |
 | `Button` | atom | `.svelte` | The one action button: `variant`, `type` (default `button`), `disabled`, `onclick`, any other button attribute such as `aria-*`, and a `children` snippet. Every action is `primary` (the primary colour filled; the one main action of a group) or `secondary` (outlined in the secondary colour; the default, every action beside it). `danger` deletes and `ghost` cancels or clears. A group has at most one `primary`. |
 | `IconButton` | atom | `.svelte` | A square, quiet button for close, back and more: `label` (its name, since an icon names nothing), a `children` snippet with the icon, and any other button attribute. |
+| `ResizeEdge` | atom | `.svelte` | A panel's left-edge resize handle, shared by `Panel` and `Overlay`: a focusable `separator` with `label`, `value`, `min`, `max`, `onresize`, `oncommit`, `onreset`, `rightEdge` and a bindable `dragging`. A drag measures from `rightEdge()`; ← and → move it 16px (`STEP`), Home and End go to the limits, a double-click resets. |
 | `Surface` | atom | `.svelte` | The sticker container every card, box and row uses: `kind` (`card` outlined, shadowed and padded; `sunken` into the page, no shadow; `row` a list row's sticker, unpadded), `element` (`div` by default, or `section`, `article`, `aside`, `li`), `class`, any other attribute, and a `children` snippet. |
 | `Tag` | atom | `.svelte` | A small pill for what a row is: `tone` (`muted` by default, `outlined`, `filled`, most important filled) and a `children` snippet. |
 | `CodeTiles` | atom | `.svelte` | A combi name as one tile per character: `code` and an optional `label`. It is one `role="img"` named by the label or the code, so a screen reader reads it once; the characters stay selectable and copy as the code. |
@@ -25,7 +26,8 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `Tabs` | atom | `.svelte` | A tab strip with roving focus: `label`, `tabs` (`{ value, label, badge?, disabled? }[]`), `value`, `onchange`. |
 | `Toast` | atom | `.svelte` | A dismissible message in a status or alert live region by `tone` (`info`, `warn`, `error`): `message`, `tone`, `ondismiss`. It moves itself to the end of `<body>` and sits on `--z-toast`, above the frame. |
 | `ToolCard` | molecule | `.astro` | A Home card: `slug`, `icon` — a `TOOLS` entry spreads straight in. Name and tagline come from the catalogues' `tools[slug]` through `Text`. |
-| `Panel` | molecule | `.svelte` | The one panel: a section in the page, beside the saved list or as the page's own view. See below. |
+| `Panel` | molecule | `.svelte` | The docked panel: a section in the page, beside the saved list or as the page's own view. See below. |
+| `Overlay` | molecule | `.svelte` | The one pop-up: `kind` `panel` (a side panel from 700px, a sheet below) or `dialog` (centred, `danger` for what cannot be undone). See below. |
 | `CodeDisplay` | molecule | `.svelte` | The full code drawn character by character with the field each belongs to: `code`, `summary`, `hints`, `onjump`, `canJump`. |
 | `EntryPicker` | molecule | `.svelte` | A searchable grid of catalogue entries with icons: `label`, `searchLabel`, `options`, `value`, `onpick`, optional clear. |
 | `Field` | molecule | `.svelte` | A labelled editor field with its help line and optional note: `id`, `label`, `help`, `helpLabel`, `note`, and a `children` snippet. |
@@ -37,7 +39,7 @@ Layouts are the `project-layouts` skill; routes are the `project-pages` skill.
 | `HomeSaved` | organism | `.svelte` | Home's latest three saved codes (code, `LoadoutIcons`, the note's first line, Copy for the 10 characters) and a See all link to `/combi-name/`; renders nothing with no saved codes. |
 | `CombiApp` | organism | `.svelte` | The combi page island: holds the draft, the saved list, the address bar and the notices (`Toast`), and sets the editor beside the list from `DOCK_MIN_WIDTH` (1100px) or in the list's place below it, with a back arrow and a step in the browser's history. It also holds the list's search, filter and sort (remembered through `writeListSort`) and which `CombiFilter` tab is open. Beside the list there is room for one panel: while the filter panel is open it takes the editor's place, the draft kept, and opening a code shuts it. |
 | `CombiList` | organism | `.svelte` | The saved list: New code, search (bindable `query`), the Filter and Sort buttons (`panel`, `onpanel`), how many show with a removable tag per pick of the bindable `filter`, the `sort` in words, then the rows and their New, Open, Copy and Share actions. |
-| `CombiFilter` | organism | `.svelte` | The list's Filter and Sort tabs (`tab`, `ontab`): goal, mode, episode, cookie and rounds filters with a count on each choice, and the sort with its order named in the sort's own words. A `Panel` (`id="list-view"`) beside the list from 1100px; below, with `sheet`, a sheet over the bottom of the page. |
+| `CombiFilter` | organism | `.svelte` | The list's Filter and Sort tabs (`tab`, `ontab`): goal, mode, episode, cookie and rounds filters with a count on each choice, and the sort with its order named in the sort's own words. A `Panel` (`id="list-view"`) beside the list from 1100px; below, with `overlay`, an `Overlay` panel: a side panel from 700px, a sheet below. |
 | `CombiEditor` | organism | `.svelte` | The editor in a `Panel` (beside the list, or as the page's view): the code display, the verdict and five tabs (Main, Cookies, Treasures, Boosts, Run log), with Copy, Share, Save and Update. |
 | `EditorMainTab`, `EditorRolesTab`, `EditorBoostsTab`, `EditorTreasuresTab`, `EditorRunLogTab` | organism | `.svelte` | One editor tab each: run settings, cookie / relay / pet, boosts, treasures, and the run log (stats and note). Each takes `uid`, `draft`, `m`, `onchange`. |
 | `TreasureSlot` | organism | `.svelte` | One treasure slot's alternatives and levels, written in option order. |
@@ -65,8 +67,28 @@ handle's names, which the caller passes in the page's language (`m.frame.close`,
 - `back` makes it the page's own view (`data-layout="view"`, the combi
   editor below 1100px in the list's place): the close button is a ← leading the header,
   the width is the page's, and nothing resizes.
-- The left edge is a `role="separator"` handle: drag, or ←/→ in 16px steps; double-click
-  resets to the default. A view (`back`) has none.
+- The left edge is a `ResizeEdge`: drag, or ←/→ in 16px steps, Home and End for the
+  limits; double-click resets to the default. A view (`back`) has none.
+- Its head, body and foot use `Overlay`'s spacing and type, so a docked panel, a side panel
+  and a sheet look alike.
+
+### Overlay
+
+`Overlay` takes `kind` (`panel` by default, or `dialog`), `id`, `title`, `open`, `onclose`, a
+`children` snippet, optional `footer` and `actions` snippets, `closeLabel`, and for a panel
+`resizeLabel` and `expandLabel` (`m.frame.resize`, `m.frame.expand`). `focus` is a selector
+for what takes focus on open (the overlay itself by default); `danger` marks a dialog.
+
+- It is a `role="dialog"` with `aria-modal` over a `--scrim` scrim, on `--z-sheet`. It
+  takes focus on open and hands it back on close, and shuts on Escape (unless a control
+  handled it), on the scrim and on its `IconButton` close.
+- `panel` is a side panel from the right from 700px (`RAIL_MIN_WIDTH`), with a
+  `ResizeEdge` and the same width rules and memory as `Panel` (`#lib/panel-width`). Below
+  700px it is a sheet from the bottom, up to 85% high, whose grab handle (a button named
+  `expandLabel`, with `aria-expanded`) toggles full height on a tap or ↑ and ↓, snaps to
+  full height when dragged up past 70% of the screen, and closes when dragged down 100px.
+  It switches between the two as the window crosses 700px, without closing.
+- `dialog` is centred, for an important answer only.
 
 ## Text in two languages
 
@@ -238,11 +260,12 @@ const { variant = "primary", type = "button", ...attrs } = Astro.props
   - a **centred dialog**, kept for an important interaction that needs an answer before
     anything else, such as confirming what cannot be undone.
 
-  Each takes focus when it opens and hands it back when it shuts, shuts on Escape and on
-  its backdrop, and stacks on the `--z-*` tokens (`--z-sheet` for a sheet). Content that
+  All three are `Overlay` (`kind="panel"` is the side panel and the sheet, `kind="dialog"`
+  the dialog); never build another. Each takes focus when it opens and hands it back when
+  it shuts, shuts on Escape and on its backdrop, and stacks on `--z-sheet`. Content that
   belongs to a row or to the page opens in place instead: the editor and the filter panel
-  dock beside the list as a `Panel`, Settings rows open as a `SettingsRow`, Share as
-  `ShareBox`.
+  dock beside the list as a `Panel` from 1100px, Settings rows open as a `SettingsRow`,
+  Share as `ShareBox`.
 - **Sets are written in table order.** A control that holds a set the codec encodes (goals,
   boosts, cookie powers, a treasure slot's alternatives) reports it filtered from its own
   options, never in click order — click order would give one build two codes. See the
@@ -304,11 +327,12 @@ component that hardcodes a colour also hardcodes a theme.
 - type: `--font-head` (headings, set on `h1`–`h4`), `--font-ui` (controls and labels),
   `--font-body` (on `body`) and `--mono`;
 - shape: `--radius`, `--radius-sm`, `--radius-ctl` (pills), `--border` (outline width),
-  `--shadow`, `--shadow-pop`, and `--shadow-btn`, which a button completes with its own
-  colour;
+  `--shadow`, `--shadow-pop`, and `--shadow-btn` and `--shadow-pop-at`, offsets a button
+  or a danger dialog completes with its own colour;
 - spacing: `--pad` (inside a surface), `--gap` (between its items), `--stack` (between
   sibling surfaces), `--ctl` (a control's height) and `--tap` (a touch target);
-- stacking: `--z-scrim`, `--z-sidebar`, `--z-topbar`, `--z-sheet`, `--z-toast`.
+- stacking: `--z-raised` (a part over its own box's content, such as a sticky tab strip),
+  `--z-scrim`, `--z-sidebar`, `--z-topbar`, `--z-sheet`, `--z-toast`.
 
 Labels are sentence case: no `text-transform: uppercase` and no `letter-spacing` (the
 spec's Look; letter-spacing also pulls Thai combining marks off their base).

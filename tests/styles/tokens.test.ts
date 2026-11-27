@@ -66,6 +66,7 @@ const shape: Record<string, string> = {
 	"--shadow": "2px 2px 0 var(--ink)",
 	"--shadow-pop": "4px 4px 0 var(--ink)",
 	"--shadow-btn": "2px 2px 0",
+	"--shadow-pop-at": "4px 4px 0",
 	"--pad": "12px",
 	"--gap": "10px",
 	"--stack": "8px",

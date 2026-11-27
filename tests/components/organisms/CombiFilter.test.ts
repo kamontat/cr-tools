@@ -48,7 +48,7 @@ afterEach(() => {
 	document.body.innerHTML = ""
 })
 
-type Over = { filter?: ListFilter; sort?: ListSort; tab?: "filter" | "sort"; sheet?: boolean; query?: string }
+type Over = { filter?: ListFilter; sort?: ListSort; tab?: "filter" | "sort"; overlay?: boolean; query?: string }
 
 function setup(over: Over = {}) {
 	const handlers = { onfilter: vi.fn(), onsort: vi.fn(), ontab: vi.fn(), onclose: vi.fn() }
@@ -58,7 +58,7 @@ function setup(over: Over = {}) {
 		filter: NO_FILTER,
 		sort: DEFAULT_SORT,
 		tab: "filter" as const,
-		sheet: false,
+		overlay: false,
 		shown: entries.length,
 		...over,
 		...handlers,
@@ -144,20 +144,21 @@ test("docked: a panel section beside the list, closed by its ✕", async () => {
 	expect(onclose).toHaveBeenCalled()
 })
 
-test("as a sheet: Show N codes, the backdrop and Escape close it", async () => {
-	const { container, onclose } = setup({ sheet: true })
+test("as an overlay: a modal dialog; Show N codes, the backdrop and Escape close it", async () => {
+	const { container, onclose } = setup({ overlay: true })
 	expect(container.querySelector("section.panel")).toBeNull()
-	expect(screen.getByRole("region", { name: t.filter })).toBeTruthy()
+	expect(container.querySelector(".sheet")).toBeNull()
+	expect(screen.getByRole("dialog", { name: t.filter })).toBeTruthy()
 	await fireEvent.click(screen.getByRole("button", { name: t.showCodes(3) }))
 	expect(onclose).toHaveBeenCalledTimes(1)
-	await fireEvent.click(container.querySelector(".scrim") as HTMLElement)
+	await fireEvent.click(container.querySelector(".overlay-scrim") as HTMLElement)
 	expect(onclose).toHaveBeenCalledTimes(2)
 	await fireEvent.keyDown(screen.getByRole("tab", { name: new RegExp(`^${t.filter}`) }), { key: "Escape" })
 	expect(onclose).toHaveBeenCalledTimes(3)
 })
 
-test("as a sheet, focus moves into it when it opens", async () => {
-	setup({ sheet: true })
+test("as an overlay, focus moves to its tab when it opens", async () => {
+	setup({ overlay: true })
 	await waitFor(() => expect(document.activeElement?.getAttribute("role")).toBe("tab"))
 })
 

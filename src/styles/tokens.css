@@ -42,6 +42,8 @@
 	--shadow-pop: 4px 4px 0 var(--ink);
 	/* A button adds its own colour; it drops the shadow when pressed. */
 	--shadow-btn: 2px 2px 0;
+	/* A danger dialog casts the pop shadow in its own colour. */
+	--shadow-pop-at: 4px 4px 0;
 
 	/* Spacing: inside a surface, between its items, between sibling surfaces. */
 	--pad: 12px;
@@ -50,7 +52,8 @@
 	--ctl: 32px;
 	--tap: 2.75rem;
 
-	/* Stacking, lowest first: the drawer's scrim, the sidebar over the page, the top bar, notices. */
+	/* Stacking, lowest first: a part raised within its own box, the drawer's scrim, the sidebar over the page, the top bar, notices. */
+	--z-raised: 1;
 	--z-scrim: 15;
 	--z-sidebar: 20;
 	--z-topbar: 30;
