@@ -2,7 +2,7 @@
 
 What changed in this project and why, newest first.
 
-## 2026-11-27: Sugar Rush buttons, choices, tabs and notices, and one pop-up for every panel
+## 2026-11-27: Sugar Rush buttons, choices, tabs and notices, one pop-up for every panel, and the combi page
 
 ### BREAKING CHANGES
 
@@ -40,6 +40,16 @@ What changed in this project and why, newest first.
 - The docked panel takes the Sugar Rush look, with the same header, body and footer as the
   pop-up, so a docked panel, a side panel and a sheet look alike. `Panel` and
   `CombiFilter` leave the look test's allow-list.
+- The combi page takes the Sugar Rush look. Each saved code is its own card, with mode,
+  episode and goals as tags, and the code open in the editor has a soft yellow tint instead
+  of a rose bar. New code, Filter, Sort and each row's actions are the shared `Button`;
+  Delete is plain red text until pressed once, then a filled red confirm button.
+- The editor draws the 10-character code as tiles, one per character, and clicking a
+  field's tiles still jumps to its tab. Its actions are the shared `Button`, its `⋯` menu
+  a card with the pop shadow, and the docked and full-page editor are outlined in ink.
+- Share is a `Surface` card, and a picked option is yellow everywhere on the page: the
+  pickers, the treasure levels and a treasure slot's All and Add buttons. Every combi page
+  component leaves the look test's allow-list.
 
 ### Decisions
 
@@ -47,6 +57,8 @@ What changed in this project and why, newest first.
   rather than two components, so a window resized while Filter is open keeps it open.
 - The danger dialog's red shadow reuses the pop shadow's offset through a new
   `--shadow-pop-at` token, because the look test allows only shadows built from tokens.
+- `CodeDisplay` draws tiles in the `CodeTiles` look instead of using `CodeTiles`, because
+  `CodeTiles` is one image for screen readers and cannot hold a jump button per field.
 
 ## 2026-11-26: Sugar Rush look planned, and its colours, fonts and style checks
 
