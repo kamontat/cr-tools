@@ -52,6 +52,8 @@ test("the 10 game characters show large, and the summary and full code small", (
 	const { container } = setup()
 	const big = container.querySelector(".code-big") as Element
 	expect(big.textContent?.replace(/\s/g, "")).toBe(GAME)
+	// One tile per game character, as CodeTiles draws a code.
+	expect([...big.querySelectorAll(".tile")].map((tile) => tile.textContent)).toEqual([...GAME])
 	expect(screen.getByText("Money · EP. 7")).toBeTruthy()
 	const full = container.querySelector(".code-full") as Element
 	expect(full.textContent?.replace(/\s/g, "")).toBe(CODE)

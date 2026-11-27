@@ -53,8 +53,32 @@ const loadout = $derived<Run[]>(
 	{/each}
 {/snippet}
 
+<!-- The game's 10 characters as tiles, the CodeTiles look; each field stays a button that jumps to its tab. -->
+{#snippet tiles(list: Run[])}
+	{#each list as run, at (at)}
+		{#if run.group !== null && canJump(run.group)}
+			<button
+				type="button"
+				class="run"
+				aria-label={run.hint}
+				title={run.hint}
+				onclick={() => onjump(run.group as string)}>
+				{#each [...run.text] as char, n (n)}
+					<span class="tile">{char}</span>
+				{/each}
+			</button>
+		{:else}
+			<span class="run" title={run.hint || undefined}>
+				{#each [...run.text] as char, n (n)}
+					<span class="tile">{char}</span>
+				{/each}
+			</span>
+		{/if}
+	{/each}
+{/snippet}
+
 <div class="display">
-	<div row class="code-big">{@render runs(big)}</div>
+	<div row class="code-big">{@render tiles(big)}</div>
 	{#if summary}
 		<p class="summary">{summary}</p>
 	{/if}
@@ -65,44 +89,75 @@ const loadout = $derived<Run[]>(
 
 <style>
 .display {
-	gap: 4px;
+	gap: 6px;
 	min-width: 0;
 }
 
-.code-big,
-.code-full {
-	flex-wrap: wrap;
-	font-family: var(--mono);
-	overflow-wrap: anywhere;
-}
-
+/* The tiles: one per character, a field's tiles together, as CodeTiles draws them. */
 .code-big {
-	color: var(--code);
-	font-size: 1.625rem;
-	font-weight: 600;
-	letter-spacing: 0.1em;
+	flex-wrap: wrap;
+	gap: 3px;
+	max-width: 340px;
 }
 
-.code-full {
-	color: var(--muted);
-	font-size: 0.75rem;
-}
-
-.code-big button,
-.code-full button {
+.run {
+	display: inline-flex;
+	gap: 3px;
 	padding: 0;
 	border: 0;
-	border-radius: 4px;
+	border-radius: calc(var(--radius-sm) - 4px);
 	background: none;
-	color: inherit;
 	font: inherit;
-	letter-spacing: inherit;
+}
+
+button.run {
 	cursor: pointer;
 }
 
-.code-big button:hover,
+.tile {
+	display: grid;
+	place-items: center;
+	width: 1.6em;
+	aspect-ratio: 4 / 5;
+	border: var(--border) solid var(--ink);
+	border-radius: calc(var(--radius-sm) - 4px);
+	background: var(--surface-2);
+	color: var(--code);
+	font-family: var(--mono);
+	font-size: clamp(14px, 3.6vw, 18px);
+	font-weight: 700;
+}
+
+button.run:hover .tile,
+button.run:focus-visible .tile {
+	border-color: var(--accent);
+	background: color-mix(in srgb, var(--accent) 14%, var(--surface-2));
+}
+
+button.run:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.code-full {
+	flex-wrap: wrap;
+	color: var(--muted);
+	font-family: var(--mono);
+	font-size: 0.75rem;
+	overflow-wrap: anywhere;
+}
+
+.code-full button {
+	padding: 0;
+	border: 0;
+	border-radius: calc(var(--radius-sm) - 6px);
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
 .code-full button:hover,
-.code-big button:focus-visible,
 .code-full button:focus-visible {
 	background: var(--hover);
 	text-decoration: underline dotted;

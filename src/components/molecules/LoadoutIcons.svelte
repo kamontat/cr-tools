@@ -60,7 +60,7 @@ let { loadout, size = 24 }: Props = $props()
 	bottom: -4px;
 	padding: 0 3px;
 	border: 1px solid var(--line);
-	border-radius: 999px;
+	border-radius: var(--radius-ctl);
 	background: var(--surface);
 	color: var(--muted);
 	font-size: 0.625rem;

@@ -63,7 +63,7 @@ test("a collapsed row shows the code, then the mode, episode and goals as badges
 	const score = rowOf(scoreCode)
 	const money = rowOf(moneyCode)
 	const badges = (row: HTMLElement) =>
-		[...row.querySelectorAll(".head .badge")].map((badge) => badge.textContent?.trim())
+		[...row.querySelectorAll(".head .badges .tag")].map((badge) => badge.textContent?.trim())
 	expect(badges(score)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.score])
 	expect(badges(money)).toEqual([en.combi.modes.manual, en.combi.describe.anyEpisode, en.combi.goals.money])
 	expect(score.textContent).not.toContain("Score farm")

@@ -56,7 +56,7 @@ img,
 .tile {
 	display: inline-block;
 	flex: none;
-	border-radius: var(--radius);
+	border-radius: var(--radius-sm);
 	object-fit: contain;
 }
 
@@ -77,7 +77,7 @@ img,
 	flex: none;
 	padding: 3px;
 	border: 2px solid var(--kind);
-	border-radius: 6px;
+	border-radius: var(--radius-sm);
 }
 
 .kind[data-kind="evolved"] {
@@ -94,7 +94,7 @@ img,
 	right: -2px;
 	min-width: 14px;
 	padding: 0 2px;
-	border-radius: 0 4px 0 3px;
+	border-radius: 0 calc(var(--radius-sm) - 4px) 0 calc(var(--radius-sm) - 6px);
 	background: var(--kind);
 	color: var(--bg);
 	font-family: var(--mono);

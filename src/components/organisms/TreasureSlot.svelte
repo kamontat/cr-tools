@@ -169,11 +169,11 @@ function toggle(id: string) {
 }
 
 .pick {
-	gap: 8px;
-	padding: 8px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	gap: var(--stack);
+	padding: var(--stack) var(--gap);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 }
 
 .head {
@@ -190,7 +190,7 @@ function toggle(id: string) {
 }
 
 button {
-	border: 1px solid var(--line);
+	border: var(--border) solid var(--line);
 	background: var(--surface);
 	color: var(--muted);
 	font: inherit;
@@ -201,7 +201,7 @@ button {
 	width: 32px;
 	height: 32px;
 	padding: 0;
-	border-radius: var(--radius);
+	border-radius: var(--radius-sm);
 }
 
 .levels {
@@ -214,8 +214,9 @@ button {
 	flex-wrap: wrap;
 	gap: 2px;
 	padding: 2px;
-	border-radius: 9px;
-	background: var(--hover);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 }
 
 .strip button {
@@ -223,27 +224,32 @@ button {
 	min-height: 32px;
 	padding: 0 4px;
 	border: 0;
-	border-radius: 7px;
+	border-radius: calc(var(--radius-sm) - 3px);
 	background: none;
 	font-size: 0.8125rem;
 }
 
 .strip button[aria-pressed="true"] {
-	background: var(--accent);
-	color: var(--on-accent);
+	outline: var(--border) solid var(--ink);
+	outline-offset: calc(var(--border) * -1);
+	background: var(--pick);
+	color: var(--on-pick);
 }
 
 .all,
 .add {
 	min-height: 32px;
 	padding: 4px 12px;
-	border-radius: 999px;
+	border-color: var(--secondary);
+	border-radius: var(--radius-ctl);
+	font-family: var(--font-ui);
 }
 
 .all[aria-pressed="true"],
 .add[aria-expanded="true"] {
-	border-color: var(--accent);
-	color: var(--text);
+	border-color: var(--ink);
+	background: var(--pick);
+	color: var(--on-pick);
 }
 
 .add {

@@ -4,7 +4,10 @@ import type { TabName } from "#lib/combi/state"
 
 import { SvelteSet } from "svelte/reactivity"
 
+import Button from "#components/atoms/Button.svelte"
 import EntryIcon from "#components/atoms/EntryIcon.svelte"
+import Surface from "#components/atoms/Surface.svelte"
+import Tag from "#components/atoms/Tag.svelte"
 import ShareBox from "#components/organisms/ShareBox.svelte"
 import { episodeArt } from "#lib/combi/art"
 import { imageFor, labelFor } from "#lib/combi/catalog"
@@ -184,9 +187,9 @@ const remove = (entry: SavedCode) => {
 
 <section class="list">
 	<div class="tools">
-		<button type="button" class="btn primary new" onclick={onnew}>
+		<Button variant="primary" onclick={onnew}>
 			<span aria-hidden="true">+</span> {m.combi.list.newCode}
-		</button>
+		</Button>
 		<input
 			class="search"
 			type="search"
@@ -194,29 +197,19 @@ const remove = (entry: SavedCode) => {
 			aria-label={m.combi.list.search}
 			placeholder={m.combi.list.search}
 			bind:value={query}>
-		<button
-			type="button"
-			class="btn view"
-			class:on={panel === "filter"}
-			aria-expanded={panel === "filter"}
-			onclick={() => onpanel("filter")}>
+		<Button aria-expanded={panel === "filter"} onclick={() => onpanel("filter")}>
 			<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4h12M4 8h8M6.5 12h3" /></svg>
 			{m.combi.list.filter}
 			{#if active > 0}
 				<span class="count">{active}</span>
 			{/if}
-		</button>
-		<button
-			type="button"
-			class="btn view"
-			class:on={panel === "sort"}
-			aria-expanded={panel === "sort"}
-			onclick={() => onpanel("sort")}>
+		</Button>
+		<Button aria-expanded={panel === "sort"} onclick={() => onpanel("sort")}>
 			<svg viewBox="0 0 16 16" aria-hidden="true">
 				<path d="M5 2.5v11M2.5 11 5 13.5 7.5 11M11 13.5v-11M8.5 5 11 2.5 13.5 5" />
 			</svg>
 			{m.combi.list.sort}
-		</button>
+		</Button>
 	</div>
 
 	{#if entries.length > 0}
@@ -246,9 +239,9 @@ const remove = (entry: SavedCode) => {
 	{/if}
 
 	{#if entries.length === 0}
-		<p class="empty">{m.combi.list.empty}</p>
+		<Surface kind="sunken" class="empty">{m.combi.list.empty}</Surface>
 	{:else if shown.length === 0}
-		<p class="empty">{m.combi.list.noMatch}</p>
+		<Surface kind="sunken" class="empty">{m.combi.list.noMatch}</Surface>
 	{:else}
 		<ul class="entries">
 			{#each shown as entry, index (entry.code)}
@@ -258,7 +251,11 @@ const remove = (entry: SavedCode) => {
 				{@const icons = rowLoadout(entry.code)}
 				{@const open = expanded.has(entry.code)}
 				{@const id = `entry-details-${index}`}
-				<li class="entry" class:open aria-current={entry.code === current ? "true" : undefined}>
+				<Surface
+					kind="row"
+					element="li"
+					class="entry{open ? " open" : ""}"
+					aria-current={entry.code === current ? "true" : undefined}>
 					<button
 						type="button"
 						class="head"
@@ -281,12 +278,10 @@ const remove = (entry: SavedCode) => {
 								<!-- Open, the Run line says it all, and the note shows whole. -->
 							{:else if run !== null}
 								<span class="badges">
-									<span class="badge mode">{run.mode}</span>
-									<span class="sep" aria-hidden="true">·</span>
-									<span class="badge episode">{run.episode}</span>
+									<Tag tone="filled">{run.mode}</Tag>
+									<Tag tone="outlined">{run.episode}</Tag>
 									{#each run.goalNames as name (name)}
-										<span class="sep" aria-hidden="true">·</span>
-										<span class="badge goal">{name}</span>
+										<Tag>{name}</Tag>
 									{/each}
 								</span>
 							{:else}
@@ -551,45 +546,30 @@ const remove = (entry: SavedCode) => {
 								<span class="saved">{m.combi.list.saved(date.format(entry.savedAt))}</span>
 								<div class="actions">
 									{#if arming === entry.code}
-										<button
-											type="button"
-											class="btn small danger armed"
+										<Button
+											variant="danger"
 											aria-label={m.combi.list.confirmDeleteCode(game)}
 											onclick={() => remove(entry)}
 											onblur={() => (arming = null)}>
 											{m.combi.list.confirmDelete}
-										</button>
+										</Button>
 									{:else}
-										<button
-											type="button"
-											class="btn small danger"
-											aria-label={m.combi.list.deleteCode(game)}
-											onclick={() => remove(entry)}>
+										<Button variant="ghost" aria-label={m.combi.list.deleteCode(game)} onclick={() => remove(entry)}>
 											{m.combi.list.delete}
-										</button>
+										</Button>
 									{/if}
-									<button
-										type="button"
-										class="btn small"
+									<Button
 										aria-label={m.combi.list.shareCode(game)}
 										aria-expanded={sharing.has(entry.code)}
 										onclick={() => (sharing.has(entry.code) ? sharing.delete(entry.code) : sharing.add(entry.code))}>
 										{m.combi.list.share}
-									</button>
-									<button
-										type="button"
-										class="btn small"
-										aria-label={m.combi.list.copyCode(game)}
-										onclick={() => oncopy(entry)}>
+									</Button>
+									<Button aria-label={m.combi.list.copyCode(game)} onclick={() => oncopy(entry)}>
 										{m.combi.list.copy}
-									</button>
-									<button
-										type="button"
-										class="btn small primary"
-										aria-label={m.combi.list.editCode(game)}
-										onclick={() => onopen(entry)}>
+									</Button>
+									<Button variant="primary" aria-label={m.combi.list.editCode(game)} onclick={() => onopen(entry)}>
 										{m.combi.list.edit}
-									</button>
+									</Button>
 								</div>
 							</div>
 							{#if sharing.has(entry.code)}
@@ -597,7 +577,7 @@ const remove = (entry: SavedCode) => {
 							{/if}
 						</div>
 					{/if}
-				</li>
+				</Surface>
 			{/each}
 		</ul>
 	{/if}
@@ -607,7 +587,7 @@ const remove = (entry: SavedCode) => {
 .list {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: var(--gap);
 	min-width: 0;
 	/* The list sits beside the docked editor, so it reads its own width, not the window's. */
 	container: list / inline-size;
@@ -617,11 +597,12 @@ const remove = (entry: SavedCode) => {
 .tools {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 8px;
+	gap: var(--stack);
 	align-items: center;
 }
 
-.new,
+/* New code is the tools' first child. */
+.tools > :global(.btn:first-child),
 .search {
 	grid-column: 1 / -1;
 }
@@ -631,54 +612,39 @@ const remove = (entry: SavedCode) => {
 		grid-template-columns: auto minmax(0, 1fr) auto auto;
 	}
 
-	.new,
+	.tools > :global(.btn:first-child),
 	.search {
 		grid-column: auto;
 	}
 }
 
-.btn,
+.tools > :global(.btn) {
+	white-space: nowrap;
+}
+
+/* Filter or Sort while its panel is open: picked, in yellow. */
+.tools > :global(.btn[aria-expanded="true"]) {
+	background: var(--pick);
+	color: var(--on-pick);
+}
+
 .search {
 	min-width: 0;
-	min-height: 38px;
-	padding: 7px 12px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	min-height: var(--ctl);
+	padding: 3px 14px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 	color: var(--text);
 	font: inherit;
 }
 
-.btn {
-	font-weight: 600;
-	cursor: pointer;
+.search:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+	outline-offset: 0;
 }
 
-.btn.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
-}
-
-/* Filter and Sort: an icon, the word, and for Filter how many picks it holds. */
-.btn.view {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	white-space: nowrap;
-}
-
-.btn.view:hover {
-	background: var(--hover);
-}
-
-.btn.view.on {
-	border-color: var(--accent);
-	box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-.btn.view svg {
+.tools :global(svg) {
 	width: 16px;
 	height: 16px;
 	fill: none;
@@ -691,7 +657,7 @@ const remove = (entry: SavedCode) => {
 .count {
 	min-width: 20px;
 	padding: 0 6px;
-	border-radius: 999px;
+	border-radius: var(--radius-ctl);
 	background: var(--accent);
 	color: var(--on-accent);
 	font-size: 0.75rem;
@@ -713,8 +679,8 @@ const remove = (entry: SavedCode) => {
 	align-items: center;
 	gap: 6px;
 	padding: 2px 4px 2px 10px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
+	border: var(--border) solid var(--pick);
+	border-radius: var(--radius-ctl);
 	background: var(--surface);
 	color: var(--text);
 	font: inherit;
@@ -747,7 +713,7 @@ const remove = (entry: SavedCode) => {
 	background: none;
 	color: var(--accent);
 	font: inherit;
-	font-weight: 600;
+	font-family: var(--font-ui);
 	cursor: pointer;
 }
 
@@ -756,7 +722,6 @@ const remove = (entry: SavedCode) => {
 }
 
 @media (pointer: coarse) {
-	.btn,
 	.search,
 	.head {
 		min-height: var(--tap);
@@ -767,46 +732,37 @@ const remove = (entry: SavedCode) => {
 	}
 }
 
-.empty {
+.list > :global(.empty) {
 	margin: 0;
-	padding: 14px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
 	color: var(--muted);
 }
 
+/* Each saved code is its own sticker row. */
 .entries {
 	display: flex;
 	flex-direction: column;
+	gap: var(--stack);
 	margin: 0;
 	padding: 0;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
 	list-style: none;
+}
+
+.entries > :global(.entry) {
 	overflow: hidden;
 }
 
-.entry {
-	border-bottom: 1px solid var(--line);
-}
-
-.entry:last-child {
-	border-bottom: 0;
-}
-
-.entry[aria-current="true"] {
-	box-shadow: inset 3px 0 0 var(--accent);
+/* The code open in the editor: the picked yellow, softened over the surface. */
+.entries > :global(.entry[aria-current="true"]) {
+	background: color-mix(in srgb, var(--pick) 30%, var(--surface));
 }
 
 /* The head: the cookie with its pet on the corner, the code and goals, the note and episode, the chevron. */
 .head {
 	display: flex;
-	gap: 14px;
+	gap: var(--gap);
 	align-items: center;
 	width: 100%;
-	padding: 12px 16px;
+	padding: var(--stack) var(--pad);
 	border: 0;
 	background: none;
 	color: var(--text);
@@ -832,13 +788,14 @@ const remove = (entry: SavedCode) => {
 	justify-content: center;
 	width: 52px;
 	height: 52px;
-	border-radius: 12px;
-	background: var(--hover);
+	border: var(--border) solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 }
 
 /* No cookie set: an empty slot, as the game draws one. */
 .face.empty {
-	border: 2px dashed var(--line);
+	border-style: dashed;
 	background: none;
 }
 
@@ -849,7 +806,7 @@ const remove = (entry: SavedCode) => {
 	display: flex;
 	border-radius: 50%;
 	background: var(--surface);
-	box-shadow: 0 0 0 2px var(--surface);
+	outline: 2px solid var(--surface);
 }
 
 .summary {
@@ -872,34 +829,8 @@ const remove = (entry: SavedCode) => {
 .badges {
 	display: flex;
 	flex-flow: row wrap;
-	gap: 4px 6px;
+	gap: 4px;
 	align-items: center;
-}
-
-.badge {
-	padding: 0 6px;
-	border: 1px solid var(--line);
-	border-radius: 999px;
-	font-size: 0.6875rem;
-	font-weight: 600;
-	line-height: 1.4;
-	white-space: nowrap;
-}
-
-.badge.mode {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--bg);
-}
-
-.badge.episode {
-	border-color: var(--accent);
-	color: var(--accent);
-}
-
-.badge.goal {
-	color: var(--muted);
-	font-weight: 400;
 }
 
 .episode {
@@ -931,7 +862,7 @@ const remove = (entry: SavedCode) => {
 	transition: transform 0.15s;
 }
 
-.entry.open .chevron {
+:global(.entry.open) .chevron {
 	transform: translateY(2px) rotate(225deg);
 }
 
@@ -939,12 +870,12 @@ const remove = (entry: SavedCode) => {
 .details {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	/* The head's hover colour fills it to its bottom edge, so the details start a step below. */
-	margin: 12px 16px 14px;
-	padding: 4px 14px 12px;
-	border-radius: var(--radius);
-	background: var(--bg);
+	gap: var(--gap);
+	margin: var(--stack) var(--pad) var(--pad);
+	padding: 4px var(--pad) var(--pad);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-sm);
+	background: var(--surface-2);
 }
 
 .lines {
@@ -962,7 +893,7 @@ const remove = (entry: SavedCode) => {
 }
 
 .row-line + .row-line {
-	border-top: 1px solid var(--line);
+	border-top: 1px dashed var(--line);
 }
 
 .label {
@@ -986,19 +917,11 @@ const remove = (entry: SavedCode) => {
 
 .pill {
 	padding: 1px 8px;
-	border: 2px solid var(--accent);
-	border-radius: 6px;
+	border: var(--border) solid var(--accent);
+	border-radius: var(--radius-ctl);
 	color: var(--accent);
 	font-size: 0.8125rem;
 	font-weight: 600;
-}
-
-.tag {
-	padding: 1px 8px;
-	border: 1px solid var(--line);
-	border-radius: 6px;
-	color: var(--muted);
-	font-size: 0.8125rem;
 }
 
 .with-art {
@@ -1022,7 +945,7 @@ const remove = (entry: SavedCode) => {
 	min-width: 0;
 	padding: 4px;
 	border: 0;
-	border-radius: var(--radius);
+	border-radius: var(--radius-sm);
 	background: none;
 	color: inherit;
 	font: inherit;
@@ -1125,7 +1048,7 @@ const remove = (entry: SavedCode) => {
 	bottom: -4px;
 	padding: 0 5px;
 	border: 1px solid var(--line);
-	border-radius: 999px;
+	border-radius: var(--radius-ctl);
 	background: var(--surface);
 	color: var(--text);
 	font-size: 0.6875rem;
@@ -1176,7 +1099,7 @@ const remove = (entry: SavedCode) => {
 	justify-content: center;
 	width: 36px;
 	border: 0;
-	border-radius: var(--radius);
+	border-radius: var(--radius-sm);
 	background: none;
 	color: var(--muted);
 	cursor: pointer;
@@ -1216,36 +1139,19 @@ const remove = (entry: SavedCode) => {
 	gap: 6px;
 }
 
-.btn.small {
-	min-height: 32px;
-	padding: 4px 12px;
-	font-size: 0.8125rem;
-}
-
-.btn.danger {
-	border-color: transparent;
-	background: none;
+/* Delete, before it is armed, reads as a quiet danger. */
+.actions > :global(.btn.ghost) {
 	color: var(--danger);
-}
-
-.btn.danger:hover {
-	background: var(--hover);
-}
-
-.btn.danger.armed {
-	border-color: var(--danger);
-	background: var(--danger);
-	color: var(--on-danger);
 }
 
 /* A narrow list puts each label over its line. */
 @container list (max-width: 480px) {
 	.head {
-		padding-inline: 12px;
+		padding-inline: var(--stack);
 	}
 
 	.details {
-		margin-inline: 10px;
+		margin-inline: var(--stack);
 	}
 
 	.row-line {

@@ -3,6 +3,7 @@ import type { SavedCode } from "#lib/combi/saved"
 
 import { tick, untrack } from "svelte"
 
+import Button from "#components/atoms/Button.svelte"
 import Tabs from "#components/atoms/Tabs.svelte"
 import CodeDisplay from "#components/molecules/CodeDisplay.svelte"
 import Panel from "#components/molecules/Panel.svelte"
@@ -344,9 +345,7 @@ function onclick(event: MouseEvent) {
 						value={typed}
 						oninput={typeInputChanged}
 						onkeydown={typeKeydown}>
-					<button type="button" class="btn done" onmousedown={keepFocus} onclick={commitTyped}>
-						{m.combi.editor.done}
-					</button>
+					<Button onmousedown={keepFocus} onclick={commitTyped}>{m.combi.editor.done}</Button>
 				</div>
 				<p class="type-status" class:error={reading.kind === "error"} id="{uid}-type-status" aria-live="polite">
 					{reading.text}
@@ -382,20 +381,18 @@ function onclick(event: MouseEvent) {
 
 	{#snippet actions()}
 		<div row class="foot" bind:this={foot}>
-			<button type="button" class="btn primary" onclick={oncopy}>{m.combi.editor.copy}</button>
-			<button type="button" class="btn" aria-expanded={sharing} onclick={() => (sharing = !sharing)}>
-				{m.combi.editor.share}
-			</button>
+			<Button variant="primary" onclick={oncopy}>{m.combi.editor.copy}</Button>
+			<Button aria-expanded={sharing} onclick={() => (sharing = !sharing)}>{m.combi.editor.share}</Button>
 			{#if saved === null}
-				<button type="button" class="btn" onclick={onsave}>{m.combi.editor.save}</button>
+				<Button onclick={onsave}>{m.combi.editor.save}</Button>
 			{:else if canUpdate}
-				<button type="button" class="btn" onclick={onupdate}>{m.combi.editor.update}</button>
+				<Button onclick={onupdate}>{m.combi.editor.update}</Button>
 			{/if}
 			<div class="menu-wrap" bind:this={menuWrap} onfocusout={menuFocusout}>
 				<button
 					bind:this={moreButton}
 					type="button"
-					class="btn more"
+					class="more"
 					aria-label={m.combi.editor.more}
 					title={m.combi.editor.more}
 					aria-haspopup="menu"
@@ -434,31 +431,27 @@ function onclick(event: MouseEvent) {
 
 <style>
 .editor {
-	gap: 12px;
+	gap: var(--gap);
 	min-width: 0;
 }
 
 .head {
-	gap: 8px;
+	gap: var(--stack);
 }
 
 .typing {
 	align-items: center;
-	gap: 8px;
-}
-
-.btn.done {
-	flex: none;
+	gap: var(--stack);
 }
 
 .type-code {
 	flex: 1;
 	min-width: 0;
-	min-height: 36px;
-	padding: 6px 10px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
+	min-height: var(--ctl);
+	padding: 3px 14px;
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface-2);
 	color: var(--code);
 	font-family: var(--mono);
 	font-size: 1rem;
@@ -479,72 +472,70 @@ function onclick(event: MouseEvent) {
 }
 
 .tabpanel {
-	gap: 20px;
+	gap: var(--pad);
 	min-width: 0;
-	padding-block: 8px 24px;
+	padding-block: var(--stack) var(--pad);
 }
 
 .foot {
+	flex-wrap: wrap;
 	align-items: center;
-	gap: 8px;
+	gap: var(--stack);
 	min-width: 0;
 }
 
-.btn {
+.foot > :global(.btn) {
 	flex: none;
-	min-height: 36px;
-	padding: 6px 12px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font: inherit;
-	font-weight: 500;
-	cursor: pointer;
 }
 
 @media (pointer: coarse) {
-	.btn,
+	.more,
 	.type-code {
 		min-height: var(--tap);
 	}
-}
-
-.btn:hover {
-	background: var(--hover);
-}
-
-.btn.primary {
-	border-color: var(--accent);
-	background: var(--accent);
-	color: var(--on-accent);
 }
 
 .menu-wrap {
 	position: relative;
 }
 
-.btn.more {
+/* ⋯ opens the menu: a round sticker beside the actions. */
+.more {
+	display: grid;
 	flex: none;
-	min-width: 44px;
+	place-items: center;
+	min-width: var(--ctl);
+	min-height: var(--ctl);
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-ctl);
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.more:hover,
+.more[aria-expanded="true"] {
+	background: var(--hover);
 }
 
 .menu {
 	position: absolute;
 	right: 0;
 	top: calc(100% + 6px);
-	z-index: 5;
+	z-index: var(--z-raised);
 	min-width: 180px;
 	padding: 4px;
-	border: 1px solid var(--line);
-	border-radius: var(--radius);
+	border: var(--border) solid var(--ink);
+	border-radius: var(--radius-sm);
 	background: var(--surface);
+	box-shadow: var(--shadow-pop);
 }
 
 .menu button {
-	padding: 9px 12px;
+	padding: 7px 12px;
 	border: 0;
-	border-radius: 6px;
+	border-radius: calc(var(--radius-sm) - 4px);
 	background: none;
 	color: var(--text);
 	font: inherit;
